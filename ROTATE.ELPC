@@ -1,0 +1,111 @@
+' rotate screen contents
+#output "rotate"
+
+' 4.0000 = 96x96 clrbox canvas (9216 bytes)
+' 4.2400 = free
+
+.defines
+'-------
+#define OP_COPY = 0
+#define OP_MIX  = 1
+#define OP_SWAP = 2
+#define OP_FILL = 3
+
+#declare HOTREG_7 = $d05d
+#declare SCRNPTRLSB = $d060
+#declare SCRNPTRBNK = $d062
+
+#declare t, x, y, colr, ang, xinc, yinc, tx, ty, txinc, tyinc
+#declare box_ang, cx, cy, hyp
+#define PI = 3.1415926535
+#define a$
+
+
+.main
+'----
+  gosub init
+  gosub dummy_content
+.mn_loop
+  gosub rotate_logic
+  gosub draw_content
+  goto mn_loop
+
+
+.init
+'----
+  ' print chr$(27);"5";chr$(147);
+  ang = .1
+
+  ' switch to 80x50
+  bank 128
+  setbit HOTREG_7, 7
+  poke $d031, $e8 ' 1110 1000 = H640,FAST,ATTR,V400
+
+  ' move SCRNPTR to bank4 - $8000
+  wpoke SCRNPTRLSB, $8000
+  poke SCRNPTRBNK,$04
+
+  ' clear 80x50 chars and colour ram
+  edma 3, 4000, 160, $48000
+  edma 3, 4000, 6, $ff80000
+  ' for idx=0 to 3999:poke $48000+idx,160:poke $ff80000+idx,6:next idx
+
+  return
+
+
+.dummy_content
+'-------------
+  edma OP_FILL, 96*96, 0, $40000
+  for t = 0 to 50
+    colr = int(rnd(1)*16)
+    x = int(rnd(1)*96)
+    y = int(rnd(1)*96)
+    poke $40000 + x + y * 96, colr
+  next t
+  for y = 0 to 96
+    for x = 0 to 95
+      poke $40000 + x + y * 96, mod(y, 16)
+    next x
+  next y
+  return
+
+
+.rotate_logic
+'------------
+  ang = ang - .1
+  hyp = sqr(25*25+40*40)
+  xinc = cos(ang)
+  yinc = sin(ang)
+  txinc = cos(ang+PI/2)
+  tyinc = sin(ang+PI/2)
+  box_ang = atn(-25/-40)+ PI +ang
+  tx = hyp * cos(box_ang) + 48
+  ty = hyp * sin(box_ang) + 48
+  cx = tx
+  cy = ty
+  return
+
+
+.draw_content
+'------------
+  ' TODO: convert this for loop into assembly...
+  for y = 0 to 49
+    cx = tx + txinc * y
+    cy = ty + tyinc * y
+
+    for x = 0 to 79
+      poke $ff80000 + x + y * 80, peek($40000 + cx + cy * 96)
+      ' poke $ff80000 + x + y * 80, peek($40000 + x + y * 96)
+      cx = cx + xinc
+      cy = cy + yinc
+    next x
+  next y
+
+  'cursor 0,0:print chr$(27);"q tx=";tx;", ty=";ty;
+  'cursor 0,1:print chr$(27);"q ang=";ang;", hyp=";hyp;
+  'cursor 0,2:print chr$(27);"q xinc=";xinc;", yinc=";yinc;
+  'cursor 0,3:print chr$(27);"q txinc=";txinc;", tyinc=";tyinc;
+  'get key a$
+
+  return
+ÿ
