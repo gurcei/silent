@@ -16,6 +16,8 @@
 #declare SCRNPTRBNK = $d062
 
 #declare t, x, y, colr, ang, xinc, yinc, tx, ty, txinc, tyinc
+#declare y1add
+#declare xfrac, yfrac
 #declare box_ang, cx, cy, hyp
 #define PI = 3.1415926535
 #define a$
@@ -34,7 +36,7 @@
 .init
 '----
   ' print chr$(27);"5";chr$(147);
-  ang = .1
+  ang = 2*PI
 
   ' switch to 80x50
   bank 128
@@ -73,16 +75,21 @@
 .rotate_logic
 '------------
   ang = ang - .1
+  if ang < 0 then ang = ang + (2 * PI)
   hyp = sqr(25*25+40*40)
   xinc = cos(ang)
   yinc = sin(ang)
   txinc = cos(ang+PI/2)
   tyinc = sin(ang+PI/2)
   box_ang = atn(-25/-40)+ PI +ang
+  if box_ang < 0 then box_ang = box_ang + (2 * PI)
   tx = hyp * cos(box_ang) + 48
   ty = hyp * sin(box_ang) + 48
   cx = tx
   cy = ty
+  xfrac = 0
+  yfrac = 0
+  y1add = 0
   return
 
 
@@ -90,15 +97,17 @@
 '------------
   ' TODO: convert this for loop into assembly...
   for y = 0 to 49
-    cx = tx + txinc * y
-    cy = ty + tyinc * y
-
+    cx = tx
+    cy = ty
     for x = 0 to 79
-      poke $ff80000 + x + y * 80, peek($40000 + cx + cy * 96)
+      poke $ff80000 + x + y1add, peek($40000 + cx + cy * 96)
       ' poke $ff80000 + x + y * 80, peek($40000 + x + y * 96)
       cx = cx + xinc
       cy = cy + yinc
     next x
+    tx = tx + txinc
+    ty = ty + tyinc
+    y1add = y1add + 80
   next y
 
   'cursor 0,0:print chr$(27);"q tx=";tx;", ty=";ty;
