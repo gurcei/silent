@@ -35,6 +35,7 @@
 
 .init
 '----
+  ^^bload "asmrotate",b0
   ' print chr$(27);"5";chr$(147);
   ang = 2*PI
 
@@ -76,15 +77,15 @@
 '------------
   ang = ang - .1
   if ang < 0 then ang = ang + (2 * PI)
-  hyp = sqr(25*25+40*40)
-  xinc = cos(ang)
-  yinc = sin(ang)
-  txinc = cos(ang+PI/2)
-  tyinc = sin(ang+PI/2)
+  hyp = sqr(25*25+40*40) * 256
+  xinc = cos(ang) * 256
+  yinc = sin(ang) * 256
+  txinc = cos(ang+PI/2) * 256
+  tyinc = sin(ang+PI/2) * 256
   box_ang = atn(-25/-40)+ PI +ang
   if box_ang < 0 then box_ang = box_ang + (2 * PI)
-  tx = hyp * cos(box_ang) + 48
-  ty = hyp * sin(box_ang) + 48
+  tx = hyp * cos(box_ang) + 48 * 256
+  ty = hyp * sin(box_ang) + 48 * 256
   cx = tx
   cy = ty
   xfrac = 0
@@ -95,12 +96,27 @@
 
 .draw_content
 '------------
-  ' TODO: convert this for loop into assembly...
+  ' ASSEMBLY version
+  if xinc < 0 then xinc = xinc + 65536
+  if yinc < 0 then yinc = yinc + 65536
+  if txinc < 0 then txinc = txinc + 65536
+  if tyinc < 0 then tyinc = tyinc + 65536
+
+  wpoke $1a00, tx
+  wpoke $1a02, ty
+  wpoke $1a04, xinc
+  wpoke $1a06, yinc
+  wpoke $1a08, txinc
+  wpoke $1a0a, tyinc
+  bank 0:sys $1800:bank 128
+
+#ifdef BASIC
+  ' BASIC version
   for y = 0 to 49
     cx = tx
     cy = ty
     for x = 0 to 79
-      poke $ff80000 + x + y1add, peek($40000 + cx + cy * 96)
+      poke $ff80000 + x + y1add, peek($40000 + cx/256 + cy/256 * 96)
       ' poke $ff80000 + x + y * 80, peek($40000 + x + y * 96)
       cx = cx + xinc
       cy = cy + yinc
@@ -109,6 +125,7 @@
     ty = ty + tyinc
     y1add = y1add + 80
   next y
+#endif
 
   'cursor 0,0:print chr$(27);"q tx=";tx;", ty=";ty;
   'cursor 0,1:print chr$(27);"q ang=";ang;", hyp=";hyp;
