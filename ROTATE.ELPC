@@ -20,8 +20,8 @@
 #declare xfrac, yfrac
 #declare box_ang, cx, cy, hyp
 #define PI = 3.1415926535
-#define a$
-
+#declare pl_rad, pl_ang, pl_dir, pl_clr
+#declare a$
 
 .main
 '----
@@ -38,6 +38,10 @@
   ^^bload "asmrotate",b0
   ' print chr$(27);"5";chr$(147);
   ang = 2*PI + .1
+  pl_rad = 0
+  pl_ang = 0
+  pl_dir = 0
+  pl_clr = 0
 
   ' switch to 80x50
   bank 128
@@ -59,17 +63,22 @@
 .dummy_content
 '-------------
   edma OP_FILL, 96*96, 0, $40000
-  for t = 0 to 50
-    colr = int(rnd(1)*16)
-    x = int(rnd(1)*96)
-    y = int(rnd(1)*96)
-    poke $40000 + x + y * 96, colr
-  next t
-  for y = 0 to 96
-    for x = 0 to 95
-      poke $40000 + x + y * 96, mod(y, 16)
-    next x
-  next y
+
+  'poke $40000 + 48*96, 1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6
+
+  'for t = 0 to 50
+  '  colr = int(rnd(1)*16)
+  '  x = int(rnd(1)*96)
+  '  y = int(rnd(1)*96)
+  '  poke $40000 + x + y * 96, colr
+  'next t
+
+  'for y = 0 to 96
+  '  for x = 0 to 95
+  '    poke $40000 + x + y * 96, mod(y, 16)
+  '  next x
+  'next y
+
   return
 
 
@@ -80,8 +89,8 @@
   hyp = sqr(25*25+40*40) * 65536
   xinc = cos(ang) * 65536
   yinc = sin(ang) * 65536
-  txinc = yinc ' cos(ang+PI/2) * 65536
-  tyinc = xinc ' sin(ang+PI/2) * 65536
+  txinc = cos(ang+PI/2) * 65536
+  tyinc = sin(ang+PI/2) * 65536
   box_ang = atn(-25/-40)+ PI +ang
   if box_ang < 0 then box_ang = box_ang + (2 * PI)
   tx = hyp * cos(box_ang) + 48 * 65536
@@ -96,7 +105,41 @@
 
 .draw_content
 '------------
-'#ifdef ASSEMBLY
+  gosub plot_iteration
+  gosub asm_rotation
+  ' gosub basic_rotation
+
+  'cursor 0,0:print chr$(27);"q tx=";tx;", ty=";ty;
+  'cursor 0,1:print chr$(27);"q ang=";ang;", hyp=";hyp;
+  'cursor 0,2:print chr$(27);"q xinc=";xinc;", yinc=";yinc;
+  'cursor 0,3:print chr$(27);"q txinc=";txinc;", tyinc=";tyinc;
+  'get key a$
+
+  return
+
+.plot_iteration
+'--------------
+  x = 48 + cos(pl_ang) * pl_rad
+  y = 48 + sin(pl_ang) * pl_rad
+
+  poke $40000 + x + int(y) * 96, pl_clr + 64
+
+  pl_ang = pl_ang + .05
+  if pl_ang > 2 * PI then pl_ang = pl_ang - 2 * PI
+
+  pl_rad = pl_rad + .1
+  if pl_rad > 20 then begin
+    pl_rad=0
+    pl_clr = pl_clr + 1
+    if pl_clr = 16 then pl_clr = 0
+    pl_ang = .3926 * pl_clr
+  bend
+
+  return
+
+
+.asm_rotation
+'------------
   ' ASSEMBLY version
   if xinc < 0 then xinc = xinc + 4294967296
   if yinc < 0 then yinc = yinc + 4294967296
@@ -122,17 +165,18 @@
   wpoke $1a16, tyinc/65536
 
   bank 0:sys $1800:bank 128
-  get key a$
-'#endif
 
-#ifdef BASIC
+  return
+
+
+.basic_rotation
+'--------------
   ' BASIC version
   for y = 0 to 49
     cx = tx
     cy = ty
     for x = 0 to 79
-      poke $ff80000 + x + y1add, peek($40000 + cx/65536 + cy/65536 * 96)
-      ' poke $ff80000 + x + y * 80, peek($40000 + x + y * 96)
+      poke $ff80000 + x + y1add, peek($40000 + cx/65536 + int(cy/65536) * 96)
       cx = cx + xinc
       cy = cy + yinc
     next x
@@ -140,13 +184,10 @@
     ty = ty + tyinc
     y1add = y1add + 80
   next y
-#endif
 
-  'cursor 0,0:print chr$(27);"q tx=";tx;", ty=";ty;
-  'cursor 0,1:print chr$(27);"q ang=";ang;", hyp=";hyp;
-  'cursor 0,2:print chr$(27);"q xinc=";xinc;", yinc=";yinc;
-  'cursor 0,3:print chr$(27);"q txinc=";txinc;", tyinc=";tyinc;
-  'get key a$
+  get key a$
 
   return
+
+         
 ÿ
