@@ -37,7 +37,7 @@
 '----
   ^^bload "asmrotate",b0
   ' print chr$(27);"5";chr$(147);
-  ang = 2*PI
+  ang = 2*PI + .1
 
   ' switch to 80x50
   bank 128
@@ -77,15 +77,15 @@
 '------------
   ang = ang - .1
   if ang < 0 then ang = ang + (2 * PI)
-  hyp = sqr(25*25+40*40) * 256
-  xinc = cos(ang) * 256
-  yinc = sin(ang) * 256
-  txinc = cos(ang+PI/2) * 256
-  tyinc = sin(ang+PI/2) * 256
+  hyp = sqr(25*25+40*40) * 65536
+  xinc = cos(ang) * 65536
+  yinc = sin(ang) * 65536
+  txinc = yinc ' cos(ang+PI/2) * 65536
+  tyinc = xinc ' sin(ang+PI/2) * 65536
   box_ang = atn(-25/-40)+ PI +ang
   if box_ang < 0 then box_ang = box_ang + (2 * PI)
-  tx = hyp * cos(box_ang) + 48 * 256
-  ty = hyp * sin(box_ang) + 48 * 256
+  tx = hyp * cos(box_ang) + 48 * 65536
+  ty = hyp * sin(box_ang) + 48 * 65536
   cx = tx
   cy = ty
   xfrac = 0
@@ -96,19 +96,34 @@
 
 .draw_content
 '------------
+'#ifdef ASSEMBLY
   ' ASSEMBLY version
-  if xinc < 0 then xinc = xinc + 65536
-  if yinc < 0 then yinc = yinc + 65536
-  if txinc < 0 then txinc = txinc + 65536
-  if tyinc < 0 then tyinc = tyinc + 65536
+  if xinc < 0 then xinc = xinc + 4294967296
+  if yinc < 0 then yinc = yinc + 4294967296
+  if txinc < 0 then txinc = txinc + 4294967296
+  if tyinc < 0 then tyinc = tyinc + 4294967296
 
-  wpoke $1a00, tx
-  wpoke $1a02, ty
-  wpoke $1a04, xinc
-  wpoke $1a06, yinc
-  wpoke $1a08, txinc
-  wpoke $1a0a, tyinc
+  wpoke $1a00, mod(tx,65536)
+  wpoke $1a02, tx/65536
+
+  wpoke $1a04, mod(ty, 65536)
+  wpoke $1a06, ty/65536
+
+  wpoke $1a08, mod(xinc,65536)
+  wpoke $1a0a, xinc/65536
+
+  wpoke $1a0c, mod(yinc, 65536)
+  wpoke $1a0e, yinc/65536
+
+  wpoke $1a10, mod(txinc, 65536)
+  wpoke $1a12, txinc/65536
+
+  wpoke $1a14, mod(tyinc, 65536)
+  wpoke $1a16, tyinc/65536
+
   bank 0:sys $1800:bank 128
+  get key a$
+'#endif
 
 #ifdef BASIC
   ' BASIC version
@@ -116,7 +131,7 @@
     cx = tx
     cy = ty
     for x = 0 to 79
-      poke $ff80000 + x + y1add, peek($40000 + cx/256 + cy/256 * 96)
+      poke $ff80000 + x + y1add, peek($40000 + cx/65536 + cy/65536 * 96)
       ' poke $ff80000 + x + y * 80, peek($40000 + x + y * 96)
       cx = cx + xinc
       cy = cy + yinc

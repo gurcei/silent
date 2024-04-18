@@ -1,0 +1,19 @@
+autowatch
+autocls
+
+wd 1a00 tx
+wd 1a04 ty
+wd 1a08 xinc
+wd 1a0c yinc
+wd 1a10 txinc
+wd 1a14 tyinc
+
+ww 1a18 y1add
+wd 1a1a cx
+wd 1a1e cy
+wd 1a22 zbkp
+wb 1a26 peekval
+wd 1a27 tmpw1
+wd 1a2b tmpw2
+
+wd fc zptr32
