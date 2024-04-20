@@ -1,4 +1,5 @@
 *.bin
+*.clr
 *.dat
 *.ln
 *.p
