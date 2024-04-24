@@ -26,5 +26,16 @@ EOF
 endef
 export scr_getlogo
 
+define scr_putlogo_a
+m65dbg -l tcp <<'EOF'
+load logo_a.bin 40800
+load logo_a.clr ff80000
+quit
+EOF
+endef
+export scr_putlogo_a
+
 getlogo:; @ eval "$$scr_getlogo"
 putlogo:; @ eval "$$scr_putlogo"
+
+putlogo_a:; @ eval "$$scr_putlogo_a"
