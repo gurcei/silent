@@ -6,10 +6,12 @@ ana.ln: c:\Users\gurcei\AppData\Roaming\xemu-lgb\mega65\hdos\11.D81
 	c1541 -attach "C:\Users\gurcei\AppData\Roaming\xemu-lgb\mega65\hdos\11.D81" -read lyr02.ln,s lyr02.ln
 	c1541 -attach "C:\Users\gurcei\AppData\Roaming\xemu-lgb\mega65\hdos\11.D81" -read lyr03.ln,s lyr03.ln
 	c1541 -attach "C:\Users\gurcei\AppData\Roaming\xemu-lgb\mega65\hdos\11.D81" -read enigma.p,s enigma.p
-	c1541 -attach "C:\Users\gurcei\AppData\Roaming\xemu-lgb\mega65\hdos\MA203.D81" -read rotate.asm,s rotate.asm
+	c1541 -attach "silent.d81" -read rotate.asm,s rotate.asm
+	c1541 -attach "silent.d81" -read bas.bin bas.bin
+	c1541 -attach "silent.d81" -read bas.dat bas.dat
 
 xemu:
-	/c/Jenkins/Projects/xemu/build/bin/xmega65.native -hdosvirt -uartmon :4510 -8 silent.d81 &
+	/c/Jenkins/Projects/xemu/build/bin/xmega65.native -rom /c/Users/gurcei/Downloads/920385.bin -hdosvirt -uartmon :4510 -8 silent.d81 &
 
 define scr_putlogo
 m65dbg -l tcp <<'EOF'
