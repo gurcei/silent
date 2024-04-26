@@ -8,6 +8,9 @@ ana.ln: c:\Users\gurcei\AppData\Roaming\xemu-lgb\mega65\hdos\11.D81
 	c1541 -attach "C:\Users\gurcei\AppData\Roaming\xemu-lgb\mega65\hdos\11.D81" -read enigma.p,s enigma.p
 	c1541 -attach "C:\Users\gurcei\AppData\Roaming\xemu-lgb\mega65\hdos\MA203.D81" -read rotate.asm,s rotate.asm
 
+xemu:
+	/c/Jenkins/Projects/xemu/build/bin/xmega65.native -hdosvirt -uartmon :4510 -8 silent.d81 &
+
 define scr_putlogo
 m65dbg -l tcp <<'EOF'
 load logo.bin 40800
@@ -26,6 +29,24 @@ EOF
 endef
 export scr_getlogo
 
+define scr_putlogo_bg
+m65dbg -l tcp <<'EOF'
+load logo_bg.bin 40800
+load logo_bg.clr ff80000
+quit
+EOF
+endef
+export scr_putlogo_bg
+
+define scr_putlogo_b
+m65dbg -l tcp <<'EOF'
+load logo_b.bin 40800
+load logo_b.clr ff80000
+quit
+EOF
+endef
+export scr_putlogo_b
+
 define scr_putlogo_a
 m65dbg -l tcp <<'EOF'
 load logo_a.bin 40800
@@ -35,7 +56,19 @@ EOF
 endef
 export scr_putlogo_a
 
+define scr_putlogo_s
+m65dbg -l tcp <<'EOF'
+load logo_s.bin 40800
+load logo_s.clr ff80000
+quit
+EOF
+endef
+export scr_putlogo_s
+
 getlogo:; @ eval "$$scr_getlogo"
 putlogo:; @ eval "$$scr_putlogo"
 
+putlogo_bg:; @ eval "$$scr_putlogo_bg"
+putlogo_b:; @ eval "$$scr_putlogo_b"
 putlogo_a:; @ eval "$$scr_putlogo_a"
+putlogo_s:; @ eval "$$scr_putlogo_s"
