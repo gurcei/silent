@@ -11,7 +11,7 @@ ana.ln: c:\Users\gurcei\AppData\Roaming\xemu-lgb\mega65\hdos\11.D81
 	c1541 -attach "silent.d81" -read bas.dat bas.dat
 
 xemu:
-	/c/Jenkins/Projects/xemu/build/bin/xmega65.native -rom /c/Users/gurcei/Downloads/920385.bin -hdosvirt -uartmon :4510 -8 silent.d81 &
+	/c/Jenkins/Projects/xemu/build/bin/xmega65.native -rom /c/Users/gurcei/Downloads/920385.bin -hdosvirt -uartmon :4510 -8 silent.d81 &> /dev/null &
 
 define scr_putlogo
 m65dbg -l tcp <<'EOF'
