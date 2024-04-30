@@ -1,0 +1,215 @@
+#output "baslogo"
+
+' BANK4 Memory usage
+' ------------------
+' 4.0000 DMA-LIST
+' 4.0800 SCREEN MEMORY
+' 4.2000 PETSCII GRAPHICS
+
+' BANK5 Memory usage
+' ------------------
+' 5.0000 screen buffer
+' 5.1000 color ram buffer
+
+.defines
+#declare k, ptr, tmp, max_frames, frm_idx, frmw, frmh, sz
+#declare frame_addr(25), src_addr, dest_addr, length, transp
+#declare frameidx, fx, fy, mirror, data_addr, frmx, frmy
+#declare frmx1, frmy1, scraddr, clraddr, cdata_addr, yy
+
+.offsets
+#define OFFSET_DATA_SIZE  = 0
+#define OFFSET_NUM_FRAMES = 2
+#define OFFSET_FRAME0     = 3
+
+#define FRM_OFFSET_X          = 0
+#define FRM_OFFSET_Y          = 1
+#define FRM_OFFSET_W          = 2
+#define FRM_OFFSET_H          = 3
+#define FRM_OFFSET_HITBOXES   = 4
+#define FRM_OFFSET_HB_HEAD    = 4
+#define FRM_OFFSET_HB_TORSO   = 8
+#define FRM_OFFSET_HB_FEET    = 12
+#define FRM_OFFSET_HB_ATTACK  = 16
+#define FRM_OFFSET_DATA       = 20
+
+
+'----
+.main
+'----
+  gosub init
+  gosub load_data
+  gosub draw_b
+  gosub page_flip
+  end
+
+
+'----
+.init
+'----
+  poke $d020, 1, 1
+  print chr$(142);   ' uppercase
+  print chr$(27);"5" ' 80x50
+
+  ' clear dma list area
+
+  for k = 0 to 20
+    poke $40000+k, 0
+  next k
+
+  poke $40000, $81 ' opt = dest addr MB selector
+  poke $40001, $00 ' default to 1st megabyte
+
+  poke $40002, $07 ' opt = enable transparency
+  poke $40003, $86 ' opt = set transparency
+  poke $40004, $20 ' transparency value
+  poke $40005, $00 ' end of options
+
+  poke $40006, $00 ' CMD lsb = COPY
+  wpoke $40007, $0000 ' length
+  wpoke $40009, $1000 ' source addr
+  poke $4000b, $05    ' source bank
+  wpoke $4000c, $1000 ' dest addr
+  poke $4000e, $05    ' dest bank
+  poke $4000f, $00    ' CMD msb (ignore)
+  wpoke $40010, $0000 ' modulo (ignore)
+
+  ' clear the offscreen buffer
+  edma 3, $fa0, 32, $50000
+  edma 3, $fa0, 0, $51000
+  return
+
+'---------
+.load_data
+'---------
+  ptr = $42000
+  
+  bload "bas.bin",p(ptr)
+  gosub init_petscii_frames
+  gosub _increment_ptr_to_next_free
+  return
+
+'-------------------
+.init_petscii_frames
+'-------------------
+  tmp = ptr
+  max_frames = peek(ptr + OFFSET_NUM_FRAMES)
+  'print
+  'print "ptr=";hex$(ptr + OFFSET_NUM_FRAMES)
+  ptr = ptr + OFFSET_FRAME0
+
+  'print
+  'print "form=";form;" - mx_frm=";max_frames;": ";
+
+  frm_idx = 0
+  do while frm_idx < max_frames
+    'print frm_idx;
+    frame_addr(frm_idx) = ptr
+    frmw = peek(ptr + FRM_OFFSET_W)
+    frmh = peek(ptr + FRM_OFFSET_H)
+    
+    'print "ptr=";hex$(ptr);", idx=";frm_idx;", w=";frmw;", h=";frmh
+    ptr = ptr + FRM_OFFSET_DATA + frmw * frmh
+
+    ':print chr$(147);"frm_idx=";frm_idx
+
+    frm_idx = frm_idx + 1
+  loop
+
+  ptr = tmp
+  return
+
+'---------------------------
+._increment_ptr_to_next_free
+'---------------------------
+  ptr = tmp
+  sz = wpeek(ptr + OFFSET_DATA_SIZE)
+  'print
+  'print "inc sz = ";sz
+  'print "ptr = ";hex$(ptr + OFFSET_DATA_SIZE)
+  ptr = ptr + sz
+
+  'get key a$
+  return
+
+
+'------
+.draw_b
+'------
+  frameidx = 0
+  fx=0 : fy=0
+  mirror = 0
+  gosub draw_petscii_frame
+
+  return
+
+
+'------------------
+.draw_petscii_frame
+'------------------
+  poke $4000b, $04  ' assure source bank 4 (for original frame data)
+  if mirror = 1 then setbit $40006, 5:else clrbit $40006, 5
+  data_addr = frame_addr(frameidx)
+  frmx = peek(data_addr + FRM_OFFSET_X)
+  frmy = peek(data_addr + FRM_OFFSET_Y)
+  frmw = peek(data_addr + FRM_OFFSET_W)
+  frmh = peek(data_addr + FRM_OFFSET_H)
+
+  frmx = fx ' override position
+  frmy = fy
+
+  frmx1=frmx+frmw-1
+  frmy1=frmy+frmh-1
+
+  scraddr = $50000 + frmx + frmy * 80
+  clraddr = $51000 + frmx + frmy * 80
+  if mirror = 1 then clraddr = clraddr + frmw - 1
+
+  data_addr = data_addr + FRM_OFFSET_DATA
+  cdata_addr = data_addr + frmw * frmh
+
+  for yy=frmy to frmy1
+
+    ' draw chars
+    ' ----------
+    src_addr = data_addr
+    dest_addr = scraddr
+    length = frmw
+    transp = 102
+    gosub transparent_dma
+
+    src_addr = cdata_addr
+    dest_addr = clraddr
+    length = frmw
+    transp = $ff
+    gosub transparent_dma
+
+    data_addr = data_addr + frmw
+    cdata_addr = cdata_addr + frmw
+    scraddr = scraddr + 80
+    clraddr = clraddr + 80  
+  next yy
+
+  return
+
+
+'---------------
+.transparent_dma
+'---------------
+  wpoke $40009, src_addr
+  wpoke $4000c, dest_addr
+  wpoke $40007, length
+  poke  $40004, transp
+  poke $d702, 4 ' dma list in bank 4
+  poke $d701, $00 ' dma list msb
+  poke $d705, $00 ' dma list lsb
+
+  return
+
+'---------
+.page_flip
+'---------
+  edma 0, $fa0, $50000, $40800
+  edma 0, $fa0, $51000, $ff80000
+  return
+ÿ
