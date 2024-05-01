@@ -16,7 +16,7 @@
 #declare frame_addr(25), src_addr, dest_addr, length, transp
 #declare frameidx, fx, fy, mirror, data_addr, frmx, frmy
 #declare frmx1, frmy1, scraddr, clraddr, cdata_addr, yy
-#declare inc, inc_dir
+#declare inc(3), inc_dir(3), a$, x, y
 
 .offsets
 #define OFFSET_DATA_SIZE  = 0
@@ -46,16 +46,28 @@
 '------------
 .animate_logo
 '------------
-  inc_dir = -1
-  inc = 3
+  inc_dir(0) = -1
+  inc(0) = 3
+
+  inc_dir(1) = -1
+  inc(1) = 2
+
+  inc_dir(2) = -1
+  inc(2) = 1
+
+  inc_dir(3) = -1
+  inc(3) = 1
 
 .anim_rpt
-  gosub draw_b
+  gosub draw_bas
   gosub page_flip
-  
-  inc = inc + .2 * inc_dir
-  if inc < .6 then inc_dir = 1
-  if inc > 2.9 then inc_dir = -1
+
+  for frameidx = 0 to 2  
+    inc(frameidx) = inc(frameidx) + .2 * inc_dir(frameidx)
+    if inc(frameidx) < .6 then inc_dir(frameidx) = 1
+    if inc(frameidx) > 2.9 then inc_dir(frameidx) = -1
+  next frameidx
+
   goto anim_rpt
   
   return
@@ -115,19 +127,36 @@
   ptr = ptr + OFFSET_FRAME0
 
   'print
-  'print "form=";form;" - mx_frm=";max_frames;": ";
+  print "- mx_frm=";max_frames;": "
 
   frm_idx = 0
   do while frm_idx < max_frames
     'print frm_idx;
     frame_addr(frm_idx) = ptr
+    frmx = peek(ptr + FRM_OFFSET_X)
+    frmy = peek(ptr + FRM_OFFSET_Y)
     frmw = peek(ptr + FRM_OFFSET_W)
     frmh = peek(ptr + FRM_OFFSET_H)
+
+    frmx1=frmx+frmw-1
+    frmy1=frmy+frmh-1
+
+    data_addr = ptr
+    data_addr = data_addr + FRM_OFFSET_DATA
+    cdata_addr = data_addr + frmw * frmh
+
+    for y = 0 to frmy1-frmy
+      for x = 0 to frmx1-frmx
+        if peek(data_addr + x + y * frmw) = 102 then begin
+          poke (cdata_addr + x + y * frmw), $ff
+        bend
+      next x
+    next y
     
     'print "ptr=";hex$(ptr);", idx=";frm_idx;", w=";frmw;", h=";frmh
-    ptr = ptr + FRM_OFFSET_DATA + frmw * frmh
+    ptr = ptr + FRM_OFFSET_DATA + frmw * frmh * 2
 
-    ':print chr$(147);"frm_idx=";frm_idx
+    :print "frm_idx=";frm_idx
 
     frm_idx = frm_idx + 1
   loop
@@ -149,11 +178,26 @@
   return
 
 
-'------
-.draw_b
-'------
+'--------
+.draw_bas
+'--------
+  frameidx = 3
+  fx=-999 : fy = -999
+  mirror = 0
+  gosub draw_petscii_frame
+
   frameidx = 0
-  fx=5 : fy=10
+  fx=-999 : fy=-999
+  mirror = 0
+  gosub draw_petscii_frame
+
+  frameidx = 1
+  fx=-999 : fy=-999
+  mirror = 0
+  gosub draw_petscii_frame
+
+  frameidx = 2
+  fx=-999 : fy=-999
   mirror = 0
   gosub draw_petscii_frame
 
@@ -171,8 +215,8 @@
   frmw = peek(data_addr + FRM_OFFSET_W)
   frmh = peek(data_addr + FRM_OFFSET_H)
 
-  frmx = fx ' override position
-  frmy = fy
+  if fx<>-999 then frmx = fx ' override position
+  if fy<>-999 then frmy = fy
 
   frmx1=frmx+frmw-1
   frmy1=frmy+frmh-1
@@ -184,7 +228,7 @@
   data_addr = data_addr + FRM_OFFSET_DATA
   cdata_addr = data_addr + frmw * frmh
 
-  for yy=frmy1 to frmy step -inc
+  for yy=frmy1 to frmy step -inc(frameidx)
     if yy < frmy then yy = frmy
     if scraddr < $50000 then goto for_skip
 
