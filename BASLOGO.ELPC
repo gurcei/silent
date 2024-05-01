@@ -16,6 +16,7 @@
 #declare frame_addr(25), src_addr, dest_addr, length, transp
 #declare frameidx, fx, fy, mirror, data_addr, frmx, frmy
 #declare frmx1, frmy1, scraddr, clraddr, cdata_addr, yy
+#declare inc, inc_dir
 
 .offsets
 #define OFFSET_DATA_SIZE  = 0
@@ -39,10 +40,25 @@
 '----
   gosub init
   gosub load_data
-  gosub draw_b
-  gosub page_flip
+  gosub animate_logo
   end
 
+'------------
+.animate_logo
+'------------
+  inc_dir = -1
+  inc = 3
+
+.anim_rpt
+  gosub draw_b
+  gosub page_flip
+  
+  inc = inc + .2 * inc_dir
+  if inc < .6 then inc_dir = 1
+  if inc > 2.9 then inc_dir = -1
+  goto anim_rpt
+  
+  return
 
 '----
 .init
@@ -137,7 +153,7 @@
 .draw_b
 '------
   frameidx = 0
-  fx=0 : fy=0
+  fx=5 : fy=10
   mirror = 0
   gosub draw_petscii_frame
 
@@ -161,33 +177,36 @@
   frmx1=frmx+frmw-1
   frmy1=frmy+frmh-1
 
-  scraddr = $50000 + frmx + frmy * 80
-  clraddr = $51000 + frmx + frmy * 80
+  scraddr = $50000 + frmx + (frmy+frmh-1) * 80
+  clraddr = $51000 + frmx + (frmy+frmh-1) * 80
   if mirror = 1 then clraddr = clraddr + frmw - 1
 
   data_addr = data_addr + FRM_OFFSET_DATA
   cdata_addr = data_addr + frmw * frmh
 
-  for yy=frmy to frmy1
+  for yy=frmy1 to frmy step -inc
+    if yy < frmy then yy = frmy
+    if scraddr < $50000 then goto for_skip
 
     ' draw chars
     ' ----------
-    src_addr = data_addr
+    src_addr = data_addr + int(yy-frmy) * frmw
     dest_addr = scraddr
     length = frmw
     transp = 102
     gosub transparent_dma
 
-    src_addr = cdata_addr
+    src_addr = cdata_addr + int(yy-frmy) * frmw
     dest_addr = clraddr
     length = frmw
     transp = $ff
     gosub transparent_dma
 
-    data_addr = data_addr + frmw
-    cdata_addr = cdata_addr + frmw
-    scraddr = scraddr + 80
-    clraddr = clraddr + 80  
+    'data_addr = d + frmw * int(frmy1 + yy
+    'cdata_addr = cdata_addr + frmw
+    scraddr = scraddr - 80
+    clraddr = clraddr - 80
+.for_skip
   next yy
 
   return
@@ -211,5 +230,9 @@
 '---------
   edma 0, $fa0, $50000, $40800
   edma 0, $fa0, $51000, $ff80000
+
+  ' clear the offscreen buffer
+  edma 3, $fa0, 32, $50000
+  edma 3, $fa0, 0, $51000
   return
 ÿ
