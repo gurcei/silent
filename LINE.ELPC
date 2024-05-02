@@ -26,7 +26,7 @@ goto main
   didx% = 0
   group_flag& = 0 : rev_flag& = 0
   print "{x93}";
-  poke $d020, 11
+  poke $d020, 0
   poke $d021, 0
   return
 
@@ -44,8 +44,8 @@ goto main
   if a$="{x86}" then gosub save_file : return ' f3
   if a$="{x88}" then gosub set_group_flag : return ' f7
   if a$="{x87}" then gosub play_data : return ' f5
-  'if a$="{x12}" then rev_flag& = 1 : return
-  'if a$="{x92}" then rev_flag& = 0 : return
+  if a$="{x12}" then rev_flag& = 1 : return
+  if a$="{x92}" then rev_flag& = 0 : return
   if a$<>"" then cursor x, y : gosub restore_char : gosub chk_rev : print a$; : gosub save_char
   return
 
@@ -60,14 +60,13 @@ goto main
 '-------
 .chk_rev
 '-------
-  'if rev_flag& = 1 then print "{x12}";:else print "{x92}";
+  if rev_flag& = 1 then print "{x12}";:else print "{x92}";
   return
 
 '---------
 .play_data
 '---------
   print "{x93}";
-  print "{x4}";
 
   pidx% = 0
   do while pidx% < didx%
@@ -75,7 +74,7 @@ goto main
     if val& = $ff then group_flag& = 1 : goto pd_endloop
     if val& = $fe then group_flag& = 0 : sleep .02 : goto pd_endloop
     x = val&
-    'if x >= $80 then x=x-$80 : print "{x12}"; : else print "{x92}";
+    if x >= $80 then x=x-$80 : print "{x12}"; : else print "{x92}";
     y = ldata&(pidx%) : pidx% = pidx% + 1
     a$ = chr$(ldata&(pidx%)) : pidx% = pidx% + 1
     cursor x, y: print a$;
@@ -83,7 +82,6 @@ goto main
 .pd_endloop
   loop
 
-  print "{x4}";
   return
 
 '--------------
@@ -140,19 +138,18 @@ goto main
 '---------
 .save_char
 '---------
-  'if oldx=x and oldy=y and instr("{x90}{x5}{x1C}{x9F}{x1E}{x9E}{x81}{x95}{x96}{x97}{x98}{x99}{x9A}{x9B}{x1}{x4}{x12}{x92}", a$)=0 then begin
-  '  ' replace previous char
-  '  ldata&(didx%-3) = x + rev_flag& * $80
-  '  ldata&(didx%-1) = asc(a$)
-  'bend:else:begin
+  if oldx=x and oldy=y then begin
+    ' replace previous char
+    ldata&(didx%-3) = x + rev_flag& * $80
+    ldata&(didx%-1) = asc(a$)
+  bend:else:begin
     ' write new char
-    ' ldata&(didx%) = x + rev_flag& * $80 : didx% = didx% + 1
-    ldata&(didx%) = x : didx% = didx% + 1
+    ldata&(didx%) = x + rev_flag& * $80 : didx% = didx% + 1
     ldata&(didx%) = y : didx% = didx% + 1
     ldata&(didx%) = asc(a$) : didx% = didx% + 1
     
     oldx=x : oldy=y
-  'bend
+  bend
 
   return
 
