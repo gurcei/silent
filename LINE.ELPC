@@ -11,7 +11,8 @@
 '       - adds $ff (start) or $fe (stop) to data stream
 '         the intent is to draw such groups in one hit
 '         (rather than char by char)
-'  
+'  ALT+Left/Right = scroll canvas left/right
+
 
 .declares
 '--------
@@ -234,9 +235,9 @@ goto main
   delete (fname$)
   dopen #2,(fname$),w,u8
 
-  for x = 0 to didx%
-    print #2, chr$(ldata&(x));
-  next x  
+  for xx = 0 to didx%
+    print #2, chr$(ldata&(xx));
+  next xx  
   dclose #2
   return
 
