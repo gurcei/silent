@@ -1,14 +1,78 @@
 #output "line"
 
+' Keys:
+' ----
+'  Up/Down/Left/Right = Move cursor position
+'  CTRL+9/0 = Set reverse on/off
+'  F1 = load file
+'  F3 = save file
+'  F5 = play data
+'  F7 = toggle group flag
+'       - adds $ff (start) or $fe (stop) to data stream
+'         the intent is to draw such groups in one hit
+'         (rather than char by char)
+'  
+
+.declares
+'--------
 #declare a$, loc
-#declare x=0, y=0
+#declare x=0, y=0, xx, yy
 #declare t0=0
 #declare modified%=0
-#declare oldx, oldy
-#declare fname$
+#declare oldx, oldy, oldoffs
+#declare fname$, alt_key
 
 #declare ldata&(8192), didx%=0, pidx%=0
 #declare group_flag&, val&, rev_flag& = 0
+#declare offs
+
+.defines
+'-------
+#define OP_COPY = 0
+#define OP_MIX  = 1
+#define OP_SWAP = 2
+#define OP_FILL = 3
+
+#define DST_DEC = 32
+#define SRC_DEC = 16
+
+.keys
+'----
+#define KEY_UP = "{x91}"
+#define KEY_DOWN = "{x11}"
+#define KEY_LEFT = "{x9D}"
+#define KEY_RIGHT = "{x1D}"
+#define KEY_SPACE = " "
+#define KEY_DEL = "{x14}"
+#define KEY_CTRL_W = "{x17}"
+#define KEY_CTRL_U = "{x15}"
+#define KEY_MEGA_Q = "«"
+#define KEY_F1 = "{x85}"
+#define KEY_F3 = "{x86}"
+#define KEY_F4 = "{x8A}"
+#define KEY_F5 = "{x87}"
+#define KEY_F7 = "{x88}"
+#define KEY_F8 = "{x8C}"
+#define KEY_F9 = chr$(16)
+#define KEY_RETURN = chr$(13)
+#define KEY_ESCAPE = chr$(27)
+#define KEY_SHIFT_RETURN = chr$(141)
+#define KEY_SHIFT_PLUS = "Û"
+#define KEY_SHIFT_MINUS = "Ý"
+#define KEY_REV_ON = "{x12}"
+#define KEY_REV_OFF = "{x92}"
+#define KEY_TAB = chr$(9)
+#define KEY_HOME = "{x13}"
+#define KEY_CLR  = "{x93}"
+#define KEY_LOWERCASE = chr$(14)
+#define KEY_UPPERCASE = chr$(142)
+#define KEY_BEEP = chr$(7)
+#define KEY_INST = "{x94}"
+#define KEY_DEL  = "{x14}"
+#define KEY_MEGA_K = "{xA1}"
+#define KEY_MEGA_J = "µ"
+#define KEY_MEGA_H = "´"
+#define KEY_MEGA_L = "¶"
 
 gosub init
 
@@ -22,12 +86,13 @@ goto main
 '----
   ' switch back to upper-case
   ' poke $d018, peek($d018) and $fd
-  oldx = -1 : oldy = -1
+  oldx = -1 : oldy = -1 : oldoffs = -1
   didx% = 0
   group_flag& = 0 : rev_flag& = 0
   print "{x93}";
-  poke $d020, 0
+  poke $d020, 11
   poke $d021, 0
+  offs = 0
   return
 
 
@@ -35,18 +100,49 @@ goto main
 .check_input
 '-----------
   get a$
+  gosub check_alt_key_inputs
+
   if a$<>"" then gosub draw_info
-  if a$="{x9D}" and x>0 then gosub restore_char : x=x-1 : return
-  if a$="{x1D}" and x<79 then gosub restore_char : x=x+1 : return
-  if a$="{x91}" and y>0 then gosub restore_char : y=y-1 : return          
-  if a$="{x11}" and y<49 then gosub restore_char : y=y+1 : return
-  if a$="{x85}" then gosub load_file : return ' f1
-  if a$="{x86}" then gosub save_file : return ' f3
-  if a$="{x88}" then gosub set_group_flag : return ' f7
-  if a$="{x87}" then gosub play_data : return ' f5
-  if a$="{x12}" then rev_flag& = 1 : return
-  if a$="{x92}" then rev_flag& = 0 : return
-  if a$<>"" then cursor x, y : gosub restore_char : gosub chk_rev : print a$; : gosub save_char
+  if a$=KEY_LEFT and x>0 then gosub restore_char : x=x-1 : return
+  if a$=KEY_RIGHT and x<78 then gosub restore_char : x=x+1 : return
+  if a$=KEY_UP and y>0 then gosub restore_char : y=y-1 : return          
+  if a$=KEY_DOWN and y<49 then gosub restore_char : y=y+1 : return
+  if a$=KEY_F1 then gosub load_file : return
+  if a$=KEY_F3 then gosub save_file : return
+  if a$=KEY_F7 then gosub set_group_flag : return
+  if a$=KEY_F5 then gosub play_data : return
+  if a$=KEY_REV_ON then rev_flag& = 1 : return
+  if a$=KEY_REV_OFF then rev_flag& = 0 : return
+  if a$<>"" then begin
+    cursor x, y
+    gosub restore_char
+    gosub chk_rev
+    xx = x : yy = y
+    gosub draw_char
+    gosub save_char
+  bend
+  return
+
+
+'---------
+.draw_char
+'---------
+  ' poke $40800 + x + y*80, asc(a$)
+  ' poke $ff80000 + x + y*80, rcolor(1)
+  print a$;
+  return
+
+'--------------------
+.check_alt_key_inputs
+'--------------------
+  alt_key = peek($d611) and 16
+
+  if alt_key = 0 then return
+
+  if a$=KEY_LEFT then gosub scroll_canvas_left
+  if a$=KEY_RIGHT then gosub scroll_canvas_right
+
+  a$=""
   return
 
 
@@ -68,20 +164,30 @@ goto main
 '---------
   print "{x93}";
 
+  offs=0
   pidx% = 0
   do while pidx% < didx%
     val& = ldata&(pidx%) : pidx% = pidx% + 1
     if val& = $ff then group_flag& = 1 : goto pd_endloop
     if val& = $fe then group_flag& = 0 : sleep .02 : goto pd_endloop
     x = val&
-    if x >= $80 then x=x-$80 : print "{x12}"; : else print "{x92}";
+    val& = ldata&(pidx%)
+    pidx% = pidx% + 1
+    x = x + (val& and $7f) * 256
+    if val& and $80 then print "{x12}"; : else print "{x92}";
     y = ldata&(pidx%) : pidx% = pidx% + 1
     a$ = chr$(ldata&(pidx%)) : pidx% = pidx% + 1
-    cursor x, y: print a$;
+
+    do while x-offs > 78
+      gosub scroll_canvas_right
+    loop
+
+    xx = x-offs : yy = y: cursor xx, yy : gosub draw_char
     if group_flag& = 0 then sleep .02
 .pd_endloop
   loop
 
+  x = x-offs
   return
 
 '--------------
@@ -138,17 +244,23 @@ goto main
 '---------
 .save_char
 '---------
-  if oldx=x and oldy=y then begin
+  if oldx=x and oldy=y and oldoffs=offs and instr("{x90}{x5}{x1C}{x9F}{x1E}{x9E}{x81}{x95}{x96}{x97}{x98}{x99}{x9A}{x9B}{x1}{x4}{x12}{x92}", a$)=0 then begin
     ' replace previous char
-    ldata&(didx%-3) = x + rev_flag& * $80
+    ldata&(didx%-4) = (x+offs) and 255
+    ldata&(didx%-3) = (x+offs) / 256 + rev_flag& * $80
     ldata&(didx%-1) = asc(a$)
   bend:else:begin
     ' write new char
-    ldata&(didx%) = x + rev_flag& * $80 : didx% = didx% + 1
-    ldata&(didx%) = y : didx% = didx% + 1
-    ldata&(didx%) = asc(a$) : didx% = didx% + 1
+    ldata&(didx%) = (x+offs) and 255
+      didx% = didx% + 1
+    ldata&(didx%) = (x+offs) / 256 + rev_flag& * $80
+      didx% = didx% + 1
+    ldata&(didx%) = y
+      didx% = didx% + 1
+    ldata&(didx%) = asc(a$)
+      didx% = didx% + 1
     
-    oldx=x : oldy=y
+    oldx=x : oldy=y : oldoffs=offs
   bend
 
   return
@@ -174,5 +286,28 @@ goto main
   loc = $ff80000 + x + 80 * y
   poke loc, peek(loc) xor 32
   modified% = modified% xor 1
+  return
+
+
+'------------------
+.scroll_canvas_left
+'------------------
+  if offs>0 then offs=offs-1:else return
+  for yy = 0 to 49
+    edma OP_COPY+DST_DEC+SRC_DEC, {x5F}
+           79, $40800 + yy*80 + 78, $40800 + yy*80 + 79
+    poke $40800 + yy*80, 32 
+  next yy
+  return
+
+
+'-------------------
+.scroll_canvas_right
+'-------------------
+  offs=offs+1
+  for yy = 0 to 49
+    edma OP_COPY, 79, $40801 + yy*80, $40800 + yy*80
+    poke $40800 + 79 + yy*80, 32 
+  next yy                
   return
 ÿ
