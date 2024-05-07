@@ -1,15 +1,19 @@
 Anathema - The Silent Enigma
 ============================
-- from M65 screen, fade to black
-  - play 1st chunk on black
+- play 1st chunk
+  - from M65 screen
+  - fade to white
+  - show BAS logo 
+  - fade to white
 - play 1nd chunk again
-  - Towards the end, fade in 'Anathema' logo
-- play 2nd chunk again
-  - Towards the end, fade in 'The Silent Enigma' title underneath
-- play 3rd chunk
-  - Fade out 'Anathema', then 'the Silent Enigma'
+  - write "presents..." in middle of screen
+  - fade to white
+- play 2nd + 3rd chunk
+  - write 'The Silent Enigma' (black text on white background)
+  - Midway, change palette slowly to white text on black background
 - play 4th chunk
-  - Fade to white
+  - write 'Anathema' logo (white text on black bg)
+  - Fade to black
   - Pan down from white sky down to various shades of blue sky
   - towards the end, pan down to picturesque nature scene
     - trees
@@ -38,20 +42,17 @@ The solitude left me blind
   - She embraces the trunk of the large tree
   - the tree pulses with energy in response to her embrace
 
-Beneath an open sky
+--------
+- Beneath an open sky
+- Sibilant cries of youth dying
+- Enslave me with grief
+- A moonlit era, oblivion's twilight kiss
+- Wishes in lament
+- Happiness in a broken vision
+- Utopia still unborn...
 
-Sibilant cries of youth dying
-
-Enslave me with grief
-
-A moonlit era, oblivion's twilight kiss
-
-Wishes in lament
-
-Happiness in a broken vision
-
-Utopia still unborn...
-
+- In this section, skip the lyrics, and just send greetings to community members
+--------
 
 Tormented echoes of a fallen Eden
 
@@ -59,4 +60,4 @@ I longed for her beauty
 
 Yet from dust, she returned
 
-The dream, an enigma... silent
+The dream, an enigma... Silent...

@@ -17,7 +17,7 @@
 
 .declares
 '--------
-#declare a$, loc
+#declare a$, z$, loc, k, v, debug=0
 #declare x=0, y=0, xx, yy
 #declare t0=0
 #declare modified%=0
@@ -27,6 +27,7 @@
 #declare ldata&(12288), didx%=0, pidx%=0
 #declare group_flag&, val&, rev_flag& = 0
 #declare offs, ver=2
+#declare lastflag, last_group_idx
 
 .defines
 '-------
@@ -53,9 +54,11 @@
 #define KEY_F3 = "{x86}"
 #define KEY_F4 = "{x8A}"
 #define KEY_F5 = "{x87}"
+#define KEY_F6 = "{x8B}"
 #define KEY_F7 = "{x88}"
 #define KEY_F8 = "{x8C}"
-#define KEY_F9 = chr$(16)
+#define KEY_F9 = "{x10}"
+#define KEY_F10 = "{x15}"
 #define KEY_RETURN = chr$(13)
 #define KEY_ESCAPE = chr$(27)
 #define KEY_SHIFT_RETURN = chr$(141)
@@ -86,9 +89,10 @@ goto main
 '----
 .init
 '----
+  key off
   ' switch back to upper-case
   ' poke $d018, peek($d018) and $fd
-  oldx = -1 : oldy = -1 : oldoffs = -1
+  oldx = -1 : oldy = -1 : oldoffs = 0
   didx% = 0
   group_flag& = 0 : rev_flag& = 0
   print "{x93}";
@@ -114,8 +118,11 @@ goto main
   if a$=KEY_F7 then gosub set_group_flag : return
   if a$=KEY_F9 then gosub toggle_version
   if a$=KEY_F5 then gosub play_data : return
+  if a$=KEY_F6 then lastflag=1:gosub play_data : return
   if a$=KEY_REV_ON then rev_flag& = 1 : return
   if a$=KEY_REV_OFF then rev_flag& = 0 : return
+  if a$=KEY_F10 then input k, v:ldata&(k) = v
+  if a$="{x4}" then debug=mod(debug+1,2):a$="":cursor 0,0:print chr$(27);"qdebug=";debug
   if a$<>"" then begin
     cursor x, y
     gosub restore_char
@@ -129,11 +136,26 @@ goto main
 '--------------
 .toggle_version
 '--------------
-  if ver=2 then ver=1:else ver = 2
-  print "{x13}";chr$(27);"qversion";ver
+  ver = ver + 1
+  if ver = 4 then ver = 1
+  print "{x13}";chr$(27);"qversion";ver;
   a$=""
+  if ver = 3 then gosub draw_font_guide_lines
   return
 
+
+'---------------------
+.draw_font_guide_lines
+'---------------------
+  print "{x93}{x92}{x11}{x11}----------"
+  print
+  print
+  print ".........."
+  print
+  print
+  print
+  print "----------"
+  return
 
 '---------
 .draw_char
@@ -175,10 +197,22 @@ goto main
 '---------
   print "{x93}";
 
+  if ver = 3 then gosub draw_font_guide_lines
   offs=0
   pidx% = 0
+  if lastflag = 1 then pidx% = last_group_idx : lastflag = 0
+
   do while pidx% < didx%
+
+    cursor 0,49:print chr$(27);"qpidx=";pidx%;"[";ldata&(pidx%);ldata&(pidx%+1);ldata&(pidx%+2);
+
     val& = ldata&(pidx%) : pidx% = pidx% + 1
+    if val& = $ff then begin
+      gosub draw_font_guide_lines
+      if pidx% > last_group_idx then last_group_idx = pidx%
+      goto pd_endloop
+    bend
+
     'if val& = $ff then group_flag& = 1 : goto pd_endloop
     'if val& = $fe then group_flag& = 0 : sleep .02 : goto pd_endloop
     x = val& and $7f
@@ -201,6 +235,11 @@ goto main
 
     xx = x-offs : yy = y: cursor xx, yy : gosub draw_char
 
+    if debug=1 then get key z$
+    if z$="x" then gosub delete_char
+    if z$="<" then pidx%=pidx%-6
+    if z$="h" then pidx%=0:goto play_data
+    if z$="t" then didx%=pidx%
       'print "{x13}{x11}";chr$(27);"q x,y,pidx,a$=";x;y;pidx%,asc(a$)
       'get key a$
 
@@ -211,17 +250,31 @@ goto main
   x = x-offs
   return
 
+'-----------
+.delete_char
+'-----------
+  didx% = didx% - 3
+  pidx% = pidx% - 3
+  for k = pidx% to didx%
+    ldata&(k) = ldata&(k+3)
+    ldata&(k+1) = ldata&(k+4)
+    ldata&(k+2) = ldata&(k+5)
+  next k
+
+  return
+
 '--------------
 .set_group_flag
 '--------------
   if group_flag& = 0 then begin
-    group_flag& = 1
+    ' group_flag& = 1
     ldata&(didx%) = $ff
-    poke $d020, $02
+    poke $d020, (peek($d020)+1) and 15
+    gosub draw_font_guide_lines
   bend:else begin
-    group_flag& = 0
-    ldata&(didx%) = $fe
-    poke $d020, $00
+  '  group_flag& = 0
+  '  ldata&(didx%) = $fe
+  '  poke $d020, $00
   bend
   didx% = didx% + 1
   return
