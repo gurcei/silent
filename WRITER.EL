@@ -1,0 +1,1 @@
+#OUTPUT "WRITER"'--------.DECLARES'--------'----.MAIN'----  GOSUB INIT  S$ = "×RITE THIS!"  GOSUB WRITE¯TEXT  END'----.INIT'----  ' LOAD 'ABC.LN' FONT  ' KEEP AN ARRAY OF INDICES TO EACH DRAWN LETTER  RETURN

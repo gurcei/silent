@@ -1,0 +1,24 @@
+#output "writer"
+
+'--------
+.declares
+'--------
+
+
+'----
+.main
+'----
+  gosub init
+
+  s$ = "Write this!"
+  gosub write_text
+  end
+
+
+'----
+.init
+'----
+  ' load 'abc.ln' font
+  ' keep an array of indices to each drawn letter
+  return
+ÿ
