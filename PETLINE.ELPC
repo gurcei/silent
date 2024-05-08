@@ -33,6 +33,7 @@
 #declare PIX_NONE = 32
 #declare PIX_ALL = 160
 
+#declare PI = 3.141592654269
 
 '----
 .vars
@@ -40,22 +41,69 @@
 #declare x1, y1, x2, y2
 #declare dx, dy, mx, my, cx, cy
 #declare cur_char, pix
+#declare diffx, diffy, deltax, deltay, tanval, angle
+#declare a$, ang, line_length, k, debug
 
 
 '----
 .main
 '----
   gosub init
-  x1 = 0 : y1 = 0 : x2 = 10 : y2 = 10
-  gosub draw_line
+
+  for ang = 0 to 2*PI step PI / 8
+
+    x1 = 80
+    y1 = 50
+    x2 = int(80 + 30 * cos(ang))
+    y2 = int(50 + 30 * sin(ang))
+
+    ' cursor 0,20:print chr$(27);"qx1 =";x1;", y1 =";y1
+    ' cursor 0,21:print chr$(27);"qx2 =";x2;", y2 =";y2
+    ' get key a$
+    ' if a$="d" then debug = 1: else debug = 0
+
+    gosub draw_line
+  next ang
+
   end
 
 
 '---------
 .draw_line
 '---------
+  diffx = x2-x1
+  diffy = y2-y1
+
+  line_length = sqr(diffx*diffx + diffy*diffy)
+  
+  if diffx = 0 then begin
+    deltax = 0
+    if diffy<0 then deltay = -1
+    if diffy>0 then deltay = 1
+  bend:else begin
+    tanval = diffy / diffx
+    angle = atn(tanval)  ' this is range -90deg to 90deg
+    if diffx<0 then begin
+     if diffy<0 then angle = angle - PI:else angle = angle + PI
+    bend
+    deltax = cos(angle)
+    deltay = sin(angle)
+  bend
+
   cx = x1 : cy = y1
+  for k = 1 to line_length
+    gosub draw_pixel
+    cx = cx + deltax
+    cy = cy + deltay
+
+    if debug=1 then begin
+      cursor 0,15:print chr$(27);"qcx =";cx;", cy =";cy
+      cursor 0,22:print chr$(27);"qdiffx =";diffx;", diffy =";diffy
+      get key a$
+    bend
+  next k
   gosub draw_pixel
+
   return
 
 
@@ -63,10 +111,13 @@
 .draw_pixel
 '----------
   ' pixel cropped?
-  if dx<0 or dx>159 or dy<0 or dy>99 then return
+  if cx<0 or cx>159 or cy<0 or cy>99 then return
 
   dx = int(cx/2) : dy = int(cy/2)
-  mx = mod(cx,2) : my = mod(cy,2)
+  mx = mod(int(cx),2) : my = mod(int(cy),2)
+
+    ' cursor 0,16:print chr$(27);"qdx =";dx;", dy =";dy
+    ' cursor 0,17:print chr$(27);"qmx =";mx;", my =";my
 
   cur_char = peek($40800 + dx + dy * 80)
   gosub read_on_pixels
