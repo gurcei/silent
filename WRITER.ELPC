@@ -3,6 +3,12 @@
 '--------
 .declares
 '--------
+#declare s$, pidx%, didx%, ldata&(12000), ptr, val&
+#declare char_idx%(60)
+#declare char_width%(60)
+#declare char_cnt, max_width, k
+#declare x, y, a$, debug=0, z$
+#declare xx, yy, chr
 
 
 '----
@@ -10,7 +16,13 @@
 '----
   gosub init
 
-  s$ = "Write this!"
+  xx=0:yy=0
+  s$ = ",/#"
+  gosub write_text
+
+  xx=0:yy=15
+  
+  s$ = "Hello Camcam!"
   gosub write_text
   end
 
@@ -18,7 +30,155 @@
 '----
 .init
 '----
+  print "{x93}";
+
+  xx = 0 : yy = 0
+  ptr = $42000
   ' load 'abc.ln' font
-  ' keep an array of indices to each drawn letter
+  gosub load_font
+
+  char_cnt = 0
+  char_idx%(0) = 0
+  char_width%(0) = 0
+  max_width = 0
+
+  k = 0
+  do while k < didx%
+    ' get x value
+    val& = ldata&(k)
+    k=k+1
+
+    if val& = $ff then begin
+      ' keep an array of widths of each letter
+      char_width%(char_cnt)=max_width
+
+      ' print "char_width(";char_cnt;") = ";max_width
+      ' get key z$
+
+      max_width = 0
+      char_cnt=char_cnt+1
+
+      ' keep an array of indices to each drawn letter
+      char_idx%(char_cnt) = k
+      'print "char_idx%(";char_cnt;")=";k
+      'get key a$
+    bend
+
+    if val& = $ff then goto cont_loop
+
+    val& = val& and $7f
+    if val& > max_width then max_width = val&
+    
+    k=k+1  ' skip y value
+    k=k+1  ' skip char 
+
+.cont_loop
+  loop
+
+  return
+
+
+'---------
+.load_font
+'---------
+  dopen #2,("abc.ln"),r,u8
+
+  do
+    get #2, val&
+    if st then exit
+    ldata&(didx%) = val&
+    didx% = didx% + 1
+  loop
+
+  dclose #2
+  return
+
+
+'----------
+.write_text
+'----------
+  for k = 1 to len(s$)
+    chr = asc(mid$(s$,k,1))
+    ' print "{x13}";chr$(27);"qchr=";chr;
+    gosub petscii_to_screencode
+    gosub screencode_to_idx
+    ' print "fixed chr=";chr;
+
+    if chr=32 then begin
+      xx=xx+7
+    bend:else:begin
+      gosub write_char
+      xx = xx + char_width%(chr) + 1
+    bend
+  next k
+  return
+
+
+'---------------------
+.petscii_to_screencode
+'---------------------
+  ' Based on the table here:
+  ' https://sta.c64.org/cbm64pettoscr.html
+  if chr>=$00 and chr<=$1f then chr=chr or $80:return
+  if chr>=$20 and chr<=$3f then return
+  if chr>=$40 and chr<=$5f then chr=chr and $bf:return
+  if chr>=$60 and chr<=$7f then chr=chr and $df:return
+  if chr>=$80 and chr<=$9f then chr=chr or $40:return
+  if chr>=$a0 and chr<=$bf then chr=chr and $bf:return
+  if chr>=$c0 and chr<=$fe then chr=chr and $7f:return
+  return
+
+
+'-----------------
+.screencode_to_idx
+'-----------------
+  if chr >= 65 and chr <= 90 then chr = chr - 65:return
+  if chr = 46 then chr = 26:return ' full-stop
+  if chr = 33 then chr = 27:return ' exclamation
+  if chr = 44 then chr = 28:return ' comma (smiley)
+  if chr = 47 then chr = 29:return ' forward slash (love heart)
+  if chr = 35 then chr = 30:return ' # hash (dhufish)
+  if chr >= 1 and chr <= 26 then chr = chr + 30
+  return
+
+'----------
+.write_char
+'----------
+  ' iterate over chars in string
+    ' draw current char at given x,y pos
+    ' increment x,y location 
+
+  pidx% = char_idx%(chr)
+
+  do while pidx% < didx% and ldata&(pidx%) <> $ff
+
+    ' cursor 0,49:print chr$(27);"qpidx=";pidx%;"[";ldata&(pidx%);ldata&(pidx%+1);ldata&(pidx%+2);
+
+    val& = ldata&(pidx%) : pidx% = pidx% + 1
+
+    x = val& and $7f
+
+    if val& and $80 then print "{x12}"; : else print "{x92}";
+    y = ldata&(pidx%) : pidx% = pidx% + 1
+    a$ = chr$(ldata&(pidx%)) : pidx% = pidx% + 1
+
+    cursor xx+x, yy+y : gosub draw_char
+
+    'print "{x13}{x11}";chr$(27);"q x,y,pidx,a$=";x;y;pidx%,asc(a$)
+    'get key a$
+
+    sleep .02
+.pd_endloop
+  loop
+
+  return
+
+
+'---------
+.draw_char
+'---------
+  ' poke $40800 + x + y*80, asc(a$)
+  ' poke $ff80000 + x + y*80, rcolor(1)
+  print a$;
   return
 ÿ
