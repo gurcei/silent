@@ -1,0 +1,140 @@
+#output "petline"
+
+' draw lines in 80x50 with petscii block chars
+' giving a full resolution of 160x100
+
+' NOTE: When I later want to move the logic into assembly,
+' consider referencing grim fandango's MEGAPLOT assembly source:
+' - https://github.com/grim-fandango/megaplot/blob/master/megaplot.a
+
+
+'--------
+.declares
+'--------
+#declare PIX_TL = 126
+#declare PIX_TR = 124
+#declare PIX_BL = 123
+#declare PIX_BR = 108
+
+#declare PIX_INV_TL = 254
+#declare PIX_INV_TR = 252
+#declare PIX_INV_BL = 251
+#declare PIX_INV_BR = 236
+
+#declare PIX_DIAG_TL_BR = 127
+#declare PIX_DIAG_BL_TR = 255
+
+#declare PIX_HLINE_BOT = 98
+#declare PIX_HLINE_TOP = 226
+
+#declare PIX_VLINE_LEFT = 97
+#declare PIX_VLINE_RIGHT = 225
+
+#declare PIX_NONE = 32
+#declare PIX_ALL = 160
+
+
+'----
+.vars
+'----
+#declare x1, y1, x2, y2
+#declare dx, dy, mx, my, cx, cy
+#declare cur_char, pix
+
+
+'----
+.main
+'----
+  gosub init
+  x1 = 0 : y1 = 0 : x2 = 10 : y2 = 10
+  gosub draw_line
+  end
+
+
+'---------
+.draw_line
+'---------
+  cx = x1 : cy = y1
+  gosub draw_pixel
+  return
+
+
+'----------
+.draw_pixel
+'----------
+  ' pixel cropped?
+  if dx<0 or dx>159 or dy<0 or dy>99 then return
+
+  dx = int(cx/2) : dy = int(cy/2)
+  mx = mod(cx,2) : my = mod(cy,2)
+
+  cur_char = peek($40800 + dx + dy * 80)
+  gosub read_on_pixels
+
+  if mx = 0 and my = 0 then pix = pix or 1
+  if mx = 1 and my = 0 then pix = pix or 2
+  if mx = 0 and my = 1 then pix = pix or 4
+  if mx = 1 and my = 1 then pix = pix or 8
+
+  gosub set_on_pixels
+  poke $40800 + dx + dy * 80, cur_char
+
+  return
+
+
+'--------------
+.read_on_pixels
+'--------------
+  pix = 0 ' bitfields: tl = 1, tr = 2, bl = 4, br = 8
+  if cur_char = PIX_TL then pix = 1:return
+  if cur_char = PIX_TR then pix = 2:return
+  if cur_char = PIX_BL then pix = 4:return
+  if cur_char = PIX_BR then pix = 8:return
+
+  if cur_char = PIX_INV_TL then pix=14:return
+  if cur_char = PIX_INV_TR then pix=13:return
+  if cur_char = PIX_INV_BL then pix=11:return
+  if cur_char = PIX_INV_BR then pix=7:return
+
+  if cur_char = PIX_DIAG_TL_BR then pix=9:return
+  if cur_char = PIX_DIAG_BL_TR then pix=6:return
+
+  if cur_char = PIX_HLINE_BOT then pix=12:return
+  if cur_char = PIX_HLINE_TOP then pix=3:return
+
+  if cur_char = PIX_VLINE_LEFT then pix=5:return
+  if cur_char = PIX_VLINE_RIGHT then pix=10:return
+
+  if cur_char = PIX_ALL then pix=15:return
+  return
+
+
+'-------------
+.set_on_pixels
+'-------------
+  if pix = 0 then cur_char = PIX_NONE:return
+  if pix = 1 then cur_char = PIX_TL:return
+  if pix = 2 then cur_char = PIX_TR:return
+  if pix = 3 then cur_char = PIX_HLINE_TOP:return
+  if pix = 4 then cur_char = PIX_BL:return
+  if pix = 5 then cur_char = PIX_VLINE_LEFT:return
+  if pix = 6 then cur_char = PIX_DIAG_BL_TR:return
+  if pix = 7 then cur_char = PIX_INV_BR:return
+  if pix = 8 then cur_char = PIX_BR:return
+  if pix = 9 then cur_char = PIX_DIAG_TL_BR:return
+  if pix = 10 then cur_char = PIX_VLINE_RIGHT:return
+  if pix = 11 then cur_char = PIX_INV_BL:return
+  if pix = 12 then cur_char = PIX_HLINE_BOT:return
+  if pix = 13 then cur_char = PIX_INV_TR:return
+  if pix = 14 then cur_char = PIX_INV_TL:return
+  if pix = 15 then cur_char = PIX_ALL:return
+  return
+
+
+'----
+.init
+'----
+  print chr$(27);"5";chr$(147);
+  return
+  
+ÿ
