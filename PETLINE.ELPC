@@ -47,30 +47,69 @@
 #declare px(10), py(10), plen, pang, pidx, pdist
 #declare sqang
 #declare cb_anga, cb_angb, cbidx, cbtmp, pz
+#declare cb_inca, cb_incb, ret_ang, z$
+
+
+gosub init
 
 '----
 .main
 '----
-  gosub init
-  gosub draw_cube
-  ' gosub draw_many_squares
-  ' gosub draw_square
-  ' gosub draw_lines_from_centre_out
+  print "{x93}";
+  print "petline example menu:"
+  print "--------------------"
+  print "1) lines"
+  print "2) square"
+  print "3) many squares"
+  print "4) draw cube"
+  print "5) draw many cubes"
+
+  get key z$
+  if z$="1" then gosub draw_lines_from_centre_out
+  if z$="2" then gosub draw_square
+  if z$="3" then gosub draw_many_squares
+  if z$="4" then gosub draw_cube
+  if z$="5" then gosub draw_many_cubes
+
+  if z$>="1" and z$<="5" then get key z$
+  goto main
   end
 
+
+'---------------
+.draw_many_cubes
+'---------------
+  cb_incb = 0
+  for cb_inca = 0 to .9*PI/2 step PI/8
+    ' print"{x93}"
+    gosub draw_cube
+  next cb_inca
+
+  cb_inca = 0
+  for cb_incb = PI/8 to .9*PI/2 step PI/8
+    ' print"{x93}"
+    gosub draw_cube
+  next cb_incb
+
+  return
+  
 
 '---------
 .draw_cube
 '---------
-  pdist = 40
+  pdist = 50
   cbidx = 0
 
   cb_angb = atn(1/sqr(2))
   for cb_anga = PI / 4 to 1.9 * PI step PI/2
     cbtmp = pdist * cos(cb_angb)
-    pz = cbtmp * sin(cb_anga)/2
-    py(cbidx) = centrey + pdist * sin(cb_angb) + pz
-    px(cbidx) = centrex + cbtmp * cos(cb_anga) - pz
+    pz = cbtmp * sin(cb_anga)
+    py(cbidx) = pdist * sin(cb_angb)
+    px(cbidx) = cbtmp * cos(cb_anga)
+    gosub rotate_inca
+    gosub rotate_incb
+    px(cbidx) = centrex + px(cbidx) - pz / 2
+    py(cbidx) = centrey + py(cbidx) + pz / 2
 
     'print "px(";cbidx;")=";px(cbidx);", py(";cbidx;")=";py(cbidx)
     cbidx = cbidx + 1
@@ -87,9 +126,13 @@
     y1 = py(cbidx)
 
     cbtmp = pdist * cos(cb_angb)
-    pz = cbtmp * sin(cb_anga)/2
-    py(cbidx) = centrey + pdist * sin(cb_angb) + pz
-    px(cbidx) = centrex + cbtmp * cos(cb_anga) - pz
+    pz = cbtmp * sin(cb_anga)
+    py(cbidx) = pdist * sin(cb_angb)
+    px(cbidx) = cbtmp * cos(cb_anga)
+    gosub rotate_inca
+    gosub rotate_incb
+    px(cbidx) = centrex + px(cbidx) - pz / 2
+    py(cbidx) = centrey + py(cbidx) + pz / 2
 
     x2 = px(cbidx)
     y2 = py(cbidx)
@@ -102,6 +145,35 @@
   gosub draw_poly
 
   return
+
+
+'-----------
+.rotate_inca
+'-----------
+  ' rotate along y-axis by inca
+  diffx = px(cbidx)
+  diffy = pz
+  cbtmp = sqr(diffx*diffx + diffy*diffy)
+  gosub atan2  ' returns angle
+  angle = angle + cb_inca
+  px(cbidx) = cbtmp * cos(angle)
+  pz = cbtmp * sin(angle) 
+  return
+
+
+'-----------
+.rotate_incb
+'-----------
+  ' rotate along z-axis by incb
+  diffx = px(cbidx)
+  diffy = py(cbidx)
+  cbtmp = sqr(diffx*diffx + diffy*diffy)
+  gosub atan2  ' returns angle
+  angle = angle + cb_incb
+  px(cbidx) = cbtmp * cos(angle)
+  py(cbidx) = cbtmp * sin(angle) 
+  return
+
 
 '-----------------
 .draw_many_squares
@@ -190,11 +262,7 @@
     if diffy<0 then deltay = -1
     if diffy>0 then deltay = 1
   bend:else begin
-    tanval = diffy / diffx
-    angle = atn(tanval)  ' this is range -90deg to 90deg
-    if diffx<0 then begin
-     if diffy<0 then angle = angle - PI:else angle = angle + PI
-    bend
+    gosub atan2  ' returns angle
     deltax = cos(angle)
     deltay = sin(angle)
   bend
@@ -213,6 +281,22 @@
   next k
   gosub draw_pixel
 
+  return
+
+
+'-----
+.atan2
+'-----
+  if diffx = 0 then begin
+    if diffy<0 then angle = - PI/2
+    if diffy>0 then angle = PI/2
+  bend:else begin
+    tanval = diffy / diffx
+    angle = atn(tanval)  ' this is range -90deg to 90deg
+    if diffx<0 then begin
+     if diffy<0 then angle = angle - PI:else angle = angle + PI
+    bend
+  bend
   return
 
 

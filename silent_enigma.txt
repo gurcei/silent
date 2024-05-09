@@ -12,6 +12,8 @@ Stretch ideas
 =============
 - Line drawing on sprite overlays
 - Explore OPL3 to supplement music with drums
+- Study how MegaAssembler handles multi-file projects
+  - Could Eleven do similar?
 
 Anathema - The Silent Enigma
 ============================
