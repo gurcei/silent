@@ -2,7 +2,7 @@ enigma.p song length = 3:52
 
 TODO:
 ====
-- 80x50 petscii line drawing routine
+DONE- 80x50 petscii line drawing routine
 - Draw rotating 3d cube with petscii art
 - Try port line drawing routine to assembly, for speed
 - Tie up all pieces of demo together

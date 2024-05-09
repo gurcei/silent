@@ -43,18 +43,65 @@
 #declare cur_char, pix
 #declare diffx, diffy, deltax, deltay, tanval, angle
 #declare a$, ang, line_length, k, debug
-#declare centrex, centrey, px(10), py(10), plen, pang, pidx, pdist
+#declare centrex, centrey, centrez
+#declare px(10), py(10), plen, pang, pidx, pdist
 #declare sqang
+#declare cb_anga, cb_angb, cbidx, cbtmp, pz
 
 '----
 .main
 '----
   gosub init
-  gosub draw_many_squares
+  gosub draw_cube
+  ' gosub draw_many_squares
   ' gosub draw_square
   ' gosub draw_lines_from_centre_out
   end
 
+
+'---------
+.draw_cube
+'---------
+  pdist = 40
+  cbidx = 0
+
+  cb_angb = atn(1/sqr(2))
+  for cb_anga = PI / 4 to 1.9 * PI step PI/2
+    cbtmp = pdist * cos(cb_angb)
+    pz = cbtmp * sin(cb_anga)/2
+    py(cbidx) = centrey + pdist * sin(cb_angb) + pz
+    px(cbidx) = centrex + cbtmp * cos(cb_anga) - pz
+
+    'print "px(";cbidx;")=";px(cbidx);", py(";cbidx;")=";py(cbidx)
+    cbidx = cbidx + 1
+  next cb_anga 
+
+  plen = 4
+  gosub draw_poly
+
+  ' draw lines from poly
+  cbidx = 0
+  cb_angb = -atn(1/sqr(2))
+  for cb_anga = PI / 4 to 1.9 * PI step PI/2
+    x1 = px(cbidx)
+    y1 = py(cbidx)
+
+    cbtmp = pdist * cos(cb_angb)
+    pz = cbtmp * sin(cb_anga)/2
+    py(cbidx) = centrey + pdist * sin(cb_angb) + pz
+    px(cbidx) = centrex + cbtmp * cos(cb_anga) - pz
+
+    x2 = px(cbidx)
+    y2 = py(cbidx)
+
+    gosub draw_line
+    cbidx = cbidx + 1
+  next cb_anga
+
+  plen = 4
+  gosub draw_poly
+
+  return
 
 '-----------------
 .draw_many_squares
@@ -68,7 +115,6 @@
 '-----------
 .draw_square
 '-----------
-  centrex = 80 : centrey = 50
   pdist = 45
 
   pang = sqang - 3 * PI / 4
@@ -99,6 +145,8 @@
   for pidx = 0 to plen-2
     x1 = px(pidx) : y1 = py(pidx)
     x2 = px(pidx+1) : y2 = py(pidx+1)
+    ' print "x1=";x1;", y1=";y1;", x2=";x2;", y2=";y2
+    ' get key a$
     gosub draw_line
   next pidx
 
@@ -246,6 +294,7 @@
 '----
 .init
 '----
+  centrex = 80 : centrey = 50
   print chr$(27);"5";chr$(147);
   return
   
