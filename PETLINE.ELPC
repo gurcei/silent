@@ -43,13 +43,74 @@
 #declare cur_char, pix
 #declare diffx, diffy, deltax, deltay, tanval, angle
 #declare a$, ang, line_length, k, debug
-
+#declare centrex, centrey, px(10), py(10), plen, pang, pidx, pdist
+#declare sqang
 
 '----
 .main
 '----
   gosub init
+  gosub draw_many_squares
+  ' gosub draw_square
+  ' gosub draw_lines_from_centre_out
+  end
 
+
+'-----------------
+.draw_many_squares
+'-----------------
+  for sqang = 0 to 1.9 * PI step PI / 8
+    gosub draw_square
+  next sqang
+  return
+
+
+'-----------
+.draw_square
+'-----------
+  centrex = 80 : centrey = 50
+  pdist = 30
+
+  pang = sqang - 3 * PI / 4
+  px(0) = centrex + pdist * cos(pang)
+  py(0) = centrey + pdist * sin(pang)
+
+  pang = sqang - PI / 4
+  px(1) = centrex + pdist * cos(pang)
+  py(1) = centrey + pdist * sin(pang)
+
+  pang = sqang + PI / 4
+  px(2) = centrex + pdist * cos(pang)
+  py(2) = centrey + pdist * sin(pang)
+
+  pang = sqang + 3 * PI / 4
+  px(3) = centrex + pdist * cos(pang)
+  py(3) = centrey + pdist * sin(pang)
+
+  plen = 4
+
+  gosub draw_poly
+  return
+
+
+'---------
+.draw_poly
+'---------
+  for pidx = 0 to plen-2
+    x1 = px(pidx) : y1 = py(pidx)
+    x2 = px(pidx+1) : y2 = py(pidx+1)
+    gosub draw_line
+  next pidx
+
+  x1 = px(plen-1) : y1 = py(plen-1)
+  x2 = px(0) : y2 = py(0)
+  gosub draw_line
+
+  return
+
+'--------------------------
+.draw_lines_from_centre_out
+'--------------------------
   for ang = 0 to 2*PI step PI / 8
 
     x1 = 80
@@ -65,7 +126,7 @@
     gosub draw_line
   next ang
 
-  end
+  return
 
 
 '---------
