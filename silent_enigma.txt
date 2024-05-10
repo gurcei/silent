@@ -15,6 +15,18 @@ Stretch ideas
 - Study how MegaAssembler handles multi-file projects
   - Could Eleven do similar?
 
+Credits + Greets
+================
+- deathy for being so passionate about developing for the MEGA65
+- Grim Fandango for MEGAPLOT, my starting point for plotting petscii via assembly :)
+- Nobato for initial square rotation example
+- Greets to the mega65 team: gardners, deft, martin, lydon, dddaaannn and others
+- Greets to active devs this year: bisgedi, btoschi, carthibar, clockchip, deathy/BAS, Drex, EgonOlsen71, El Nebuloso, fredrikr, Geehaf, GeirS, grubi, heath_man, jim-64, jwa74, kibo, M3wP, mc64, Mirage-BD, Mr. Jones, Nobato, retroCombs, Roughnight, SirLazarus, Stigodump, TOS22, Urban Lindeskog, zeus074
+- TwoBitRetro (for pascal65), Magnus Heidenborn (for letting me port his awesome C64 BASIC 'Stranded' game to the MEGA65), Stefan Eilers (for M65Script)
+- sy20022 and mjoergen for the awesome alternate cores (C64, Gameboy, ZX Spectrum), looking forward the upcoming alternate cores you have planned! :)
+- muse/shoestring for your awesome arcade cores
+- Greets to vloggers: Retrocombs, Perifractic and 8-Bit Guy, thx for the MEGA65 review and all the best with your X-16 release :)
+
 Anathema - The Silent Enigma
 ============================
 - play 1st chunk

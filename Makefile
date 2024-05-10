@@ -1,4 +1,4 @@
-all:
+all: megaplot.prg
 	c1541 -attach "silent.d81" -read ana.ln,s ana.ln
 	c1541 -attach "silent.d81" -read silent.l,s silent.l
 	c1541 -attach "silent.d81" -read abc.ln,s abc.ln
@@ -11,6 +11,7 @@ all:
 	c1541 -attach "silent.d81" -read rotate.asm,s rotate.asm
 	c1541 -attach "silent.d81" -read bas.bin bas.bin
 	c1541 -attach "silent.d81" -read bas.dat bas.dat
+	c1541 -attach "silent.d81" -delete megaplot -write megaplot.prg megaplot
 
 xemu:
 	/c/projs/xemu/build/bin/xmega65.native -rom /c/Users/phuon/Downloads/920385.bin -hdosvirt -uartmon :4510 -8 silent.d81 &> /dev/null &
@@ -76,3 +77,6 @@ putlogo_bg:; @ eval "$$scr_putlogo_bg"
 putlogo_b:; @ eval "$$scr_putlogo_b"
 putlogo_a:; @ eval "$$scr_putlogo_a"
 putlogo_s:; @ eval "$$scr_putlogo_s"
+
+megaplot.prg: megaplot.a
+	acme --cpu m65 megaplot.a
