@@ -1,10 +1,10 @@
 !to "megaplot.prg", cbm
 
-SCRNBASE = $0800
+//SCRNBASE = $0800
 //COLRBASE = $d800
-COLRBASE = $f800 //Bank 1
-ROWPTR = $fb
-COLPTR = $45
+COLRBASE = $0000 // Fixed to Bank ff8
+ROWPTR = $18
+COLPTR = $1c
 
 * = $7e00
 
@@ -42,9 +42,19 @@ init:
 				sta virtual
 				sta xhalf
 				sta yhalf
+
+				// init high word of COLPTR to be $0ff8
+				lda #$0f
 				sta COLPTR + 3
-				lda #$01
+				lda #$f8
 				sta COLPTR + 2
+
+				// init high word of ROWPTR to be LO=SCRNPTRBNK($D062) HI=SCRNPTRMB($D063.0-3)
+				lda $d063
+				and #$0f
+				sta ROWPTR + 3
+				lda $d062
+				sta ROWPTR + 2
 
 				// 40 or 80 column screen?
 				lda #80
@@ -124,12 +134,10 @@ Combine:		// combine the new bit with those of any pre-existing bits
 				// What's the character corresponding to the combined bit pattern?
 NextCharOut:	lda bitpatterns,x
 				
-Plot:			sta (ROWPTR),y
+Plot:			phy
+				plz
+				sta [ROWPTR],z
 				lda colour
-				tax
-				tya
-				taz
-				txa
 				sta [COLPTR],z
 
 DumpReg:		ldx ROWPTR
@@ -207,8 +215,10 @@ find_char_positions:
 //-----------------------------
 init_screen_and_colour_pointers:
 //-----------------------------
-				ldx #<SCRNBASE
-				ldy #>SCRNBASE
+				// ldx #<SCRNBASE
+				// ldy #>SCRNBASE
+				ldx $d060	// SCRNPTRLSB
+				ldy $d061	// SCRNPTRMSB
 				stx ROWPTR
 				sty ROWPTR + 1
 
@@ -257,7 +267,9 @@ check_for_battenburg_char_at_x_col:
 CheckChar:		// Is it in the list?  If so, which bit pattern?
 				ldx #$00
 NextChar:		lda bitpatterns,x
-				cmp (ROWPTR),y
+				phy
+				plz
+				cmp [ROWPTR],z
 				beq CheckDone
 				inx
 				cpx #$10
@@ -304,3 +316,5 @@ ymode2550:		!byte 50
 bitpatterns:	!byte $20,$7e,$7c,$e2,$7b,$61,$ff,$ec,$6c,$7f,$e1,$fb,$62,$fc,$fe,$a0
 // descriptions:      spc, TL, TR, hT, BL, vL,  /,iBR, BR,  \, vR,iBL, hB,iTR,iTL,all
 virtual:		!byte $00
+scrnbase:		!byte $00, $00, $00, $00
+colrbase:		!byte $00, $00, $00, $00

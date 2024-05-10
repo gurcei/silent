@@ -79,4 +79,4 @@ putlogo_a:; @ eval "$$scr_putlogo_a"
 putlogo_s:; @ eval "$$scr_putlogo_s"
 
 megaplot.prg: megaplot.a
-	acme --cpu m65 megaplot.a
+	acme --cpu m65 -l megaplot.sym -r megaplot.rep megaplot.a 
