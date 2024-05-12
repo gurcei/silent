@@ -38,24 +38,6 @@ init_and_plot:
 init:
 //---
 // populate properties and initialise
-				lda #$00
-				sta virtual
-				sta xhalf
-				sta yhalf
-
-				// init high word of COLPTR to be $0ff8
-				lda #$0f
-				sta COLPTR + 3
-				lda #$f8
-				sta COLPTR + 2
-
-				// init high word of ROWPTR to be LO=SCRNPTRBNK($D062) HI=SCRNPTRMB($D063.0-3)
-				lda $d063
-				and #$0f
-				sta ROWPTR + 3
-				lda $d062
-				sta ROWPTR + 2
-
 				// 40 or 80 column screen?
 				lda #80
 				sta xmode4080
@@ -75,7 +57,34 @@ init:
 				lda #25
 				sta ymode2550
 
+				jsr init2
+
 +				rts
+
+
+//----
+init2:
+//----
+				lda #$00
+				sta virtual
+				sta xhalf
+				sta yhalf
+
+				// init high word of COLPTR to be $0ff8
+				lda #$0f
+				sta COLPTR + 3
+				lda #$f8
+				sta COLPTR + 2
+
+				// init high word of ROWPTR to be LO=SCRNPTRBNK($D062) HI=SCRNPTRMB($D063.0-3)
+				lda $d063
+				and #$0f
+				sta ROWPTR + 3
+				lda $d062
+				sta ROWPTR + 2
+
+				rts
+
 
 //---
 plot:
@@ -83,6 +92,8 @@ plot:
 				sta xpos
 				stx ypos
 				sty colour
+
+				jsr init2
 
 				jsr check_xy_in_range
 				bcc +
@@ -103,7 +114,35 @@ plot:
 //---
 line:
 //---
-	// TODO
+	sta x1
+	stx y1
+	sty x2
+	stz y2
+	tsx
+	stx colour
+
+	// diffx = x2-x1
+	// diffy = y2-y1
+
+	// line_length = sqrt(diffx^2 + diffy^2)
+
+	// if diffx = 0 then begin
+	//   deltax = 0
+	//   if diffy < 0 then deltay = -1
+	//   if diffy > 0 then deltay == 1
+	// bend:else begin
+	//   gosub atan2
+	//   deltax = cos(angle)
+	//   deltay = sin(angle)
+	// bend
+
+	// cx = x1 : cy = y1
+	// for k = 1 to line_length
+	//   gosub draw_pixel
+	//   cx = cx + deltax
+	//   cy = cy + deltay
+	// next k
+	// gosub draw_pixel
 	rts
 
 //---------------
@@ -148,7 +187,17 @@ DumpReg:		ldx ROWPTR
 //---------------
 check_xy_in_range:
 //---------------
-				lda xmode4080
+				// don't draw negative x
+				lda xpos
+				bpl +
+				rts
+
+				// don't draw negative y
++				lda ypos
+				bpl +
+				rts
+
++				lda xmode4080
 				cmp #80
 				beq ValidateX80
 
@@ -318,3 +367,8 @@ bitpatterns:	!byte $20,$7e,$7c,$e2,$7b,$61,$ff,$ec,$6c,$7f,$e1,$fb,$62,$fc,$fe,$
 virtual:		!byte $00
 scrnbase:		!byte $00, $00, $00, $00
 colrbase:		!byte $00, $00, $00, $00
+x1:			!byte $00
+y1:			!byte $00
+x2:			!byte $00
+y2:			!byte $00
+

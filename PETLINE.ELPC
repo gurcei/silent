@@ -47,8 +47,8 @@
 #declare px(10), py(10), plen, pang, pidx, pdist
 #declare sqang
 #declare cb_anga, cb_angb, cbidx, cbtmp, pz
-#declare cb_inca, cb_incb, ret_ang, z$
-
+#declare cb_inca, cb_incb, ret_ang, z$, zfact
+#declare ddx, ddy, sx, sy, e, e2
 
 gosub init
 
@@ -80,16 +80,16 @@ gosub init
 .draw_many_cubes
 '---------------
   cb_incb = 0
-  for cb_inca = 0 to .9*PI/2 step PI/8
+  for cb_inca = 0 to .9*PI/2 step PI/16
     ' print"{x93}"
     gosub draw_cube
   next cb_inca
 
-  cb_inca = 0
-  for cb_incb = PI/8 to .9*PI/2 step PI/8
-    ' print"{x93}"
-    gosub draw_cube
-  next cb_incb
+  'cb_inca = 0
+  'for cb_incb = PI/8 to .9*PI/2 step PI/8
+  '  ' print"{x93}"
+  '  gosub draw_cube
+  'next cb_incb
 
   return
   
@@ -97,7 +97,7 @@ gosub init
 '---------
 .draw_cube
 '---------
-  pdist = 50
+  pdist = 45
   cbidx = 0
 
   cb_angb = atn(1/sqr(2))
@@ -108,8 +108,8 @@ gosub init
     px(cbidx) = cbtmp * cos(cb_anga)
     gosub rotate_inca
     gosub rotate_incb
-    px(cbidx) = centrex + px(cbidx) - pz / 2
-    py(cbidx) = centrey + py(cbidx) + pz / 2
+    px(cbidx) = centrex + px(cbidx) - pz * zfact / 4
+    py(cbidx) = centrey + py(cbidx) + pz * zfact
 
     'print "px(";cbidx;")=";px(cbidx);", py(";cbidx;")=";py(cbidx)
     cbidx = cbidx + 1
@@ -131,8 +131,8 @@ gosub init
     px(cbidx) = cbtmp * cos(cb_anga)
     gosub rotate_inca
     gosub rotate_incb
-    px(cbidx) = centrex + px(cbidx) - pz / 2
-    py(cbidx) = centrey + py(cbidx) + pz / 2
+    px(cbidx) = centrex + px(cbidx) - pz * zfact / 4
+    py(cbidx) = centrey + py(cbidx) + pz * zfact
 
     x2 = px(cbidx)
     y2 = py(cbidx)
@@ -249,38 +249,47 @@ gosub init
   return
 
 
-'---------
+'----------
 .draw_line
 '---------
-  diffx = x2-x1
-  diffy = y2-y1
+  ' borrowed from: www.baeldung.com/cs/bresenhams-line-algorithm
+  x1 = int(x1)
+  y1 = int(y1)
+  x2 = int(x2)
+  y2 = int(y2)
+  ddx = abs(x2-x1)
+  if x1 < x2 then sx = 1 : else sx = -1
 
-  line_length = sqr(diffx*diffx + diffy*diffy)
-  
-  if diffx = 0 then begin
-    deltax = 0
-    if diffy<0 then deltay = -1
-    if diffy>0 then deltay = 1
-  bend:else begin
-    gosub atan2  ' returns angle
-    deltax = cos(angle)
-    deltay = sin(angle)
-  bend
+  ddy = -abs(y2-y1)
+  if y1 < y2 then sy = 1 : else sy = -1
+
+  e = ddx + ddy
 
   cx = x1 : cy = y1
-  for k = 1 to line_length
+  do while 1
     gosub draw_pixel
-    cx = cx + deltax
-    cy = cy + deltay
+    if cx = (x2) and cy = y2 then exit
+
+  e2 = 2 * e
+  if e2 >= ddy then begin
+    if cx = x2 then exit
+    e = e + ddy
+    cx = cx + sx
+  bend
+
+  if e2 <= ddx then begin
+    if cy = y2 then exit
+    e = e + ddx
+    cy = cy + sy
+  bend
 
     if debug=1 then begin
       cursor 0,15:print chr$(27);"qcx =";cx;", cy =";cy
-      cursor 0,22:print chr$(27);"qdiffx =";diffx;", diffy =";diffy
+      cursor 0,16:print chr$(27);"qddx =";ddx;", ddy =";ddy;", e=";e;", e2=";e2
       get key a$
     bend
-  next k
-  gosub draw_pixel
 
+  loop
   return
 
 
@@ -303,13 +312,16 @@ gosub init
 '----------
 .draw_pixel
 '----------
+  bank 0:sys $7e06, mod(cx+256, 256), mod(cy+256, 256), 5
+  return
+
   ' pixel cropped?
   if cx<0 or cx>159 or cy<0 or cy>99 then return
 
   dx = int(cx/2) : dy = int(cy/2)
   mx = mod(int(cx),2) : my = mod(int(cy),2)
 
-    ' cursor 0,16:print chr$(27);"qdx =";dx;", dy =";dy
+    ' cursor 0,16:print chr$(27);"qhx =";hx;", hy =";hy
     ' cursor 0,17:print chr$(27);"qmx =";mx;", my =";my
 
   cur_char = peek($40800 + dx + dy * 80)
@@ -378,8 +390,12 @@ gosub init
 '----
 .init
 '----
+  bank 0:bload "megaplot"
+  sys $7e03 ' init
   centrex = 80 : centrey = 50
   print chr$(27);"5";chr$(147);
+
+  zfact = cos(PI/4)
   return
   
 ÿ
