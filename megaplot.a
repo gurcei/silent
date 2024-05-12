@@ -116,11 +116,38 @@ _plot:
 line:
 //---
 	sei
+	pha
+	lda #$00
+	sta x1+1
+	sta y1+1
+	sta x2+1
+	sta y2+1
+	pla
+	
 	sta x1
-	stx y1
-	sty x2
-	stz y2
-	ldx #$05
+	bpl +
+	lda #$ff
+	sta x1+1
+
++	stx y1
+	txa
+	bpl +
+	lda #$ff
+	sta y1+1
+
++	sty x2
+	tya
+	bpl +
+	lda #$ff
+	sta x2+1
+
++	stz y2
+	tza
+	bpl +
+	lda #$ff
+	sta y2+1
+
++	ldx #$05
 	stx colour
 
 	jsr init
@@ -131,58 +158,105 @@ line:
 	lda x2
 	sec
 	sbc x1
+	sta ddx
+
+	lda x2+1
+	sbc x1+1
+	sta ddx+1
+
 	bpl +
 
+	lda ddx
 	eor #$ff
 	clc
 	adc #$01
+	sta ddx
 
-+	sta ddx
+	lda ddx+1
+	eor #$ff
+	adc #$00
+	sta ddx+1
 
 
 	// if x1 < x2 then sx = 1 : else sx = -1
-	lda #$01
++	lda #$01
 	sta sx
+	lda #$00
+	sta sx+1
+
+	lda x1 + 1
+	cmp x2 + 1
+	bmi +
+
 	lda x1
 	cmp x2
-	
 	bmi +
+
 	lda #$ff
 	sta sx
+	sta sx+1
 	
 	// ddy = -abs(y2-y1)
 +	lda y2
 	sec
 	sbc y1
+	sta ddy
+
+	lda y2+1
+	sbc y1+1
+	sta ddy+1
+
 	bmi +
 
+	lda ddy
 	eor #$ff
 	clc
 	adc #$01
+	sta ddy
 
-+	sta ddy
+	lda ddy+1
+	eor #$ff
+	adc #$00
+	sta ddy+1
 
 	// if y1 < y2 then sy = 1 : else sy = -1
-	lda #$01
++	lda #$01
 	sta sy
+	lda #$00
+	sta sy+1
+
+	lda y1 + 1
+	cmp y2 + 1
+	bmi +
+
 	lda y1
 	cmp y2
-	
 	bmi +
+
 	lda #$ff
 	sta sy
+	sta sy+1
 	
-	// e = ddx + ddy
+	// _e = ddx + ddy
 +	lda ddx
 	clc
 	adc ddy
-	sta e
+	sta _e
+
+	lda ddx+1
+	adc ddy+1
+	sta _e+1
 	
 	// xpos = x1 : ypos = y1
 	lda x1
 	sta xpos
+	lda x1+1
+	sta xpos+1
+
 	lda y1
 	sta ypos
+	lda y1+1
+	sta ypos+1
 
 	// do while 1
 pixel_loop:
@@ -193,46 +267,76 @@ pixel_loop:
 		lda xpos
 		cmp x2
 		bne +
+		lda xpos+1
+		cmp x2+1
+		bne +
 
 		lda ypos
 		cmp y2
 		bne +
+		lda ypos+1
+		cmp y2+1
+		bne +
+
 		cli
 		rts
 	
-		// e2 = 2 * e
-+ 		lda e
+		// _e2 = 2 * _e
++ 		lda _e
 		clc
 		asl
-		sta e2
+		sta _e2
+		lda _e+1
+		asl
+		sta _e2+1
 
-		// if e2 >= ddy then begin
-		lda e2
+		// if _e2 >= ddy then begin
+		lda _e2+1
+		cmp ddy+1
+		bmi ++
+		bne +
+		lda _e2
 		cmp ddy
 		bmi ++
 			// if xpos = x2 then exit
-			lda xpos
++			lda xpos
 			cmp x2
+			bne +
+			lda xpos+1
+			cmp x2+1
 			bne +
 			cli
 			rts
 
-			// e = e + ddy
+			// _e = _e + ddy
 +			clc
-			lda e
+			lda _e
 			adc ddy
-			sta e
+			sta _e
+			lda _e+1
+			adc ddy+1
+			sta _e+1
 
 			// xpos = xpos + sx
 			clc
 			lda xpos
 			adc sx
 			sta xpos
+			lda xpos+1
+			adc sx+1
+			sta xpos+1
 		// bend
 
 
-		// if e2 <= ddx then begin
-++		lda e2
+		// if _e2 <= ddx then begin
+++		lda _e2+1
+		cmp ddx+1
+		bmi +
+		beq +
+
+		jmp pixel_loop
+
++		lda _e2
 		cmp ddx
 		bmi +
 		beq +
@@ -243,20 +347,31 @@ pixel_loop:
 			lda ypos
 			cmp y2
 			bne +
+
+			lda ypos+1
+			cmp y2+1
+			bne +
+
 			cli
 			rts
 
-			// e = e + ddx
+			// _e = _e + ddx
 +			clc
-			lda e
+			lda _e
 			adc ddx
-			sta e
+			sta _e
+			lda _e+1
+			adc ddx+1
+			sta _e+1
 
 			// ypos = ypos + sy
 			clc
 			lda ypos
 			adc sy
 			sta ypos
+			lda ypos+1
+			adc sy+1
+			sta ypos+1
 		// bend
 	
 	// loop
@@ -472,8 +587,8 @@ which_char_at_xy:
 // ---------
 // variables
 // ---------
-xpos:			!byte $00
-ypos:			!byte $00
+xpos:			!word $00
+ypos:			!word $00
 colour:			!byte $00
 screenx:		!byte $00
 screeny:		!byte $00
@@ -487,13 +602,13 @@ bitpatterns:	!byte $20,$7e,$7c,$e2,$7b,$61,$ff,$ec,$6c,$7f,$e1,$fb,$62,$fc,$fe,$
 virtual:		!byte $00
 scrnbase:		!byte $00, $00, $00, $00
 colrbase:		!byte $00, $00, $00, $00
-x1:			!byte $00
-y1:			!byte $00
-x2:			!byte $00
-y2:			!byte $00
-ddx:			!byte $00
-ddy:			!byte $00
-sx:			!byte $00
-sy:			!byte $00
-e:			!byte $00
-e2:			!byte $00
+x1:			!word $00
+y1:			!word $00
+x2:			!word $00
+y2:			!word $00
+ddx:			!word $00
+ddy:			!word $00
+sx:			!word $00
+sy:			!word $00
+_e:			!word $00
+_e2:			!word $00

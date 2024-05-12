@@ -1,14 +1,14 @@
 autowatch
 autocls
-wb xpos
-wb ypos
-wb x1
-wb y1
-wb x2
-wb y2
-wb ddx
-wb ddy
-wb e
-wb e2
-wb sx
-wb sy
+ww xpos
+ww ypos
+ww x1
+ww y1
+ww x2
+ww y2
+ww ddx
+ww ddy
+ww _e
+ww _e2
+ww sx
+ww sy
