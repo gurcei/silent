@@ -93,6 +93,7 @@ plot:
 				stx ypos
 				sty colour
 
+_plot:
 				jsr init2
 
 				jsr check_xy_in_range
@@ -114,35 +115,154 @@ plot:
 //---
 line:
 //---
+	sei
 	sta x1
 	stx y1
 	sty x2
 	stz y2
-	tsx
+	ldx #$05
 	stx colour
 
-	// diffx = x2-x1
-	// diffy = y2-y1
+	jsr init
 
-	// line_length = sqrt(diffx^2 + diffy^2)
+	// borrowed from: www.baeldung.com/cs/bresenhams-line-algorithm
 
-	// if diffx = 0 then begin
-	//   deltax = 0
-	//   if diffy < 0 then deltay = -1
-	//   if diffy > 0 then deltay == 1
-	// bend:else begin
-	//   gosub atan2
-	//   deltax = cos(angle)
-	//   deltay = sin(angle)
-	// bend
+	// ddx = abs(x2-x1)
+	lda x2
+	sec
+	sbc x1
+	bpl +
 
-	// cx = x1 : cy = y1
-	// for k = 1 to line_length
-	//   gosub draw_pixel
-	//   cx = cx + deltax
-	//   cy = cy + deltay
-	// next k
-	// gosub draw_pixel
+	eor #$ff
+	clc
+	adc #$01
+
++	sta ddx
+
+
+	// if x1 < x2 then sx = 1 : else sx = -1
+	lda #$01
+	sta sx
+	lda x1
+	cmp x2
+	
+	bmi +
+	lda #$ff
+	sta sx
+	
+	// ddy = -abs(y2-y1)
++	lda y2
+	sec
+	sbc y1
+	bmi +
+
+	eor #$ff
+	clc
+	adc #$01
+
++	sta ddy
+
+	// if y1 < y2 then sy = 1 : else sy = -1
+	lda #$01
+	sta sy
+	lda y1
+	cmp y2
+	
+	bmi +
+	lda #$ff
+	sta sy
+	
+	// e = ddx + ddy
++	lda ddx
+	clc
+	adc ddy
+	sta e
+	
+	// xpos = x1 : ypos = y1
+	lda x1
+	sta xpos
+	lda y1
+	sta ypos
+
+	// do while 1
+pixel_loop:
+		// gosub draw_pixel
+		jsr _plot
+
+		//if xpos = (x2) and ypos = y2 then exit
+		lda xpos
+		cmp x2
+		bne +
+
+		lda ypos
+		cmp y2
+		bne +
+		cli
+		rts
+	
+		// e2 = 2 * e
++ 		lda e
+		clc
+		asl
+		sta e2
+
+		// if e2 >= ddy then begin
+		lda e2
+		cmp ddy
+		bmi ++
+			// if xpos = x2 then exit
+			lda xpos
+			cmp x2
+			bne +
+			cli
+			rts
+
+			// e = e + ddy
++			clc
+			lda e
+			adc ddy
+			sta e
+
+			// xpos = xpos + sx
+			clc
+			lda xpos
+			adc sx
+			sta xpos
+		// bend
+
+
+		// if e2 <= ddx then begin
+++		lda e2
+		cmp ddx
+		bmi +
+		beq +
+
+		jmp pixel_loop
+
++			// if ypos = y2 then exit
+			lda ypos
+			cmp y2
+			bne +
+			cli
+			rts
+
+			// e = e + ddx
++			clc
+			lda e
+			adc ddx
+			sta e
+
+			// ypos = ypos + sy
+			clc
+			lda ypos
+			adc sy
+			sta ypos
+		// bend
+	
+	// loop
++	jmp pixel_loop
+
+	cli
 	rts
 
 //---------------
@@ -371,4 +491,9 @@ x1:			!byte $00
 y1:			!byte $00
 x2:			!byte $00
 y2:			!byte $00
-
+ddx:			!byte $00
+ddy:			!byte $00
+sx:			!byte $00
+sy:			!byte $00
+e:			!byte $00
+e2:			!byte $00

@@ -249,9 +249,17 @@ gosub init
   return
 
 
-'----------
+'---------
 .draw_line
 '---------
+  sys $7e03
+  x1 = mod(int(x1)+256,256)
+  y1 = mod(int(y1)+256,256)
+  x2 = mod(int(x2)+256,256)
+  y2 = mod(int(y2)+256,256)
+  sys $7e09, x1, y1, x2, y2, 5
+  return
+  
   ' borrowed from: www.baeldung.com/cs/bresenhams-line-algorithm
   x1 = int(x1)
   y1 = int(y1)
