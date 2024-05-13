@@ -80,17 +80,17 @@ gosub init
 .draw_many_cubes
 '---------------
   cb_incb = 0
-  for cb_inca = 0 to 1.9*PI/2 step PI/16
-    print"{x93}"
+  for cb_inca = 0 to 1.9*PI/4 step PI/16
+    ' print"{x93}"
     gosub draw_cube
-    sleep .02
+    ' sleep .02
   next cb_inca
 
   cb_inca = 0
   for cb_incb = 0 to 1.9*PI/2 step PI/16
-    print"{x93}"
+    ' print"{x93}"
     gosub draw_cube
-    sleep .02
+    ' sleep .02
   next cb_incb
 
   return

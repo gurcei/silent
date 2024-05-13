@@ -5,6 +5,9 @@
 COLRBASE = $0000 // Fixed to Bank ff8
 ROWPTR = $18
 COLPTR = $1c
+MULTINA = $d770
+MULTINB = $d774
+MULTOUT = $d778
 
 * = $7e00
 
@@ -516,27 +519,34 @@ init_screen_and_colour_pointers:
 //-------------------------------
 update_pointers_to_start_of_y_row:
 //-------------------------------
+				ldz #$00
+				ldy #$00
 				ldx #$00
-				ldy screeny
-				iny
+				lda screeny
+				stq MULTINA
 
-rowloopy:		// loop through the rows until we get to the start of the screen row 
-				dey
-				beq +
+				lda xmode4080
+				stq MULTINB
+
+				ldq MULTOUT
+
 				clc
-				lda ROWPTR
-				adc xmode4080,x
+				tay
+				adc ROWPTR
 				sta ROWPTR
-				clc 
-				lda COLPTR
-				adc xmode4080,x
-				sta COLPTR
-				bcs nextpagey
-				jmp rowloopy
 
-nextpagey:		inc ROWPTR + 1
-				inc COLPTR + 1
-				jmp rowloopy		
+				txa
+				adc ROWPTR+1
+				sta ROWPTR+1
+
+				clc
+				tya
+				adc COLPTR
+				sta COLPTR
+
+				txa
+				adc COLPTR+1
+				sta COLPTR+1
 
 +				rts
 

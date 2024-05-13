@@ -3,8 +3,8 @@ enigma.p song length = 3:52
 TODO:
 ====
 DONE- 80x50 petscii line drawing routine
-- Draw rotating 3d cube with petscii art
-- Try port line drawing routine to assembly, for speed
+DONE- Draw rotating 3d cube with petscii art
+DONE- Try port line drawing routine to assembly, for speed
 - Tie up all pieces of demo together
 - Starfield moving from right to left
 
@@ -19,6 +19,7 @@ Credits + Greets
 ================
 - deathy for being so passionate about developing for the MEGA65
 - Grim Fandango for MEGAPLOT, my starting point for plotting petscii via assembly :)
+- bisgedi for sharing the MULTIPLY.ASM example use of Q register written in grubi's Mega Assembler :)
 - Nobato for initial square rotation example
 - Greets to the mega65 team: gardners, deft, martin, lydon, dddaaannn and others
 - Greets to active devs this year: bisgedi, btoschi, carthibar, clockchip, deathy/BAS, Drex, EgonOlsen71, El Nebuloso, fredrikr, Geehaf, GeirS, grubi, heath_man, jim-64, jwa74, kibo, M3wP, mc64, Mirage-BD, Mr. Jones, Nobato, retroCombs, Roughnight, SirLazarus, Stigodump, TOS22, Urban Lindeskog, zeus074
