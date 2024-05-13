@@ -17,6 +17,26 @@
 #declare frameidx, fx, fy, mirror, data_addr, frmx, frmy
 #declare frmx1, frmy1, scraddr, clraddr, cdata_addr, yy
 #declare inc(3), inc_dir(3), a$, x, y
+#declare tempr, tempg, tempb, m
+#declare logo_state
+#declare flip_var, upper_nibble, lower_nibble
+
+#define FRM_B = 0
+#define FRM_A = 1
+#define FRM_S = 2
+#define FRM_BACKDROP = 3
+
+
+  ' palette
+  ' -------
+  #declare default_red(32)
+  #declare default_green(32)
+  #declare default_blue(32)
+  #declare curr_red(32)
+  #declare curr_green(32)
+  #declare curr_blue(32)
+  #declare fadeval, tempval
+
 
 .offsets
 #define OFFSET_DATA_SIZE  = 0
@@ -40,24 +60,66 @@
 '----
   gosub init
   gosub load_data
+
+  gosub state_loop
+
   gosub animate_logo
   end
+
+#define ST_FADE_TO_WHITE = 0
+#define ST_DRAW_BACKDROP_ONLY = 1
+#define ST_FADE_TO_DEFAULT = 2
+#define ST_DROP_IN_B = 3
+
+'----------
+.state_loop
+'----------
+  if logo_state = ST_FADE_TO_WHITE then begin
+    gosub fade_to_white
+    logo_state = ST_DRAW_BACKDROP_ONLY
+
+  bend:else if logo_state = ST_DRAW_BACKDROP_ONLY then begin
+    poke $d020, 1, 1
+    gosub draw_backdrop
+    gosub page_flip
+    gosub store_curr_colours
+    gosub set_palette_for_backdrop
+    fadeval=0
+    m=0
+    logo_state = ST_FADE_TO_DEFAULT
+
+  bend:else if logo_state = ST_FADE_TO_DEFAULT then begin
+    if fadeval <= 16 then begin
+      if mod(m,5) = 0 then begin
+        gosub fade_colours_to_defaults
+        fadeval = fadeval + 1
+      bend
+    bend
+
+    gosub cycle_alt_palette
+    m = m + 1
+
+    if m = 200 then logo_state = ST_DROP_IN_B
+  bend
+
+  goto state_loop
+
+  return
+
+
+'-------------
+.draw_backdrop
+'-------------
+    frameidx = FRM_BACKDROP
+    fx=-999 : fy = -999
+    mirror = 0
+    gosub draw_petscii_frame
+    return
+
 
 '------------
 .animate_logo
 '------------
-  inc_dir(0) = -1
-  inc(0) = 3
-
-  inc_dir(1) = -1
-  inc(1) = 2
-
-  inc_dir(2) = -1
-  inc(2) = 1
-
-  inc_dir(3) = -1
-  inc(3) = 1
-
 .anim_rpt
   gosub draw_bas
   gosub page_flip
@@ -75,9 +137,26 @@
 '----
 .init
 '----
-  poke $d020, 1, 1
+  logo_state = 0
+  print "{x93}"
+
+  gosub store_default_colours
+
   print chr$(142);   ' uppercase
   print chr$(27);"5" ' 80x50
+
+  inc_dir(0) = -1
+  inc(0) = 3
+
+  inc_dir(1) = -1
+  inc(1) = 2
+
+  inc_dir(2) = -1
+  inc(2) = 1
+
+  inc_dir(3) = -1
+  inc(3) = 1
+
 
   ' clear dma list area
 
@@ -127,7 +206,7 @@
   ptr = ptr + OFFSET_FRAME0
 
   'print
-  print "- mx_frm=";max_frames;": "
+  'print "- mx_frm=";max_frames;": "
 
   frm_idx = 0
   do while frm_idx < max_frames
@@ -156,7 +235,7 @@
     'print "ptr=";hex$(ptr);", idx=";frm_idx;", w=";frmw;", h=";frmh
     ptr = ptr + FRM_OFFSET_DATA + frmw * frmh * 2
 
-    :print "frm_idx=";frm_idx
+    'print "frm_idx=";frm_idx
 
     frm_idx = frm_idx + 1
   loop
@@ -177,26 +256,25 @@
   'get key a$
   return
 
-
 '--------
 .draw_bas
 '--------
-  frameidx = 3
+  frameidx = FRM_BACKDROP
   fx=-999 : fy = -999
   mirror = 0
   gosub draw_petscii_frame
 
-  frameidx = 0
+  frameidx = FRM_B
   fx=-999 : fy=-999
   mirror = 0
   gosub draw_petscii_frame
 
-  frameidx = 1
+  frameidx = FRM_A
   fx=-999 : fy=-999
   mirror = 0
   gosub draw_petscii_frame
 
-  frameidx = 2
+  frameidx = FRM_S
   fx=-999 : fy=-999
   mirror = 0
   gosub draw_petscii_frame
@@ -278,5 +356,158 @@
   ' clear the offscreen buffer
   edma 3, $fa0, 32, $50000
   edma 3, $fa0, 0, $51000
+  return
+
+
+.fade_to_white
+'-------------
+  for fadeval=0 to 16
+    gosub fade_colours_to_white
+    sleep .1
+  next fadeval
+  return
+
+
+.fade_colours_to_white
+'---------------------
+  'INPUT: fadeval=0 to 16
+  tempval = fadeval / 16
+  for k = 0 to 31
+    poke $d100+k, default_red(k) + (15 - default_red(k)) * tempval
+    poke $d200+k, default_green(k) + (15 - default_green(k)) * tempval
+    poke $d300+k, default_blue(k) + (15 - default_blue(k)) * tempval
+  next k
+  return
+
+
+.store_default_colours
+'---------------------
+  for k = 0 to 31
+    default_red(k)=peek($d100+k)
+    default_green(k)=peek($d200+k)
+    default_blue(k)=peek($d300+k)
+  next k
+  return
+
+
+.fade_colours_to_defaults
+'------------------------
+  'INPUT: fadeval=0 to 16
+  tempval = fadeval / 16
+  for k = 0 to 31
+    poke $d100+k, curr_red(k) + (default_red(k)-curr_red(k)) * tempval
+    poke $d200+k, curr_green(k) + (default_green(k)-curr_green(k)) * tempval
+    poke $d300+k, curr_blue(k) + (default_blue(k)-curr_blue(k)) * tempval
+  next k
+  return
+
+
+.store_curr_colours
+'------------------
+  for k = 0 to 31
+    curr_red(k)=peek($d100+k)
+    curr_green(k)=peek($d200+k)
+    curr_blue(k)=peek($d300+k)
+  next k
+  return
+
+
+.cycle_alt_palette_loop
+'----------------------
+  for m = 0 to 32*4
+    gosub cycle_alt_palette
+    ' gosub poll_play
+    ' gosub anim_draw_subtext
+    sleep .04
+  next m
+  return
+
+.cycle_alt_palette
+'-----------------
+  tempr = peek($d100+16)
+  tempg = peek($d200+16)
+  tempb = peek($d300+16)
+  for k = 16 to 30
+    poke $d100+k, peek($d100+k+1)
+    poke $d200+k, peek($d200+k+1)
+    poke $d300+k, peek($d300+k+1)
+  next k
+  poke $d100+31, tempr
+  poke $d200+31, tempg
+  poke $d300+31, tempb
+
+  tempr = curr_red(16)
+  tempg = curr_green(16)
+  tempb = curr_blue(16)
+  for k = 16 to 30
+    curr_red(k) = curr_red(k+1)
+    curr_green(k) = curr_green(k+1)
+    curr_blue(k) = curr_blue(k+1)
+  next k
+  curr_red(31) = tempr
+  curr_green(31) = tempg
+  curr_blue(31) = tempb
+
+  tempr = default_red(16)
+  tempg = default_green(16)
+  tempb = default_blue(16)
+  for k = 16 to 30
+    default_red(k) = default_red(k+1)
+    default_green(k) = default_green(k+1)
+    default_blue(k) = default_blue(k+1)
+  next k
+  default_red(31) = tempr
+  default_green(31) = tempg
+  default_blue(31) = tempb
+
+  return
+
+
+'------------------------
+.set_palette_for_backdrop
+'------------------------
+#define COL1_R = $da ' 218
+#define COL1_G = $89 ' 137
+#define COL1_B = $00 ' 0
+
+#define COL2_R = $1b ' 27
+#define COL2_G = $42 ' 66
+#define COL2_B = $0b ' 11
+
+#declare clr1, clr2
+  for k = 16 to 30
+    clr1 = ($ff*(k-16)/14 + COL1_R*(30-k)/14)/2
+    clr2 = ($ff*(30-k)/14 + COL2_R*(k-16)/14)/2
+    flip_var = (clr1 + clr2)/2
+    gosub flip_nibble
+    default_red(k) = flip_var
+
+    clr1 = ($ff*(k-16)/14 + COL1_G*(30-k)/14)/2
+    clr2 = ($ff*(30-k)/14 + COL2_G*(k-16)/14)/2
+    flip_var = (clr1 + clr2)/2
+    gosub flip_nibble
+    default_red(k) = flip_var
+
+    clr1 = ($ff*(k-16)/14 + COL1_B*(30-k)/14)/2
+    clr2 = ($ff*(30-k)/14 + COL2_B*(k-16)/14)/2
+    flip_var = (clr1 + clr2)/2
+    gosub flip_nibble
+    default_red(k) = flip_var
+   
+    'flip_var = COL1_R / (
+    'default_red(k) = k-15
+    'default_green(k) = k-15
+    'default_blue(k) = k-15
+  next k
+  return
+
+
+'-----------
+.flip_nibble
+'-----------
+  lower_nibble = flip_var and $0f
+  upper_nibble = (flip_var >> 4) and $0f
+
+  flip_var = (lower_nibble << 4) + upper_nibble
   return
 ÿ
