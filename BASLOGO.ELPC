@@ -20,6 +20,7 @@
 #declare tempr, tempg, tempb, m
 #declare logo_state
 #declare flip_var, upper_nibble, lower_nibble
+#declare clr1, clr2, tstart
 
 #define FRM_B = 0
 #define FRM_A = 1
@@ -89,6 +90,8 @@
     logo_state = ST_FADE_TO_DEFAULT
 
   bend:else if logo_state = ST_FADE_TO_DEFAULT then begin
+    tstart = ti
+
     if fadeval <= 16 then begin
       if mod(m,5) = 0 then begin
         gosub fade_colours_to_defaults
@@ -100,6 +103,10 @@
     m = m + 1
 
     if m = 200 then logo_state = ST_DROP_IN_B
+
+    do
+    loop while (ti-tstart) < .1
+
   bend
 
   goto state_loop
@@ -395,9 +402,49 @@
   'INPUT: fadeval=0 to 16
   tempval = fadeval / 16
   for k = 0 to 31
-    poke $d100+k, curr_red(k) + (default_red(k)-curr_red(k)) * tempval
-    poke $d200+k, curr_green(k) + (default_green(k)-curr_green(k)) * tempval
-    poke $d300+k, curr_blue(k) + (default_blue(k)-curr_blue(k)) * tempval
+
+    flip_var = curr_red(k)
+    gosub flip_nibble
+    clr1 = flip_var
+
+    flip_var = default_red(k)
+    gosub flip_nibble
+    clr2 = flip_var
+
+    flip_var = clr1 + (clr2 - clr1) * tempval
+    gosub flip_nibble
+
+    poke $d100+k, flip_var
+
+    ' ------
+
+    flip_var = curr_green(k)
+    gosub flip_nibble
+    clr1 = flip_var
+
+    flip_var = default_green(k)
+    gosub flip_nibble
+    clr2 = flip_var
+
+    flip_var = clr1 + (clr2 - clr1) * tempval
+    gosub flip_nibble
+
+    poke $d200+k, flip_var
+
+    ' ------
+
+    flip_var = curr_blue(k)
+    gosub flip_nibble
+    clr1 = flip_var
+
+    flip_var = default_blue(k)
+    gosub flip_nibble
+    clr2 = flip_var
+
+    flip_var = clr1 + (clr2 - clr1) * tempval
+    gosub flip_nibble
+
+    poke $d300+k, flip_var
   next k
   return
 
@@ -418,7 +465,6 @@
     gosub cycle_alt_palette
     ' gosub poll_play
     ' gosub anim_draw_subtext
-    sleep .04
   next m
   return
 
@@ -474,30 +520,18 @@
 #define COL2_G = $42 ' 66
 #define COL2_B = $0b ' 11
 
-#declare clr1, clr2
-  for k = 16 to 30
-    clr1 = ($ff*(k-16)/14 + COL1_R*(30-k)/14)/2
-    clr2 = ($ff*(30-k)/14 + COL2_R*(k-16)/14)/2
-    flip_var = (clr1 + clr2)/2
+  for k = 16 to 31
+    flip_var = COL1_R + (COL2_R-COL1_R) * (k-16)/15
     gosub flip_nibble
     default_red(k) = flip_var
 
-    clr1 = ($ff*(k-16)/14 + COL1_G*(30-k)/14)/2
-    clr2 = ($ff*(30-k)/14 + COL2_G*(k-16)/14)/2
-    flip_var = (clr1 + clr2)/2
+    flip_var = COL1_G + (COL2_G-COL1_G) * (k-16)/15
     gosub flip_nibble
-    default_red(k) = flip_var
+    default_green(k) = flip_var
 
-    clr1 = ($ff*(k-16)/14 + COL1_B*(30-k)/14)/2
-    clr2 = ($ff*(30-k)/14 + COL2_B*(k-16)/14)/2
-    flip_var = (clr1 + clr2)/2
+    flip_var = COL1_B + (COL2_B-COL1_B) * (k-16)/15
     gosub flip_nibble
-    default_red(k) = flip_var
-   
-    'flip_var = COL1_R / (
-    'default_red(k) = k-15
-    'default_green(k) = k-15
-    'default_blue(k) = k-15
+    default_blue(k) = flip_var
   next k
   return
 
