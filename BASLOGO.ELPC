@@ -28,6 +28,8 @@
 #define FRM_BACKDROP = 3
 
 #declare HOTREG_7 = $d05d
+#define SCRNPTRLSB = $d060
+#define SCRNPTRBNK = $d062
 
 
   ' palette
@@ -81,7 +83,10 @@
     gosub fade_to_white
     logo_state = ST_DRAW_BACKDROP_ONLY
 
-  bend:else if logo_state = ST_DRAW_BACKDROP_ONLY then begin
+  bend
+  
+  if logo_state = ST_DRAW_BACKDROP_ONLY then begin
+    bank 128
     poke $d020, 1, 1
     gosub init_80x50
     gosub draw_backdrop
@@ -92,7 +97,9 @@
     m=0
     logo_state = ST_FADE_TO_DEFAULT
 
-  bend:else if logo_state = ST_FADE_TO_DEFAULT then begin
+  bend
+  
+  if logo_state = ST_FADE_TO_DEFAULT then begin
     tstart = ti
 
     if fadeval <= 16 then begin
@@ -120,15 +127,15 @@
 '----------
 .init_80x50
 '----------
-  print "{x93}"
-
   ' switch back to upper-case
   poke $d018, peek($d018) and $fd
 
   ' switch to 80x50
-  bank 128
   setbit HOTREG_7, 7
   poke $d031, $e8 ' 1110 1000 = H640,FAST,ATTR,V400
+
+  wpoke SCRNPTRLSB, $0800
+  poke SCRNPTRBNK, $04
 
   return
 
@@ -523,9 +530,9 @@
   poke $d200+31, tempg
   poke $d300+31, tempb
 
-  tempr = curr_red&(16)
-  tempg = curr_green&(16)
-  tempb = curr_blue&(16)
+  tempr = curr_red&(12)
+  tempg = curr_green&(12)
+  tempb = curr_blue&(12)
   for k = 12 to 30
     curr_red&(k) = curr_red&(k+1)
     curr_green&(k) = curr_green&(k+1)
@@ -535,9 +542,9 @@
   curr_green&(31) = tempg
   curr_blue&(31) = tempb
 
-  tempr = default_red&(16)
-  tempg = default_green&(16)
-  tempb = default_blue&(16)
+  tempr = default_red&(12)
+  tempg = default_green&(12)
+  tempb = default_blue&(12)
   for k = 12 to 30
     default_red&(k) = default_red&(k+1)
     default_green&(k) = default_green&(k+1)
