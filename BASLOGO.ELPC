@@ -27,15 +27,17 @@
 #define FRM_S = 2
 #define FRM_BACKDROP = 3
 
+#declare HOTREG_7 = $d05d
+
 
   ' palette
   ' -------
-  #declare default_red(32)
-  #declare default_green(32)
-  #declare default_blue(32)
-  #declare curr_red(32)
-  #declare curr_green(32)
-  #declare curr_blue(32)
+  #declare default_red&(32)
+  #declare default_green&(32)
+  #declare default_blue&(32)
+  #declare curr_red&(32)
+  #declare curr_green&(32)
+  #declare curr_blue&(32)
   #declare fadeval, tempval
 
 
@@ -81,6 +83,7 @@
 
   bend:else if logo_state = ST_DRAW_BACKDROP_ONLY then begin
     poke $d020, 1, 1
+    gosub init_80x50
     gosub draw_backdrop
     gosub page_flip
     gosub store_curr_colours
@@ -110,6 +113,22 @@
   bend
 
   goto state_loop
+
+  return
+
+
+'----------
+.init_80x50
+'----------
+  print "{x93}"
+
+  ' switch back to upper-case
+  poke $d018, peek($d018) and $fd
+
+  ' switch to 80x50
+  bank 128
+  setbit HOTREG_7, 7
+  poke $d031, $e8 ' 1110 1000 = H640,FAST,ATTR,V400
 
   return
 
@@ -145,12 +164,8 @@
 .init
 '----
   logo_state = 0
-  print "{x93}"
 
   gosub store_default_colours
-
-  print chr$(142);   ' uppercase
-  print chr$(27);"5" ' 80x50
 
   inc_dir(0) = -1
   inc(0) = 3
@@ -380,9 +395,35 @@
   'INPUT: fadeval=0 to 16
   tempval = fadeval / 16
   for k = 0 to 31
-    poke $d100+k, default_red(k) + (15 - default_red(k)) * tempval
-    poke $d200+k, default_green(k) + (15 - default_green(k)) * tempval
-    poke $d300+k, default_blue(k) + (15 - default_blue(k)) * tempval
+
+    flip_var = default_red&(k)
+    gosub flip_nibble
+    clr1 = flip_var
+
+    clr2 = $f0
+
+    flip_var = clr1 + (clr2 - clr1) * tempval
+    gosub flip_nibble
+
+    poke $d100+k, flip_var
+
+    flip_var = default_green&(k)
+    gosub flip_nibble
+    clr1 = flip_var
+
+    flip_var = clr1 + (clr2 - clr1) * tempval
+    gosub flip_nibble
+
+    poke $d200+k, flip_var
+
+    flip_var = default_blue&(k)
+    gosub flip_nibble
+    clr1 = flip_var
+
+    flip_var = clr1 + (clr2 - clr1) * tempval
+    gosub flip_nibble
+
+    poke $d300+k, flip_var
   next k
   return
 
@@ -390,9 +431,9 @@
 .store_default_colours
 '---------------------
   for k = 0 to 31
-    default_red(k)=peek($d100+k)
-    default_green(k)=peek($d200+k)
-    default_blue(k)=peek($d300+k)
+    default_red&(k)=peek($d100+k)
+    default_green&(k)=peek($d200+k)
+    default_blue&(k)=peek($d300+k)
   next k
   return
 
@@ -403,11 +444,11 @@
   tempval = fadeval / 16
   for k = 0 to 31
 
-    flip_var = curr_red(k)
+    flip_var = curr_red&(k)
     gosub flip_nibble
     clr1 = flip_var
 
-    flip_var = default_red(k)
+    flip_var = default_red&(k)
     gosub flip_nibble
     clr2 = flip_var
 
@@ -418,11 +459,11 @@
 
     ' ------
 
-    flip_var = curr_green(k)
+    flip_var = curr_green&(k)
     gosub flip_nibble
     clr1 = flip_var
 
-    flip_var = default_green(k)
+    flip_var = default_green&(k)
     gosub flip_nibble
     clr2 = flip_var
 
@@ -433,11 +474,11 @@
 
     ' ------
 
-    flip_var = curr_blue(k)
+    flip_var = curr_blue&(k)
     gosub flip_nibble
     clr1 = flip_var
 
-    flip_var = default_blue(k)
+    flip_var = default_blue&(k)
     gosub flip_nibble
     clr2 = flip_var
 
@@ -452,9 +493,9 @@
 .store_curr_colours
 '------------------
   for k = 0 to 31
-    curr_red(k)=peek($d100+k)
-    curr_green(k)=peek($d200+k)
-    curr_blue(k)=peek($d300+k)
+    curr_red&(k)=peek($d100+k)
+    curr_green&(k)=peek($d200+k)
+    curr_blue&(k)=peek($d300+k)
   next k
   return
 
@@ -470,10 +511,10 @@
 
 .cycle_alt_palette
 '-----------------
-  tempr = peek($d100+16)
-  tempg = peek($d200+16)
-  tempb = peek($d300+16)
-  for k = 16 to 30
+  tempr = peek($d100+12)
+  tempg = peek($d200+12)
+  tempb = peek($d300+12)
+  for k = 12 to 30
     poke $d100+k, peek($d100+k+1)
     poke $d200+k, peek($d200+k+1)
     poke $d300+k, peek($d300+k+1)
@@ -482,29 +523,29 @@
   poke $d200+31, tempg
   poke $d300+31, tempb
 
-  tempr = curr_red(16)
-  tempg = curr_green(16)
-  tempb = curr_blue(16)
-  for k = 16 to 30
-    curr_red(k) = curr_red(k+1)
-    curr_green(k) = curr_green(k+1)
-    curr_blue(k) = curr_blue(k+1)
+  tempr = curr_red&(16)
+  tempg = curr_green&(16)
+  tempb = curr_blue&(16)
+  for k = 12 to 30
+    curr_red&(k) = curr_red&(k+1)
+    curr_green&(k) = curr_green&(k+1)
+    curr_blue&(k) = curr_blue&(k+1)
   next k
-  curr_red(31) = tempr
-  curr_green(31) = tempg
-  curr_blue(31) = tempb
+  curr_red&(31) = tempr
+  curr_green&(31) = tempg
+  curr_blue&(31) = tempb
 
-  tempr = default_red(16)
-  tempg = default_green(16)
-  tempb = default_blue(16)
-  for k = 16 to 30
-    default_red(k) = default_red(k+1)
-    default_green(k) = default_green(k+1)
-    default_blue(k) = default_blue(k+1)
+  tempr = default_red&(16)
+  tempg = default_green&(16)
+  tempb = default_blue&(16)
+  for k = 12 to 30
+    default_red&(k) = default_red&(k+1)
+    default_green&(k) = default_green&(k+1)
+    default_blue&(k) = default_blue&(k+1)
   next k
-  default_red(31) = tempr
-  default_green(31) = tempg
-  default_blue(31) = tempb
+  default_red&(31) = tempr
+  default_green&(31) = tempg
+  default_blue&(31) = tempb
 
   return
 
@@ -520,18 +561,21 @@
 #define COL2_G = $42 ' 66
 #define COL2_B = $0b ' 11
 
-  for k = 16 to 31
-    flip_var = COL1_R + (COL2_R-COL1_R) * (k-16)/15
+  for k = 12 to 21
+    flip_var = COL1_R + (COL2_R-COL1_R) * (k-12)/9
     gosub flip_nibble
-    default_red(k) = flip_var
+    default_red&(k) = flip_var
+    default_red&(43-k) = flip_var
 
-    flip_var = COL1_G + (COL2_G-COL1_G) * (k-16)/15
+    flip_var = COL1_G + (COL2_G-COL1_G) * (k-12)/9
     gosub flip_nibble
-    default_green(k) = flip_var
+    default_green&(k) = flip_var
+    default_green&(43-k) = flip_var
 
-    flip_var = COL1_B + (COL2_B-COL1_B) * (k-16)/15
+    flip_var = COL1_B + (COL2_B-COL1_B) * (k-12)/9
     gosub flip_nibble
-    default_blue(k) = flip_var
+    default_blue&(k) = flip_var
+    default_blue&(43-k) = flip_var
   next k
   return
 
