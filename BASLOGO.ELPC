@@ -21,6 +21,8 @@
 #declare logo_state
 #declare flip_var, upper_nibble, lower_nibble
 #declare clr1, clr2, tstart
+#declare bas_state = 0
+#declare frmy(3), orig_frmy(3), finish_cnt, bcnt
 
 #define FRM_B = 0
 #define FRM_A = 1
@@ -103,7 +105,7 @@
     tstart = ti
 
     if fadeval <= 16 then begin
-      if mod(m,5) = 0 then begin
+      if mod(m,3) = 0 then begin
         gosub fade_colours_to_defaults
         fadeval = fadeval + 1
       bend
@@ -112,11 +114,17 @@
     gosub cycle_alt_palette
     m = m + 1
 
-    if m = 200 then logo_state = ST_DROP_IN_B
+    if m = 50 then logo_state = ST_DROP_IN_B
 
     do
     loop while (ti-tstart) < .1
 
+  bend
+
+  if logo_state = ST_DROP_IN_B then begin
+    gosub animate_logo
+    gosub cycle_alt_palette
+    m = m + 1
   bend
 
   goto state_loop
@@ -153,17 +161,65 @@
 '------------
 .animate_logo
 '------------
-.anim_rpt
+  if bas_state = 0 then begin
+    orig_frmy(0) = 6
+    orig_frmy(1) = 23
+    orig_frmy(2) = 6
+
+    frmy(0) = -44
+    frmy(1) = -69
+    frmy(2) = -107
+    bas_state = 1
+
+    inc_dir(0) = 1
+    inc(0) = 1
+
+    inc_dir(1) = 1
+    inc(1) = 1
+
+    inc_dir(2) = 1
+    inc(2) = 1
+
+    inc_dir(3) = 1
+    inc(3) = 1
+
+  bend
+
+  if bas_state = 1 then begin
+    finish_cnt = 0
+    for k = 0 to 2
+      if frmy(k) < orig_frmy(k) then begin
+        frmy(k) = frmy(k) + 2
+        if frmy(k) > orig_frmy(k) then frmy(k) = orig_frmy(k)
+      bend
+
+      if frmy(k) = orig_frmy(k) then finish_cnt = finish_cnt or 2^k
+    next k
+
+  bend
   gosub draw_bas
   gosub page_flip
 
-  for frameidx = 0 to 2  
-    inc(frameidx) = inc(frameidx) + .2 * inc_dir(frameidx)
-    if inc(frameidx) < .6 then inc_dir(frameidx) = 1
-    if inc(frameidx) > 2.9 then inc_dir(frameidx) = -1
-  next frameidx
+  for frameidx = 0 to 2
+    if finish_cnt and 2^frameidx and bcnt(frameidx)<3 then begin
+      inc(frameidx) = inc(frameidx) + .2 * inc_dir(frameidx)
+      if inc(frameidx) < .6 then begin
+        inc_dir(frameidx) = 1
+        bcnt(frameidx)=bcnt(frameidx)+1
+      bend
+      if inc(frameidx) > 2.9 then begin
+        inc_dir(frameidx) = -1
+        bcnt(frameidx)=bcnt(frameidx)+1
+      bend
 
-  goto anim_rpt
+      if bcnt(frameidx) = 2 and inc(frameidx) > 1 then begin
+        inc(frameidx) = 1
+        bcnt(frameidx)=bcnt(frameidx)+1
+      bend
+    bend
+
+    bend
+  next frameidx
   
   return
 
@@ -174,18 +230,8 @@
 
   gosub store_default_colours
 
-  inc_dir(0) = -1
-  inc(0) = 3
-
-  inc_dir(1) = -1
-  inc(1) = 2
-
-  inc_dir(2) = -1
-  inc(2) = 1
-
   inc_dir(3) = -1
   inc(3) = 1
-
 
   ' clear dma list area
 
@@ -294,17 +340,17 @@
   gosub draw_petscii_frame
 
   frameidx = FRM_B
-  fx=-999 : fy=-999
+  fx=-999 : fy=frmy(0)
   mirror = 0
   gosub draw_petscii_frame
 
   frameidx = FRM_A
-  fx=-999 : fy=-999
+  fx=-999 : fy=frmy(1)
   mirror = 0
   gosub draw_petscii_frame
 
   frameidx = FRM_S
-  fx=-999 : fy=-999
+  fx=-999 : fy=frmy(2)
   mirror = 0
   gosub draw_petscii_frame
 
