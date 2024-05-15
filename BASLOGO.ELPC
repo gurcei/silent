@@ -120,7 +120,8 @@
       bend
     bend
 
-    gosub cycle_alt_palette
+    ' cycle_alt_palette
+    bank 0:sys $7e06:bank 128
     m = m + 1
 
     if m = 50 then logo_state = ST_DROP_IN_B
@@ -132,7 +133,8 @@
 
   if logo_state = ST_DROP_IN_B then begin
     gosub animate_logo
-    gosub cycle_alt_palette
+    ' cycle_alt_palette
+    bank 0:sys $7e06:bank 128
     m = m + 1
   bend
 
@@ -508,50 +510,10 @@
 .cycle_alt_palette_loop
 '----------------------
   for m = 0 to 32*4
-    gosub cycle_alt_palette
+    ' gosub cycle_alt_palette
     ' gosub poll_play
     ' gosub anim_draw_subtext
   next m
-  return
-
-.cycle_alt_palette
-'-----------------
-  tempr = peek($d100+12)
-  tempg = peek($d200+12)
-  tempb = peek($d300+12)
-  for k = 12 to 30
-    poke $d100+k, peek($d100+k+1)
-    poke $d200+k, peek($d200+k+1)
-    poke $d300+k, peek($d300+k+1)
-  next k
-  poke $d100+31, tempr
-  poke $d200+31, tempg
-  poke $d300+31, tempb
-
-  tempr = curr_red&(12)
-  tempg = curr_green&(12)
-  tempb = curr_blue&(12)
-  for k = 12 to 30
-    curr_red&(k) = curr_red&(k+1)
-    curr_green&(k) = curr_green&(k+1)
-    curr_blue&(k) = curr_blue&(k+1)
-  next k
-  curr_red&(31) = tempr
-  curr_green&(31) = tempg
-  curr_blue&(31) = tempb
-
-  tempr = default_red&(12)
-  tempg = default_green&(12)
-  tempb = default_blue&(12)
-  for k = 12 to 30
-    default_red&(k) = default_red&(k+1)
-    default_green&(k) = default_green&(k+1)
-    default_blue&(k) = default_blue&(k+1)
-  next k
-  default_red&(31) = tempr
-  default_green&(31) = tempg
-  default_blue&(31) = tempb
-
   return
 
 

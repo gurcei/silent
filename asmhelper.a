@@ -164,6 +164,7 @@ MULTOUT = $d778
 * = $7e00
 	jmp fade_colours_to_white
 	jmp fade_between_colours
+	jmp cycle_alt_palette
 
 
 //---------------------
@@ -247,6 +248,170 @@ blue:
 	cli
 	rts
 
+
+//---------------
+cycle_alt_palette:
+//---------------
+	// prepare four pointer
+	lda #$00
+	sta FOURPTR
+	sta FOURPTR+1
+	sta FOURPTR+3
+	lda #$04
+	sta FOURPTR+2
+
+	// tempr = peek($d100+12)
+	lda $d100+12
+	sta tempr
+	// tempg = peek($d200+12)
+	lda $d200+12
+	sta tempg
+	// tempb = peek($d300+12)
+	lda $d300+12
+	sta tempb
+
+	// for k = 12 to 30
+	ldx #12
+		// poke $d100+k, peek($d100+k+1)
+-		lda $d101,x
+		sta $d100,x
+		// poke $d200+k, peek($d200+k+1)
+		lda $d201,x
+		sta $d200,x
+		// poke $d300+k, peek($d300+k+1)
+		lda $d301,x
+		sta $d300,x
+	// next k
+	inx
+	cpx #31
+	bne -
+
+	// poke $d100+31, tempr
+	lda tempr
+	sta $d100+31
+	// poke $d200+31, tempg
+	lda tempg
+	sta $d200+31
+	// poke $d300+31, tempb
+	lda tempb
+	sta $d300+31
+	
+	// ----------------------------
+
+do_curr:
+	ldz #12
+	// tempr = curr_red&(12)
+	+set1ptr_from_4ptr CURR_RED
+	lda [ONEPTR],z
+	sta tempr
+	// tempg = curr_green&(12)
+	+set1ptr_from_4ptr CURR_GREEN
+	lda [ONEPTR],z
+	sta tempg
+	// tempb = curr_blue&(12)
+	+set1ptr_from_4ptr CURR_BLUE
+	lda [ONEPTR],z
+	sta tempb
+
+	// for k = 12 to 30
+	ldz #12
+		// curr_red&(k) = curr_red&(k+1)
+-		+set1ptr_from_4ptr CURR_RED
+		inz
+		lda [ONEPTR],z
+		dez
+		sta [ONEPTR],z
+		// curr_green&(k) = curr_green&(k+1)
+		+set1ptr_from_4ptr CURR_GREEN
+		inz
+		lda [ONEPTR],z
+		dez
+		sta [ONEPTR],z
+		// curr_blue&(k) = curr_blue&(k+1)
+		+set1ptr_from_4ptr CURR_BLUE
+		inz
+		lda [ONEPTR],z
+		dez
+		sta [ONEPTR],z
+	// next k
+	inz
+	cpz #31
+	bne -
+
+	ldz #31
+	// curr_red&(31) = tempr
+	+set1ptr_from_4ptr CURR_RED
+	lda tempr
+	sta [ONEPTR],z
+	// curr_green&(31) = tempg
+	+set1ptr_from_4ptr CURR_GREEN
+	lda tempg
+	sta [ONEPTR],z
+	// curr_blue&(31) = tempb
+	+set1ptr_from_4ptr CURR_BLUE
+	lda tempb
+	sta [ONEPTR],z
+	
+	// ----------------------------
+
+do_default:
+	ldz #12
+	// tempr = default_red&(12)
+	+set1ptr_from_4ptr DEFAULT_RED
+	lda [ONEPTR],z
+	sta tempr
+	// tempg = default_green&(12)
+	+set1ptr_from_4ptr DEFAULT_GREEN
+	lda [ONEPTR],z
+	sta tempg
+	// tempb = default_blue&(12)
+	+set1ptr_from_4ptr DEFAULT_BLUE
+	lda [ONEPTR],z
+	sta tempb
+
+	// for k = 12 to 30
+	ldz #12
+		// default_red&(k) = default_red&(k+1)
+-		+set1ptr_from_4ptr DEFAULT_RED
+		inz
+		lda [ONEPTR],z
+		dez
+		sta [ONEPTR],z
+		// default_green&(k) = default_green&(k+1)
+		+set1ptr_from_4ptr DEFAULT_GREEN
+		inz
+		lda [ONEPTR],z
+		dez
+		sta [ONEPTR],z
+		// default_blue&(k) = default_blue&(k+1)
+		+set1ptr_from_4ptr DEFAULT_BLUE
+		inz
+		lda [ONEPTR],z
+		dez
+		sta [ONEPTR],z
+	// next k
+	inz
+	cpz #31
+	bne -
+
+	ldz #31
+	// default_red&(31) = tempr
+	+set1ptr_from_4ptr DEFAULT_RED
+	lda tempr
+	sta [ONEPTR],z
+	// default_green&(31) = tempg
+	+set1ptr_from_4ptr DEFAULT_GREEN
+	lda tempg
+	sta [ONEPTR],z
+	// default_blue&(31) = tempb
+	+set1ptr_from_4ptr DEFAULT_BLUE
+	lda tempb
+	sta [ONEPTR],z
+
+	//return
+	rts
+
+
 flip_nibble:
 // --------
 	clc
@@ -303,3 +468,6 @@ clr1:		!word $00
 clr2:		!word $00
 tmp:		!byte $00
 tmpw:		!word $00
+tempr:		!byte $00
+tempg:		!byte $00
+tempb:		!byte $00
