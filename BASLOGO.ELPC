@@ -7,6 +7,9 @@
 '        0020: ptr to default_red&
 '        0022: ptr to default_green&
 '        0024: ptr to default_blue&
+'        0026: ptr to curr_red&
+'        0028: ptr to curr_green&
+'        002a: ptr to curr_blue&
 ' 4.0800 SCREEN MEMORY
 ' 4.2000 PETSCII GRAPHICS
 
@@ -111,7 +114,8 @@
 
     if fadeval <= 16 then begin
       if mod(m,3) = 0 then begin
-        gosub fade_colours_to_defaults
+        ' fade_colours_to_defaults
+        bank 0:vsync 10:sys $7e03, fadeval:bank 128
         fadeval = fadeval + 1
       bend
     bend
@@ -277,6 +281,15 @@
   gosub store_ptr
 
   ptr = pointer(default_blue&(0))
+  gosub store_ptr
+
+  ptr = pointer(curr_red&(0))
+  gosub store_ptr
+
+  ptr = pointer(curr_green&(0))
+  gosub store_ptr
+
+  ptr = pointer(curr_blue&(0))
   gosub store_ptr
 
   return
@@ -466,47 +479,9 @@
 .fade_to_white
 '-------------
   for fadeval=0 to 16
-    bank 0:sys $7e00, fadeval:bank 128
-    ' gosub fade_colours_to_white
+    ' fade_colours_to_white
+    bank 0:vsync 10:sys $7e00, fadeval:bank 128
   next fadeval
-  return
-
-
-.fade_colours_to_white
-'---------------------
-  'INPUT: fadeval=0 to 16
-  tempval = fadeval / 16
-  for k = 0 to 31
-
-    flip_var = default_red&(k)
-    gosub flip_nibble
-    clr1 = flip_var
-
-    clr2 = $f0
-
-    flip_var = clr1 + (clr2 - clr1) * tempval
-    gosub flip_nibble
-
-    poke $d100+k, flip_var
-
-    flip_var = default_green&(k)
-    gosub flip_nibble
-    clr1 = flip_var
-
-    flip_var = clr1 + (clr2 - clr1) * tempval
-    gosub flip_nibble
-
-    poke $d200+k, flip_var
-
-    flip_var = default_blue&(k)
-    gosub flip_nibble
-    clr1 = flip_var
-
-    flip_var = clr1 + (clr2 - clr1) * tempval
-    gosub flip_nibble
-
-    poke $d300+k, flip_var
-  next k
   return
 
 
@@ -516,58 +491,6 @@
     default_red&(k)=peek($d100+k)
     default_green&(k)=peek($d200+k)
     default_blue&(k)=peek($d300+k)
-  next k
-  return
-
-
-.fade_colours_to_defaults
-'------------------------
-  'INPUT: fadeval=0 to 16
-  tempval = fadeval / 16
-  for k = 0 to 31
-
-    flip_var = curr_red&(k)
-    gosub flip_nibble
-    clr1 = flip_var
-
-    flip_var = default_red&(k)
-    gosub flip_nibble
-    clr2 = flip_var
-
-    flip_var = clr1 + (clr2 - clr1) * tempval
-    gosub flip_nibble
-
-    poke $d100+k, flip_var
-
-    ' ------
-
-    flip_var = curr_green&(k)
-    gosub flip_nibble
-    clr1 = flip_var
-
-    flip_var = default_green&(k)
-    gosub flip_nibble
-    clr2 = flip_var
-
-    flip_var = clr1 + (clr2 - clr1) * tempval
-    gosub flip_nibble
-
-    poke $d200+k, flip_var
-
-    ' ------
-
-    flip_var = curr_blue&(k)
-    gosub flip_nibble
-    clr1 = flip_var
-
-    flip_var = default_blue&(k)
-    gosub flip_nibble
-    clr2 = flip_var
-
-    flip_var = clr1 + (clr2 - clr1) * tempval
-    gosub flip_nibble
-
-    poke $d300+k, flip_var
   next k
   return
 

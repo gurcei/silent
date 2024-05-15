@@ -11,6 +11,10 @@ FOURPTR = $18
 DEFAULT_RED = $20
 DEFAULT_GREEN = $22
 DEFAULT_BLUE = $24
+CURR_RED = $26
+CURR_GREEN = $28
+CURR_BLUE = $2a
+
 MULTINA = $d770
 MULTINB = $d774
 MULTOUT = $d778
@@ -25,7 +29,7 @@ MULTOUT = $d778
 	sta .dest+1
 }
 
-!macro asr16 .loc {
+!macro lsr16 .loc {
 	clc
 	lda .loc+1
 	ror
@@ -35,11 +39,11 @@ MULTOUT = $d778
 	sta .loc
 }
 
-!macro asr16_by .loc, .cnt {
+!macro lsr16_by .loc, .cnt {
 	ldx #.cnt
 	cpx #$00
 	beq +
--	+asr16 .loc
+-	+lsr16 .loc
 	dex
 	bne -
 + 
@@ -96,7 +100,7 @@ MULTOUT = $d778
 	plz
 }
 
-!macro fade_step .bk4ptr, .palette_loc {
+!macro fade_clr1_to_white_step .bk4ptr, .palette_loc {
 	// flip_var = default_red&(k)
 	+set1ptr_from_4ptr .bk4ptr
 	lda [ONEPTR],z
@@ -114,15 +118,41 @@ MULTOUT = $d778
 	lda #$f0
 	sta clr2+1
 	
-	// flip_var = clr1 + (clr2 - clr1) * tempval
-	+subtract16 clr2, clr1, tmpw
-	+multiply16 tmpw, tempval, tmpw
-	+add16 clr1, tmpw, tmpw
+	jsr calc_faded_colour
+
+	// poke $d100+k, flip_var
+	phz
+	plx
+	sta .palette_loc,x
+}
+
+!macro fade_clr1_to_clr2_step .bk4ptr1, .bk4ptr2, .palette_loc {
+	// flip_var = curr_red&(k)
+	+set1ptr_from_4ptr .bk4ptr1
+	lda [ONEPTR],z
 
 	// gosub flip_nibble
-	lda tmpw+1
 	jsr flip_nibble
+
+	// clr1 = flip_var
+	sta clr1+1
+	lda #$00
+	sta clr1
 	
+	// flip_var = default_red&(k)
+	+set1ptr_from_4ptr .bk4ptr2
+	lda [ONEPTR],z
+
+	// gosub flip_nibble
+	jsr flip_nibble
+
+	// clr2 = flip_var
+	sta clr2+1
+	lda #$00
+	sta clr2
+	
+	jsr calc_faded_colour
+
 	// poke $d100+k, flip_var
 	phz
 	plx
@@ -133,6 +163,7 @@ MULTOUT = $d778
 // ========
 * = $7e00
 	jmp fade_colours_to_white
+	jmp fade_between_colours
 
 
 //---------------------
@@ -155,14 +186,14 @@ fade_colours_to_white: // (a=fadeval)
 	// INPUT: fadeval=0 to 16
 	// tempval = fadeval / 16
 	+copy16 fadeval, tempval
-	+asr16_by tempval, 4
+	+lsr16_by tempval, 4
 
 	//for k = 0 to 31
 	ldz #$00
 
--		+fade_step DEFAULT_RED, $d100
-		+fade_step DEFAULT_GREEN, $d200
-		+fade_step DEFAULT_BLUE, $d300
+-		+fade_clr1_to_white_step DEFAULT_RED, $d100
+		+fade_clr1_to_white_step DEFAULT_GREEN, $d200
+		+fade_clr1_to_white_step DEFAULT_BLUE, $d300
 
 	//next k
 	inz
@@ -173,6 +204,48 @@ fade_colours_to_white: // (a=fadeval)
 	cli
 	rts
 
+
+//---------------------
+fade_between_colours: // (a=fadeval)
+//---------------------
+	sei
+	// store a into fadeval
+	sta fadeval+1
+	lda #$00
+	sta fadeval
+
+	// prepare four pointer
+	lda #$00
+	sta FOURPTR
+	sta FOURPTR+1
+	sta FOURPTR+3
+	lda #$04
+	sta FOURPTR+2
+
+	// INPUT: fadeval=0 to 16
+	// tempval = fadeval / 16
+	+copy16 fadeval, tempval
+	+lsr16_by tempval, 4
+
+	//for k = 0 to 31
+	ldz #$00
+
+kloop:
+		+fade_clr1_to_clr2_step CURR_RED, DEFAULT_RED, $d100
+red:
+		+fade_clr1_to_clr2_step CURR_GREEN, DEFAULT_GREEN, $d200
+green:
+		+fade_clr1_to_clr2_step CURR_BLUE, DEFAULT_BLUE, $d300
+blue:
+
+	//next k
+	inz
+	cpz #32
+	lbne kloop
+
+	// return
+	cli
+	rts
 
 flip_nibble:
 // --------
@@ -187,13 +260,39 @@ flip_nibble:
 
 	txa
 	and #$f0
-	asr
-	asr
-	asr
-	asr
+	lsr
+	lsr
+	lsr
+	lsr
 
 	ora tmp
 	rts
+
+
+calc_faded_colour:
+//----------------
+	// flip_var = clr1 + (clr2 - clr1) * tempval
+	lda clr2+1
+	cmp clr1+1
+	bcc +		// clr1 > clr2?
+
+	+subtract16 clr2, clr1, tmpw
+	+multiply16 tmpw, tempval, tmpw
+	+add16 clr1, tmpw, tmpw
+	jmp ++
+
++	+subtract16 clr1, clr2, tmpw
+	+multiply16 tmpw, tempval, tmpw
+	+subtract16 clr1, tmpw, tmpw
+
+++
+	// gosub flip_nibble
+	lda tmpw+1
+	jsr flip_nibble
+	
+	rts
+
+
 
 
 // VARIABLES
