@@ -8,3 +8,5 @@ wd MULTINA
 wd MULTINB
 wd MULTOUT
 ww fadeval
+wd ONEPTR
+wd FOURPTR

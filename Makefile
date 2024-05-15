@@ -15,10 +15,10 @@ all: megaplot.prg asmhelper.prg
 	c1541 -attach "silent.d81" -delete asmhelper -write asmhelper.prg asmhelper
 
 xemu:
-	/c/projs/xemu/build/bin/xmega65.native -rom /c/Users/phuon/Downloads/920385.bin -hdosvirt -uartmon :4510 -8 silent.d81 &> /dev/null &
+	/c/projs/xemu/build/bin/xmega65.native -rom /c/projs/mega65-rom/newrom.bin -hdosvirt -uartmon :4510 -8 silent.d81 &> /dev/null &
 
 fast_xemu:
-	/c/projs/xemu/build/bin/xmega65.native -rom /c/Users/phuon/Downloads/920385.bin -hdosvirt -uartmon :4510 -fastclock 200 -8 silent.d81 &> /dev/null &
+	/c/projs/xemu/build/bin/xmega65.native -rom /c/projs/mega65-rom/newrom.bin -hdosvirt -uartmon :4510 -fastclock 200 -8 silent.d81 &> /dev/null &
 define scr_putlogo
 
 m65dbg -l tcp <<'EOF'

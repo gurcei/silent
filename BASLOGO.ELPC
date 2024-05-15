@@ -3,6 +3,10 @@
 ' BANK4 Memory usage
 ' ------------------
 ' 4.0000 DMA-LIST
+' 4.0020 var interface to assembly
+'        0020: ptr to default_red&
+'        0022: ptr to default_green&
+'        0024: ptr to default_blue&
 ' 4.0800 SCREEN MEMORY
 ' 4.2000 PETSCII GRAPHICS
 
@@ -23,6 +27,7 @@
 #declare clr1, clr2, tstart
 #declare bas_state = 0
 #declare frmy(3), orig_frmy(3), finish_cnt, bcnt
+#declare loc
 
 #define FRM_B = 0
 #define FRM_A = 1
@@ -226,6 +231,8 @@
 '----
 .init
 '----
+  bank 0:bload "asmhelper":bank 128
+
   logo_state = 0
 
   gosub store_default_colours
@@ -259,7 +266,29 @@
   ' clear the offscreen buffer
   edma 3, $fa0, 32, $50000
   edma 3, $fa0, 0, $51000
+
+  ' init var interface to assembly
+  loc = $40020
+
+  ptr = pointer(default_red&(0))
+  gosub store_ptr
+
+  ptr = pointer(default_green&(0))
+  gosub store_ptr
+
+  ptr = pointer(default_blue&(0))
+  gosub store_ptr
+
   return
+
+
+'---------
+.store_ptr
+'---------
+  wpoke loc, ptr
+  loc = loc + 2
+  return
+
 
 '---------
 .load_data
@@ -437,8 +466,8 @@
 .fade_to_white
 '-------------
   for fadeval=0 to 16
-    gosub fade_colours_to_white
-    sleep .1
+    bank 0:sys $7e00, fadeval:bank 128
+    ' gosub fade_colours_to_white
   next fadeval
   return
 
