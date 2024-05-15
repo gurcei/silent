@@ -1,0 +1,206 @@
+!to "asmhelper.prg", cbm
+
+// DEFINES
+// =======
+ONEPTR = $29
+FOURPTR = $18
+
+
+// BANK4 VAR INTERFACE
+// ===================
+DEFAULT_RED = $20
+DEFAULT_GREEN = $22
+DEFAULT_BLUE = $24
+MULTINA = $d770
+MULTINB = $d774
+MULTOUT = $d778
+
+
+// MACROS
+// ======
+!macro copy16 .src, .dest {
+	lda .src
+	sta .dest
+	lda .src+1
+	sta .dest+1
+}
+
+!macro asr16 .loc {
+	clc
+	lda .loc+1
+	ror
+	sta .loc+1
+	lda .loc
+	ror
+	sta .loc
+}
+
+!macro asr16_by .loc, .cnt {
+	ldx #.cnt
+	cpx #$00
+	beq +
+-	+asr16 .loc
+	dex
+	bne -
++ 
+}
+
+!macro set1ptr_from_4ptr .b4offs {
+	phz
+	ldz #.b4offs
+	lda [FOURPTR],z
+	sta ONEPTR
+	inz
+	lda [FOURPTR],z
+	sta ONEPTR+1
+	plz
+}
+
+!macro add16 .in1, .in2, .out {
+	clc
+	lda .in1
+	adc .in2
+	sta .out
+	lda .in1+1
+	adc .in2+1
+	sta .out+1
+	clc
+}
+
+!macro subtract16 .in1, .in2, .out {
+	sec
+	lda .in1
+	sbc .in2
+	sta .out
+	lda .in1+1
+	sbc .in2+1
+	sta .out+1
+	clc
+}
+
+!macro multiply16 .in1, .in2, .out {
+	phz
+	ldz #$00
+	ldy #$00
+	ldx .in1+1
+	lda .in1
+	stq MULTINA
+
+	ldx .in2+1
+	lda .in2
+	stq MULTINB
+
+	ldq MULTOUT
+	stx .out
+	sty .out+1
+	plz
+}
+
+!macro fade_step .bk4ptr, .palette_loc {
+	// flip_var = default_red&(k)
+	+set1ptr_from_4ptr .bk4ptr
+	lda [ONEPTR],z
+
+	// gosub flip_nibble
+	jsr flip_nibble
+
+	// clr1 = flip_var
+	sta clr1+1
+	lda #$00
+	sta clr1
+	
+	// clr2 = $f0   ' (white)
+	sta clr2
+	lda #$f0
+	sta clr2+1
+	
+	// flip_var = clr1 + (clr2 - clr1) * tempval
+	+subtract16 clr2, clr1, tmpw
+	+multiply16 tmpw, tempval, tmpw
+	+add16 clr1, tmpw, tmpw
+
+	// gosub flip_nibble
+	lda tmpw+1
+	jsr flip_nibble
+	
+	// poke $d100+k, flip_var
+	phz
+	plx
+	sta .palette_loc,x
+}
+
+// ROUTINES
+// ========
+* = $7e00
+	jmp fade_colours_to_white
+
+
+//---------------------
+fade_colours_to_white: // (a=fadeval)
+//---------------------
+	sei
+	// store a into fadeval
+	sta fadeval+1
+	lda #$00
+	sta fadeval
+
+	// prepare four pointer
+	lda #$00
+	sta FOURPTR
+	sta FOURPTR+1
+	sta FOURPTR+3
+	lda #$04
+	sta FOURPTR+2
+
+	// INPUT: fadeval=0 to 16
+	// tempval = fadeval / 16
+	+copy16 fadeval, tempval
+	+asr16_by tempval, 4
+
+	//for k = 0 to 31
+	ldz #$00
+
+-		+fade_step DEFAULT_RED, $d100
+		+fade_step DEFAULT_GREEN, $d200
+		+fade_step DEFAULT_BLUE, $d300
+
+	//next k
+	inz
+	cpz #32
+	lbne -
+
+	// return
+	cli
+	rts
+
+
+flip_nibble:
+// --------
+	clc
+	tax
+	and #$0f
+	asl
+	asl
+	asl
+	asl
+	sta tmp
+
+	txa
+	and #$f0
+	asr
+	asr
+	asr
+	asr
+
+	ora tmp
+	rts
+
+
+// VARIABLES
+// ---------
+fadeval:	!word $00
+tempval:	!word $00
+clr1:		!word $00
+clr2:		!word $00
+tmp:		!byte $00
+tmpw:		!word $00
