@@ -2,8 +2,10 @@
 
 // DEFINES
 // =======
+ZEROPTR = $1c
 ONEPTR = $29
 FOURPTR = $18
+CLRPTR = $20
 
 
 // BANK4 VAR INTERFACE
@@ -165,6 +167,7 @@ MULTOUT = $d778
 	jmp fade_colours_to_white
 	jmp fade_between_colours
 	jmp cycle_alt_palette
+	jmp dma_draw
 
 
 //---------------------
@@ -246,6 +249,51 @@ blue:
 
 	// return
 	cli
+	rts
+
+
+//------
+dma_draw:
+//------
+// input: word data_addr (always bank 4)
+// input: word cdata_addr (always bank 4)
+// input: frmx, frmy, frmw, frmh (bytes)
+
+	// prepare four pointer
+	lda #$00
+	sta FOURPTR
+	sta FOURPTR+1
+	sta FOURPTR+3
+	lda #$04
+	sta FOURPTR+2
+
+	for yy=frmy1 to frmy step -inc(frameidx)
+	  if yy < frmy then yy = frmy
+	  if scraddr < $50000 then goto for_skip
+	
+	  ' draw chars
+	  ' ----------
+	  src_addr = data_addr + int(yy-frmy) * frmw
+	  dest_addr = scraddr
+	  length = frmw
+	  transp = 102
+	  gosub transparent_dma
+	
+	  src_addr = cdata_addr + int(yy-frmy) * frmw
+	  dest_addr = clraddr
+	  length = frmw
+	  transp = $ff
+	  gosub transparent_dma
+	
+	  'data_addr = d + frmw * int(frmy1 + yy
+	  'cdata_addr = cdata_addr + frmw
+	  scraddr = scraddr - 80
+	  clraddr = clraddr - 80
+.for_skip
+	next yy
+	
+	return
+
 	rts
 
 

@@ -20,9 +20,9 @@
 
 .defines
 #declare k, ptr, tmp, max_frames, frm_idx, frmw, frmh, sz
-#declare frame_addr(25), src_addr, dest_addr, length, transp
-#declare frameidx, fx, fy, mirror, data_addr, frmx, frmy
-#declare frmx1, frmy1, scraddr, clraddr, cdata_addr, yy
+#declare frame_addr%(25), src_addr, dest_addr, length, transp
+#declare frameidx, fx, fy, mirror, data_addr%, frmx, frmy
+#declare frmx1, frmy1, scraddr%, clraddr%, cdata_addr%, yy
 #declare inc(3), inc_dir(3), a$, x, y
 #declare tempr, tempg, tempb, m
 #declare logo_state
@@ -294,6 +294,12 @@
   ptr = pointer(curr_blue&(0))
   gosub store_ptr
 
+  ptr = pointer(data_addr%)
+  gosub store_ptr
+
+  ptr = pointer(cdata_addr%)
+  gosub store_ptr
+
   return
 
 
@@ -330,7 +336,7 @@
   frm_idx = 0
   do while frm_idx < max_frames
     'print frm_idx;
-    frame_addr(frm_idx) = ptr
+    frame_addr%(frm_idx) = mod(ptr,65536)
     frmx = peek(ptr + FRM_OFFSET_X)
     frmy = peek(ptr + FRM_OFFSET_Y)
     frmw = peek(ptr + FRM_OFFSET_W)
@@ -339,17 +345,19 @@
     frmx1=frmx+frmw-1
     frmy1=frmy+frmh-1
 
-    data_addr = ptr
-    data_addr = data_addr + FRM_OFFSET_DATA
-    cdata_addr = data_addr + frmw * frmh
+    data_addr% = mod(ptr, 65536)
+    data_addr% = data_addr% + FRM_OFFSET_DATA
+    cdata_addr% = data_addr% + frmw * frmh
 
+    bank 4
     for y = 0 to frmy1-frmy
       for x = 0 to frmx1-frmx
-        if peek(data_addr + x + y * frmw) = 102 then begin
-          poke (cdata_addr + x + y * frmw), $ff
+        if peek(data_addr% + x + y * frmw) = 102 then begin
+          poke (cdata_addr% + x + y * frmw), $ff
         bend
       next x
     next y
+    bank 128
     
     'print "ptr=";hex$(ptr);", idx=";frm_idx;", w=";frmw;", h=";frmh
     ptr = ptr + FRM_OFFSET_DATA + frmw * frmh * 2
@@ -406,11 +414,13 @@
 '------------------
   poke $4000b, $04  ' assure source bank 4 (for original frame data)
   if mirror = 1 then setbit $40006, 5:else clrbit $40006, 5
-  data_addr = frame_addr(frameidx)
-  frmx = peek(data_addr + FRM_OFFSET_X)
-  frmy = peek(data_addr + FRM_OFFSET_Y)
-  frmw = peek(data_addr + FRM_OFFSET_W)
-  frmh = peek(data_addr + FRM_OFFSET_H)
+  data_addr% = frame_addr%(frameidx)
+  bank 4
+  frmx = peek(data_addr% + FRM_OFFSET_X)
+  frmy = peek(data_addr% + FRM_OFFSET_Y)
+  frmw = peek(data_addr% + FRM_OFFSET_W)
+  frmh = peek(data_addr% + FRM_OFFSET_H)
+  bank 128
 
   if fx<>-999 then frmx = fx ' override position
   if fy<>-999 then frmy = fy
@@ -418,35 +428,35 @@
   frmx1=frmx+frmw-1
   frmy1=frmy+frmh-1
 
-  scraddr = $50000 + frmx + (frmy+frmh-1) * 80
-  clraddr = $51000 + frmx + (frmy+frmh-1) * 80
-  if mirror = 1 then clraddr = clraddr + frmw - 1
+  scraddr% = $0000 + frmx + (frmy+frmh-1) * 80
+  clraddr% = $1000 + frmx + (frmy+frmh-1) * 80
+  if mirror = 1 then clraddr% = clraddr% + frmw - 1
 
-  data_addr = data_addr + FRM_OFFSET_DATA
-  cdata_addr = data_addr + frmw * frmh
+  data_addr% = data_addr% + FRM_OFFSET_DATA
+  cdata_addr% = data_addr% + frmw * frmh
 
   for yy=frmy1 to frmy step -inc(frameidx)
     if yy < frmy then yy = frmy
-    if scraddr < $50000 then goto for_skip
+    if scraddr% < 0 then yy=frmy:goto for_skip
 
     ' draw chars
     ' ----------
-    src_addr = data_addr + int(yy-frmy) * frmw
-    dest_addr = scraddr
+    src_addr = data_addr% + int(yy-frmy) * frmw
+    dest_addr = scraddr%
     length = frmw
     transp = 102
     gosub transparent_dma
 
-    src_addr = cdata_addr + int(yy-frmy) * frmw
-    dest_addr = clraddr
+    src_addr = cdata_addr% + int(yy-frmy) * frmw
+    dest_addr = clraddr%
     length = frmw
     transp = $ff
     gosub transparent_dma
 
-    'data_addr = d + frmw * int(frmy1 + yy
-    'cdata_addr = cdata_addr + frmw
-    scraddr = scraddr - 80
-    clraddr = clraddr - 80
+    'data_addr% = d + frmw * int(frmy1 + yy
+    'cdata_addr% = cdata_addr + frmw
+    scraddr% = scraddr% - 80
+    clraddr% = clraddr% - 80
 .for_skip
   next yy
 
