@@ -37,6 +37,12 @@
 #declare frmy(3), orig_frmy(3), finish_cnt, bcnt
 #declare loc, inc%
 
+  #declare rain_idx, plen, rainbowstr$, rainbow_x, rainbow_y
+  #declare subtext$(2)
+  #declare subtext_idx = 0
+  subtext$(0) = "presents..."
+  subtext$(1) = "a song by..."
+
 #define FRM_B = 0
 #define FRM_A = 1
 #define FRM_S = 2
@@ -90,10 +96,13 @@
 #define ST_DRAW_BACKDROP_ONLY = 1
 #define ST_FADE_TO_DEFAULT = 2
 #define ST_DROP_IN_B = 3
+#define ST_PRESENTS = 4
 
 '----------
 .state_loop
 '----------
+  tstart = ti
+
   if logo_state = ST_FADE_TO_WHITE then begin
     gosub fade_to_white
     logo_state = ST_DRAW_BACKDROP_ONLY
@@ -111,41 +120,40 @@
     fadeval=0
     m=0
     logo_state = ST_FADE_TO_DEFAULT
-
   bend
   
   if logo_state = ST_FADE_TO_DEFAULT then begin
-    tstart = ti
-
-    if fadeval <= 16 then begin
-      if mod(m,3) = 0 then begin
-        ' fade_colours_to_defaults
-        bank 0:vsync 10:sys $7e03, fadeval:bank 128
-        fadeval = fadeval + 1
-      bend
+    if fadeval <= 128 then begin
+      ' fade_colours_to_defaults
+      bank 0:vsync 10:sys $7e03, fadeval:bank 128
+      fadeval = fadeval + 1
     bend
 
     ' cycle_alt_palette
     bank 0:sys $7e06:bank 128
     m = m + 1
 
-    if m = 50 then logo_state = ST_DROP_IN_B
-
-    do
-    loop while (ti-tstart) < .05
-
+    if m = 130 then logo_state = ST_DROP_IN_B
   bend
 
   if logo_state = ST_DROP_IN_B then begin
-    tstart = ti
     gosub animate_logo
     ' cycle_alt_palette
     bank 0:sys $7e06:bank 128
     m = m + 1
 
-    do
-    loop while (ti-tstart) < .05
+    if m > 250 then logo_state = ST_PRESENTS
   bend
+
+  if logo_state = ST_PRESENTS then begin
+    gosub anim_draw_subtext
+    ' cycle_alt_palette
+    bank 0:sys $7e06:bank 128
+    m = m + 1
+  bend
+
+  do
+  loop while (ti-tstart) < .03
 
   goto state_loop
 
@@ -159,11 +167,12 @@
   poke $d018, peek($d018) and $fd
 
   ' switch to 80x50
-  setbit HOTREG_7, 7
-  poke $d031, $e8 ' 1110 1000 = H640,FAST,ATTR,V400
+  ' setbit HOTREG_7, 7
+  ' poke $d031, $e8 ' 1110 1000 = H640,FAST,ATTR,V400
+  print chr$(27);"5";
 
-  wpoke SCRNPTRLSB, $0800
-  poke SCRNPTRBNK, $04
+  ' wpoke SCRNPTRLSB, $0800
+  ' poke SCRNPTRBNK, $04
 
   return
 
@@ -486,7 +495,7 @@
 
 .fade_to_white
 '-------------
-  for fadeval=0 to 16
+  for fadeval=0 to 128
     ' fade_colours_to_white
     bank 0:vsync 10:sys $7e00, fadeval:bank 128
   next fadeval
@@ -560,5 +569,31 @@
   upper_nibble = (flip_var >> 4) and $0f
 
   flip_var = (lower_nibble << 4) + upper_nibble
+  return
+
+.anim_draw_subtext
+'-----------------
+  if m = 330 then begin
+    subtext_idx = 1
+    plen = 0
+    edma 3,80,32,$40800+80*46
+  bend
+
+  if plen < len(subtext$(subtext_idx)) then begin
+    plen = plen + .25
+    rainbowstr$=left$(subtext$(subtext_idx),plen)
+    if subtext_idx = 0 then rainbow_x = 35:else rainbow_x = 33
+    rainbow_y = 46
+    gosub print_rainbow_str
+  bend
+  return
+
+.print_rainbow_str
+'-----------------
+  cursor rainbow_x, rainbow_y
+  for rain_idx=1 to len(rainbowstr$)
+    foreground mod(rain_idx-1,16)+16
+    print mid$(rainbowstr$,rain_idx,1);
+  next rain_idx
   return
 ÿ

@@ -251,10 +251,10 @@ fade_colours_to_white: // (a=fadeval)
 	lda #$04
 	sta FOURPTR+2
 
-	// INPUT: fadeval=0 to 16
-	// tempval = fadeval / 16
+	// INPUT: fadeval=0 to 128
+	// tempval = fadeval / 128
 	+copy16 tempval, fadeval
-	+lsr16_by tempval, 4
+	+lsr16_by tempval, 7
 
 	//for k = 0 to 31
 	ldz #$00
@@ -290,10 +290,10 @@ fade_between_colours: // (a=fadeval)
 	lda #$04
 	sta FOURPTR+2
 
-	// INPUT: fadeval=0 to 16
-	// tempval = fadeval / 16
+	// INPUT: fadeval=0 to 128
+	// tempval = fadeval / 128
 	+copy16 tempval, fadeval
-	+lsr16_by tempval, 4
+	+lsr16_by tempval, 7
 
 	//for k = 0 to 31
 	ldz #$00

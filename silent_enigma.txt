@@ -17,6 +17,7 @@ Stretch ideas
 
 Credits + Greets
 ================
+- thanks to retrocombs for showcasing the demo on his channel!
 - deathy for being so passionate about developing for the MEGA65
 - Grim Fandango for MEGAPLOT, my starting point for plotting petscii via assembly :)
 - bisgedi for sharing the MULTIPLY.ASM example use of Q register written in grubi's Mega Assembler :)
@@ -44,10 +45,34 @@ Anathema - The Silent Enigma
 - play 4th chunk
   - write 'Anathema' logo (white text on black bg)
   - Fade to black
-  - Pan down from white sky down to various shades of blue sky
-  - towards the end, pan down to picturesque nature scene
-    - trees
-    - beautiful shimmering lake
+
+chunk0 0:10 --> 0:17 fade in BAS logo (presents...)
+chunk0 0:18 --> 0:27 "a song by" anathema (16 secs)
+chunk1 0:28 --> 0:36 ...
+chunk2 0:37 --> 0:44 "The Silent Enigma"
+chunk3 0:45 --> 0:52 ...
+chunk4 0:53 --> 1:00 ...
+---------
+chunk5 1:00 --> 1:08 "In dreamland..." (starfield, lyrics, animated qix line)
+chunk6 1:09 --> 1:16
+chunk5 1:16 --> 1:24
+---------
+chunk7 1:25 --> 1:32 (starfield, lyrics, animated square)
+chunk8 1:33 --> 1:36
+chunk9 1:37 --> 1:42 "A mind's escape"...
+x4          --> 2:00
+chunk10 2:01 --> 2:11
+---------
+chunk11 2:12 --> 2:24 (spiral logic + greetings)
+chunk12 2:24 --> 2:35
+chunk13 2:36 --> 2:48 "Beneath an open sky..."
+chunk14 2:49 --> 2:59
+chunk13 3:00 --> 3:12
+chunk15 3:13 --> 3:19
+---------
+chunk16 3:20 --> 3:25 (return to star field, lyrics + rotating 3d cubes)
+chunk17 3:26 --> 3:50 "Tormented echoes..."
+chunk18 3:51 --> 4:02 "silence..."
 
 - 1st verse
 In dreamland grandeur
