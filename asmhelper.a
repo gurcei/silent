@@ -16,6 +16,11 @@ DEFAULT_BLUE = $24
 CURR_RED = $26
 CURR_GREEN = $28
 CURR_BLUE = $2a
+DATA_ADDR = $2c	// src of dma
+CDATA_ADDR = $2e
+SCRADDR = $30	// dest of dma
+CLRADDR = $32
+INC = $34
 
 MULTINA = $d770
 MULTINB = $d774
@@ -519,3 +524,8 @@ tmpw:		!word $00
 tempr:		!byte $00
 tempg:		!byte $00
 tempb:		!byte $00
+data_addr:	!word $00
+cdata_addr:	!word $00
+scraddr:	!word $00
+clraddr:	!word $00
+inc:		!word $00
