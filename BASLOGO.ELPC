@@ -161,8 +161,19 @@
 
     if fadeval = 128 then begin
       poke $d020, 0, 0
+      print "{x93}";
+      gosub store_curr_colours
+      for fadeval = 0 to 128
+        ' fade_colours_to_defaults
+        bank 0:vsync 10:sys $7e03, fadeval:bank 128
+        fadeval = fadeval + 1
+      next fadeval
       logo_state = ST_ANATHEMA
     bend
+  bend
+
+  if logo_state = ST_ANATHEMA then begin
+    print "{x5}anathema!";
   bend
 
   do
