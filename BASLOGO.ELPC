@@ -97,6 +97,8 @@
 #define ST_FADE_TO_DEFAULT = 2
 #define ST_DROP_IN_B = 3
 #define ST_PRESENTS = 4
+#define ST_ANATHEMA = 5
+
 
 '----------
 .state_loop
@@ -142,7 +144,7 @@
     bank 0:sys $7e06:bank 128
     m = m + 1
 
-    if m > 250 then logo_state = ST_PRESENTS
+    if m > 250 then logo_state = ST_PRESENTS:fadeval = 0
   bend
 
   if logo_state = ST_PRESENTS then begin
@@ -150,6 +152,17 @@
     ' cycle_alt_palette
     bank 0:sys $7e06:bank 128
     m = m + 1
+
+    if m > 360 then begin
+      ' fade to black
+      bank 0:sys $7e0c, fadeval:bank 128
+      fadeval = fadeval + 1
+    bend
+
+    if fadeval = 128 then begin
+      poke $d020, 0, 0
+      logo_state = ST_ANATHEMA
+    bend
   bend
 
   do

@@ -192,6 +192,31 @@ MULTOUT = $d778
 	sta .palette_loc,x
 }
 
+!macro fade_clr1_to_black_step .bk4ptr, .palette_loc {
+	// flip_var = default_red&(k)
+	+set1ptr_from_4ptr .bk4ptr
+	lda [ONEPTR],z
+
+	// gosub flip_nibble
+	jsr flip_nibble
+
+	// clr1 = flip_var
+	sta clr1+1
+	lda #$00
+	sta clr1
+	
+	// clr2 = $00   ' (black)
+	sta clr2
+	sta clr2+1
+	
+	jsr calc_faded_colour
+
+	// poke $d100+k, flip_var
+	phz
+	plx
+	sta .palette_loc,x
+}
+
 !macro fade_clr1_to_clr2_step .bk4ptr1, .bk4ptr2, .palette_loc {
 	// flip_var = curr_red&(k)
 	+set1ptr_from_4ptr .bk4ptr1
@@ -232,6 +257,7 @@ MULTOUT = $d778
 	jmp fade_between_colours
 	jmp cycle_alt_palette
 	jmp draw_petscii_frame
+	jmp fade_colours_to_black
 
 
 //---------------------
@@ -615,6 +641,45 @@ nextlp:
 	jmp foryyloop
 	
 	// return
+	rts
+
+
+//---------------------
+fade_colours_to_black: // (a=fadeval)
+//---------------------
+	sei
+	// store a into fadeval
+	sta fadeval+1
+	lda #$00
+	sta fadeval
+
+	// prepare four pointer
+	lda #$00
+	sta FOURPTR
+	sta FOURPTR+1
+	sta FOURPTR+3
+	lda #$04
+	sta FOURPTR+2
+
+	// INPUT: fadeval=0 to 128
+	// tempval = fadeval / 128
+	+copy16 tempval, fadeval
+	+lsr16_by tempval, 7
+
+	//for k = 0 to 31
+	ldz #$00
+
+-		+fade_clr1_to_black_step DEFAULT_RED, $d100
+		+fade_clr1_to_black_step DEFAULT_GREEN, $d200
+		+fade_clr1_to_black_step DEFAULT_BLUE, $d300
+
+	//next k
+	inz
+	cpz #32
+	lbne -
+
+	// return
+	cli
 	rts
 
 
