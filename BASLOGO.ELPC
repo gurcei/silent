@@ -132,15 +132,19 @@
     if m = 50 then logo_state = ST_DROP_IN_B
 
     do
-    loop while (ti-tstart) < .1
+    loop while (ti-tstart) < .05
 
   bend
 
   if logo_state = ST_DROP_IN_B then begin
+    tstart = ti
     gosub animate_logo
     ' cycle_alt_palette
     bank 0:sys $7e06:bank 128
     m = m + 1
+
+    do
+    loop while (ti-tstart) < .05
   bend
 
   goto state_loop
@@ -449,32 +453,8 @@
   cdata_addr% = data_addr% + frmw * frmh
   inc% = inc(frameidx) * 256
 
-  ' future sys call here
-
-  for yy=frmy1 to frmy step -inc(frameidx)
-    if yy < frmy then yy = frmy
-    if scraddr% < 0 then yy=frmy:goto for_skip
-
-    ' draw chars
-    ' ----------
-    src_addr = data_addr% + int(yy-frmy) * frmw
-    dest_addr = scraddr%
-    length = frmw
-    transp = 102
-    gosub transparent_dma
-
-    src_addr = cdata_addr% + int(yy-frmy) * frmw
-    dest_addr = clraddr%
-    length = frmw
-    transp = $ff
-    gosub transparent_dma
-
-    'data_addr% = d + frmw * int(frmy1 + yy
-    'cdata_addr% = cdata_addr + frmw
-    scraddr% = scraddr% - 80
-    clraddr% = clraddr% - 80
-.for_skip
-  next yy
+  ' asm: draw_petscii_frame
+  bank 0:sys $7e09, mod(frmy+256,256), mod(frmy1+256,256), frmw
 
   return
 

@@ -20,7 +20,7 @@ DATA_ADDR = $2c	// src of dma
 CDATA_ADDR = $2e
 SCRADDR = $30	// dest of dma
 CLRADDR = $32
-INC = $34
+INC_FRM = $34
 
 MULTINA = $d770
 MULTINB = $d774
@@ -29,7 +29,7 @@ MULTOUT = $d778
 
 // MACROS
 // ======
-!macro copy16 .src, .dest {
+!macro copy16 .dest, .src {
 	lda .src
 	sta .dest
 	lda .src+1
@@ -54,6 +54,27 @@ MULTOUT = $d778
 	dex
 	bne -
 + 
+}
+
+!macro copy_basic_int .bk4loc, .out {
+	+set0ptr_from_4ptr .bk4loc
+	ldz #$00
+	lda [ZEROPTR],z
+	sta .out+1
+	inz
+	lda [ZEROPTR],z
+	sta .out
+}
+
+!macro set0ptr_from_4ptr .b4offs {
+	phz
+	ldz #.b4offs
+	lda [FOURPTR],z
+	sta ZEROPTR
+	inz
+	lda [FOURPTR],z
+	sta ZEROPTR+1
+	plz
 }
 
 !macro set1ptr_from_4ptr .b4offs {
@@ -105,6 +126,44 @@ MULTOUT = $d778
 	stx .out
 	sty .out+1
 	plz
+}
+
+!macro multiply8 .in1, .in2, .out {
+	phz
+	ldz #$00
+	ldy #$00
+	ldx #$00
+	lda .in1
+	stq MULTINA
+
+	lda .in2
+	stq MULTINB
+
+	ldq MULTOUT
+	stx .out+1
+	sta .out
+	plz
+}
+
+!macro wpoke_b4 .offs, .intvar {
+	ldz#.offs
+	lda .intvar
+	sta [FOURPTR],z
+	inz
+	lda .intvar+1
+	sta [FOURPTR],z
+}
+
+!macro poke_b4 .offs, .bytevar {
+	ldz#.offs
+	lda .bytevar
+	sta [FOURPTR],z
+}
+
+!macro poke_b4_val .offs, .byte {
+	ldz#.offs
+	lda#.byte
+	sta [FOURPTR],z
 }
 
 !macro fade_clr1_to_white_step .bk4ptr, .palette_loc {
@@ -172,7 +231,7 @@ MULTOUT = $d778
 	jmp fade_colours_to_white
 	jmp fade_between_colours
 	jmp cycle_alt_palette
-	jmp dma_draw
+	jmp draw_petscii_frame
 
 
 //---------------------
@@ -194,7 +253,7 @@ fade_colours_to_white: // (a=fadeval)
 
 	// INPUT: fadeval=0 to 16
 	// tempval = fadeval / 16
-	+copy16 fadeval, tempval
+	+copy16 tempval, fadeval
 	+lsr16_by tempval, 4
 
 	//for k = 0 to 31
@@ -233,7 +292,7 @@ fade_between_colours: // (a=fadeval)
 
 	// INPUT: fadeval=0 to 16
 	// tempval = fadeval / 16
-	+copy16 fadeval, tempval
+	+copy16 tempval, fadeval
 	+lsr16_by tempval, 4
 
 	//for k = 0 to 31
@@ -254,51 +313,6 @@ blue:
 
 	// return
 	cli
-	rts
-
-
-//------
-dma_draw:
-//------
-// input: word data_addr (always bank 4)
-// input: word cdata_addr (always bank 4)
-// input: frmx, frmy, frmw, frmh (bytes)
-
-	// prepare four pointer
-	lda #$00
-	sta FOURPTR
-	sta FOURPTR+1
-	sta FOURPTR+3
-	lda #$04
-	sta FOURPTR+2
-
-	for yy=frmy1 to frmy step -inc(frameidx)
-	  if yy < frmy then yy = frmy
-	  if scraddr < $50000 then goto for_skip
-	
-	  ' draw chars
-	  ' ----------
-	  src_addr = data_addr + int(yy-frmy) * frmw
-	  dest_addr = scraddr
-	  length = frmw
-	  transp = 102
-	  gosub transparent_dma
-	
-	  src_addr = cdata_addr + int(yy-frmy) * frmw
-	  dest_addr = clraddr
-	  length = frmw
-	  transp = $ff
-	  gosub transparent_dma
-	
-	  'data_addr = d + frmw * int(frmy1 + yy
-	  'cdata_addr = cdata_addr + frmw
-	  scraddr = scraddr - 80
-	  clraddr = clraddr - 80
-.for_skip
-	next yy
-	
-	return
-
 	rts
 
 
@@ -465,6 +479,180 @@ do_default:
 	rts
 
 
+//------
+draw_petscii_frame: // (a = frmy, x = frmy1, y = frmw)
+//------
+// input: word data_addr (always bank 4)
+// input: word cdata_addr (always bank 4)
+// input: word scraddr (always bank 5)
+// input: word clraddr (always bank 5)
+
+	// save passed regs
+	sta frmy+1
+	lda #$00
+	sta frmy
+
+	stx frmy1+1
+	sta frmy1
+
+	sty frmw
+
+	// prepare four pointer
+	lda #$00
+	sta ZEROPTR
+	sta ZEROPTR+1
+	sta ZEROPTR+2
+	sta ZEROPTR+3
+
+	sta FOURPTR
+	sta FOURPTR+1
+	sta FOURPTR+3
+	lda #$04
+	sta FOURPTR+2
+
+	sta CLRPTR
+	sta CLRPTR+1
+	lda #$f8
+	sta CLRPTR+2
+	lda #$0f
+	sta CLRPTR+3
+
+	+copy_basic_int DATA_ADDR, data_addr
+	+copy_basic_int CDATA_ADDR, cdata_addr
+	+copy_basic_int SCRADDR, scraddr
+	+copy_basic_int CLRADDR, clraddr
+	+copy_basic_int INC_FRM, inc_frm
+
+	// for yy=frmy1 to frmy step -inc(frameidx)
+	+copy16 yy, frmy1
+	
+foryyloop:
+		//if scraddr < 0 then goto for_skip
+		lda scraddr+1
+		bpl +
+		rts
+
+		// if yy < frmy then yy = frmy
++               lda yy+1
+		cmp frmy+1
+		bmi force_yy // if hi(yy) < hi(frmy)
+		bne +   // jump if hi(yy) > hi(frmy)
+
+		lda yy
+		cmp frmy
+		bpl +
+
+force_yy:
+		+copy16 yy, frmy
+		
+		// ' draw chars
+		// ' ----------
+		// src_addr = data_addr + int(yy-frmy) * frmw
++ 		lda #$00
+		sta tmpw+1
+		sec
+		lda yy+1
+		sbc frmy+1
+		sta tmpw	// tmpw = int(yy-frmy)
+
+		+multiply8 tmpw, frmw, tmpw		// tmpw = frmw * tmpw
+		+add16 data_addr, tmpw, src_addr	// src_addr = data_addr + tmpw
+
+		// dest_addr = scraddr
+		+copy16 dest_addr, scraddr
+
+		// length = frmw
+		// lda frmw
+		// sta length   // skip this, just always use length of frmw
+
+		// transp = 102
+		lda #102
+		sta transp
+
+		// gosub transparent_dma
+		jsr transparent_dma
+		
+		// src_addr = cdata_addr + int(yy-frmy) * frmw
+		+add16 cdata_addr, tmpw, src_addr	// src_addr = cdata_addr + tmpw
+
+		// dest_addr = clraddr
+		+copy16 dest_addr, clraddr
+
+		//length = frmw
+
+		// transp = $ff
+		lda #$ff
+		sta transp
+
+		// gosub transparent_dma
+		jsr transparent_dma
+		
+		lda #80
+		sta tmpw
+		lda #$00
+		sta tmpw+1
+		// scraddr = scraddr - 80
+		+subtract16 scraddr, tmpw, scraddr
+
+		// clraddr = clraddr - 80
+		+subtract16 clraddr, tmpw, clraddr
+
+	// next yy
+	// for yy=frmy1 to frmy step -inc(frameidx)
+	// if yy == frmy1 then exit
+	lda yy
+	cmp frmy
+	bne nextlp
+
+	lda yy+1
+	cmp frmy+1
+	bne nextlp
+	rts
+
+nextlp:
+	+subtract16 yy, inc_frm, yy
+
+	jmp foryyloop
+	
+	// return
+	rts
+
+
+// ---------------------
+// INTERNAL ASM ROUTINES
+// ---------------------
+
+transparent_dma:
+//-------------
+	// wpoke $40009, src_addr
+	+wpoke_b4 $09, src_addr
+
+	// wpoke $4000c, dest_addr
+	+wpoke_b4 $0c, dest_addr
+
+	// wpoke $40007, length
+	+poke_b4 $07, frmw
+	+poke_b4_val $08, $00
+
+	// poke  $40004, transp
+	+poke_b4 $04, transp
+
+	// poke $d702, 4 ' dma list in bank 4
+	lda #$04
+	sta $d702
+
+	// poke $d701, $00 ' dma list msb
+	lda #$00
+	sta $d701
+
+	// poke $d705, $00 ' dma list lsb
+	lda #$00
+	sta $d705
+	
+	// return
+	rts
+
+
 flip_nibble:
 // --------
 	clc
@@ -528,4 +716,11 @@ data_addr:	!word $00
 cdata_addr:	!word $00
 scraddr:	!word $00
 clraddr:	!word $00
-inc:		!word $00
+inc_frm:	!word $00
+frmy:		!word $00
+frmy1:		!word $00
+frmw:		!byte $00
+yy:		!word $00
+src_addr:	!word $00
+dest_addr:	!word $00
+transp:		!byte $00
