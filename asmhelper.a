@@ -21,6 +21,8 @@ CDATA_ADDR = $2e
 SCRADDR = $30	// dest of dma
 CLRADDR = $32
 INC_FRM = $34
+STARX = $36
+STARVX = $38
 
 MULTINA = $d770
 MULTINB = $d774
@@ -258,6 +260,7 @@ MULTOUT = $d778
 	jmp cycle_alt_palette
 	jmp draw_petscii_frame
 	jmp fade_colours_to_black
+	jmp iter_starfield
 
 
 //---------------------
@@ -683,6 +686,56 @@ fade_colours_to_black: // (a=fadeval)
 	rts
 
 
+//------------
+iter_starfield:
+//------------
+	// prepare four pointer
+	lda #$00
+	sta FOURPTR
+	sta FOURPTR+1
+	sta FOURPTR+3
+	lda #$04
+	sta FOURPTR+2
+
+	+set1ptr_from_4ptr STARX
+	ldz #$00
+
+	+set0ptr_from_4ptr STARVX
+	lda #$01	// switch it to a 1 pointer too, just for convenience
+	sta ZEROPTR+2
+	lda #$00
+	sta ZEROPTR+3
+
+	// for k = 0 to 20
+	ldy #$00
+
+		// starx(k) = mod(starx(k) - starvx(k) +80, 80)
+-		sec
+		lda [ONEPTR],z
+		sbc [ZEROPTR],z
+		sta [ONEPTR],z
+		inz
+		lda [ONEPTR],z
+		sbc [ZEROPTR],z
+		sta [ONEPTR],z
+
+		bpl +		// check if subtraction was negative
+
+		clc		// if negative, add 80
+		adc #80
+		sta [ONEPTR],z
+		clc
+
++
+		inz
+
+	// next k
+	iny
+	cpy #21
+	bne -
+
+	rts
+
 // ---------------------
 // INTERNAL ASM ROUTINES
 // ---------------------
@@ -789,3 +842,6 @@ yy:		!word $00
 src_addr:	!word $00
 dest_addr:	!word $00
 transp:		!byte $00
+starx:		!word $00
+starvx:		!word $00
+

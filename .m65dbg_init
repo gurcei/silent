@@ -1,21 +1,5 @@
 autowatch
 autocls
-ww data_addr
-ww cdata_addr
-ww scraddr
-ww clraddr
-ww inc_frm
-ww tmpw
-ww frmy
-ww frmy1
-wb frmw
-ww yy
-ww src_addr
-ww dest_addr
-wb transp
-wd MULTINA
-wd MULTINB
-wd MULTOUT
-ww ZEROPTR
+wd ZEROPTR
 wd ONEPTR
 wd FOURPTR
