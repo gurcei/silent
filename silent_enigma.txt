@@ -7,7 +7,7 @@ DONE- Draw rotating 3d cube with petscii art
 DONE- Try port line drawing routine to assembly, for speed
 - Tie up all pieces of demo together
   DONE - Fade to black
-  - Starfield moving from right to left
+  DONE- Starfield moving from right to left
 
 Stretch ideas
 =============

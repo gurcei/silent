@@ -711,10 +711,11 @@ iter_starfield:
 
 		// starx(k) = mod(starx(k) - starvx(k) +80, 80)
 -		sec
+		inz
 		lda [ONEPTR],z
 		sbc [ZEROPTR],z
 		sta [ONEPTR],z
-		inz
+		dez
 		lda [ONEPTR],z
 		sbc [ZEROPTR],z
 		sta [ONEPTR],z
@@ -727,6 +728,7 @@ iter_starfield:
 		clc
 
 +
+		inz
 		inz
 
 	// next k

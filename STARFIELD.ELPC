@@ -44,7 +44,7 @@
 
 #declare src_addr, dest_addr, length, transp
 
-#declare loc, ptr
+#declare loc, ptr, m, tstart
 
 
 '-------
@@ -55,25 +55,41 @@
 #define OP_SWAP = 2
 #define OP_FILL = 3
 
+#define DST_DEC = 32
+#define SRC_DEC = 16
+
 
 '----
 .main
 '----
   gosub init
 
-.loop
+.main_loop
+  tstart = ti
+  m = m + 1
   gosub draw_starfield
-  gosub play_data_iter  ' line data
+  if m >= 70 and m < 800 then gosub play_data_iter  ' line data
   gosub page_flip
 
   gosub iter_starfield
-  goto loop
+  ' cursor 0,0:print m
+
+  if m > 850 and m < 950 then gosub scroll_canvas_right
+
+  if m = 950 then poke $d020,2
+
+  do while (ti-tstart < .03)
+  loop
+
+  goto main_loop
   end
 
 
 '----
 .init
 '----
+  m = 0
+
   bank 0:bload "asmhelper":bank 128
 
   ' switch back to upper-case
@@ -179,8 +195,14 @@
   bank 0:sys $7e0f:bank 128
 
   'for k = 0 to 20
-  '  starx%(k) = mod( (starx%(k)-starvx%(k))/256 + 80, 80)
+  '  starx(k) = mod( (starx(k)-starvx(k)) + 80, 80)
   'next k
+
+  'cursor 0,0
+  'for k = 0 to 20
+  '  print int(starx%(k)/256), stary(k)
+  'next k
+  'get key a$
   return
 
 
@@ -259,17 +281,6 @@
   return
 
 
-'-------------------
-.scroll_canvas_right
-'-------------------
-  offs=offs+1
-  for yy = 0 to 49
-    edma OP_COPY, 79, $40801 + yy*80, $40800 + yy*80
-    poke $40800 + 79 + yy*80, 32 
-  next yy                
-  return
-
-
 '---------
 .draw_char
 '---------
@@ -313,5 +324,26 @@
   poke $d701, $00 ' dma list msb
   poke $d705, $00 ' dma list lsb
 
+  return
+
+
+'------------------
+.scroll_canvas_left
+'------------------
+  for yy = 0 to 49
+    edma OP_COPY+DST_DEC+SRC_DEC, {x5F}
+           79, $52000 + yy*80 + 78, $52000 + yy*80 + 79
+    poke $52000 + yy*80, 32 
+  next yy
+  return
+
+
+'-------------------
+.scroll_canvas_right
+'-------------------
+  for yy = 0 to 49
+    edma OP_COPY, 79, $52001 + yy*80, $52000 + yy*80
+    poke $52000 + 79 + yy*80, 32 
+  next yy                
   return
 ÿ
