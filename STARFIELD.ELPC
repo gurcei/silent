@@ -1,0 +1,92 @@
+#output "starfield"
+
+' BANK4 Memory usage
+' ------------------
+' 4.0000 DMA-LIST
+' 4.0020 var interface to assembly
+'        0020: ptr to default_red&
+'        0022: ptr to default_green&
+'        0024: ptr to default_blue&
+'        0026: ptr to curr_red&
+'        0028: ptr to curr_green&
+'        002a: ptr to curr_blue&
+'        002c: ptr to data_addr%
+'        002e: ptr to cdata_addr%
+'        0030: ptr to scraddr%
+'        0032: ptr to clraddr%
+'        0034: ptr to inc%
+' 4.0800 SCREEN MEMORY
+' 4.2000 PETSCII GRAPHICS for BAS logo
+
+' BANK5 Memory usage
+' ------------------
+' 5.0000 screen buffer for draw_petscii_frame
+' 5.1000 color ram buffer for draw_petscii_frame
+
+
+'--------
+.declares
+'--------
+#declare starx(20), stary(20), starvx(20)
+#declaree k
+
+
+'----
+.main
+'----
+  gosub init
+
+.loop
+  gosub draw_starfield
+  gosub page_flip
+
+  gosub iter_starfield
+  sleep .1
+  goto loop
+  end
+
+
+'----
+.init
+'----
+  for k = 0 to 20
+    starx(k) = int(rnd(1)*80)
+    stary(k) = int(rnd(1)*50)
+    starvx(k) = rnd(1)*4 + .5
+  next k
+
+  ' clear the offscreen buffer
+  edma 3, $fa0, 32, $50000
+  edma 3, $fa0, 0, $51000
+  return
+
+
+'--------------
+.draw_starfield
+'--------------
+  for k = 0 to 20
+    poke $50000 + starx(k) + stary(k) * 80, 46  ' dot
+  next k
+  return
+
+
+'--------------
+.iter_starfield
+'--------------
+  for k = 0 to 20
+    starx(k) = mod(starx(k)-starvx(k) + 80, 80)
+  next k
+  return
+
+
+'---------
+.page_flip
+'---------
+  edma 0, $fa0, $50000, $40800
+  edma 0, $fa0, $51000, $ff80000
+
+  ' clear the offscreen buffer
+  edma 3, $fa0, 32, $50000
+  edma 3, $fa0, 1, $51000
+  return
+ÿ
