@@ -28,7 +28,23 @@
 .declares
 '--------
 #declare starx(20), stary(20), starvx(20)
-#declaree k
+#declare k
+
+#declare fname$, val&
+#declare ldata&(12288), didx%=0, pidx%=0
+#declare group_flag&, val&, rev_flag& = 0
+#declare offs, ver=2
+#declare lastflag, last_group_idx
+#declare oldx, oldy, oldoffs, x, y, a$, xx, yy, debug, z$
+
+
+'-------
+.defines
+'-------
+#define OP_COPY = 0
+#define OP_MIX  = 1
+#define OP_SWAP = 2
+#define OP_FILL = 3
 
 
 '----
@@ -49,6 +65,7 @@
 '----
 .init
 '----
+  print chr$(27);"5";
   for k = 0 to 20
     starx(k) = int(rnd(1)*80)
     stary(k) = int(rnd(1)*50)
@@ -58,6 +75,39 @@
   ' clear the offscreen buffer
   edma 3, $fa0, 32, $50000
   edma 3, $fa0, 0, $51000
+
+  fname$ = "ana.ln"
+  ver = 1
+  gosub load_line_file
+  return
+
+
+'--------------
+.load_line_file
+'-------------- ' (fname$)
+  if fname$ = "" then return
+  gosub line_file_init
+  dopen #2,(fname$),r,u8
+
+  do
+    get #2, val&
+    if st then exit
+    ldata&(didx%) = val&
+    didx% = didx% + 1
+  loop
+
+  dclose #2
+  gosub play_data
+  return
+
+
+'----
+.line_file_init
+'----
+  oldx = -1 : oldy = -1 : oldoffs = 0
+  didx% = 0
+  group_flag& = 0 : rev_flag& = 0
+  offs = 0
   return
 
 
@@ -88,5 +138,79 @@
   ' clear the offscreen buffer
   edma 3, $fa0, 32, $50000
   edma 3, $fa0, 1, $51000
+  return
+
+
+'---------
+.play_data
+'---------
+  print "{x93}";
+
+  offs=0
+  pidx% = 0
+  if lastflag = 1 then pidx% = last_group_idx : lastflag = 0
+
+  do while pidx% < didx%
+
+    cursor 0,49:print chr$(27);"qpidx=";pidx%;"[";ldata&(pidx%);ldata&(pidx%+1);ldata&(pidx%+2);
+
+    val& = ldata&(pidx%) : pidx% = pidx% + 1
+    if ver=3 and val& = $ff then begin
+      if pidx% > last_group_idx then last_group_idx = pidx%
+      goto pd_endloop
+    bend
+
+    'if val& = $ff then group_flag& = 1 : goto pd_endloop
+    'if val& = $fe then group_flag& = 0 : sleep .02 : goto pd_endloop
+    x = val& and $7f
+    if ver=2 then begin
+      x = val&
+      val& = ldata&(pidx%)
+      pidx% = pidx% + 1
+      x = x + (val& and $7f) * 256
+    bend
+
+    if val& and $80 then print "{x12}"; : else print "{x92}";
+    y = ldata&(pidx%) : pidx% = pidx% + 1
+    a$ = chr$(ldata&(pidx%)) : pidx% = pidx% + 1
+
+    if ver=2 then begin
+      do while x-offs > 78
+        gosub scroll_canvas_right
+        print "{x13}";chr$(27);"qoffs=";offs;
+      loop
+    bend
+
+    xx = x-offs : yy = y: cursor xx, yy : gosub draw_char
+
+    if debug=1 then get key z$
+      'print "{x13}{x11}";chr$(27);"q x,y,pidx,a$=";x;y;pidx%,asc(a$)
+      'get key a$
+
+    if group_flag& = 0 then sleep .02
+.pd_endloop
+  loop
+
+  x = x-offs
+  return
+
+
+'-------------------
+.scroll_canvas_right
+'-------------------
+  offs=offs+1
+  for yy = 0 to 49
+    edma OP_COPY, 79, $40801 + yy*80, $40800 + yy*80
+    poke $40800 + 79 + yy*80, 32 
+  next yy                
+  return
+
+
+'---------
+.draw_char
+'---------
+  ' poke $40800 + x + y*80, asc(a$)
+  ' poke $ff80000 + x + y*80, rcolor(1)
+  print a$;
   return
 ÿ
