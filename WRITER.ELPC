@@ -22,7 +22,7 @@
 
   xx=0:yy=15
   
-  s$ = "Hello Camcam!"
+  s$ = "This is BAS!"
   gosub write_text
   end
 
