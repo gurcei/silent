@@ -24,7 +24,10 @@
 ' ------------------
 ' 5.0000 screen buffer for draw_petscii_frame
 ' 5.1000 color ram buffer for draw_petscii_frame
-' 5.2000 screen buffer2 for line-drawing layer
+' 5.2000 screen buffer2 for 'anathema' layer
+' 5.4000 color ram buffer2 for 'anathema' layer
+' 5.3000 screen buffer3 for 'the silent enigma' layer
+' 5.4000 color ram buffer3 for 'the silent enigma' layer
 
 
 '--------
@@ -34,17 +37,17 @@
 #declare k
 
 #declare fname$, val&
-#declare ldata&(12288), didx%=0, pidx%=0
-#declare group_flag&, val&, rev_flag& = 0
-#declare offs, ver=2
+#declare ldata&(2, 12288), didx%(2)=0, pidx%(2)=0, fidx%=0
+#declare group_flag&, val&, rev_flag&(2) = 0
+#declare offs(2), ver(2)
 #declare lastflag, last_group_idx
-#declare oldx, oldy, oldoffs, x, y, a$, xx, yy, debug, z$
+#declare oldx, oldy, oldoffs(2), x, y, a$, xx, yy, debug, z$
 
 #declare chr
 
 #declare src_addr, dest_addr, length, transp
 
-#declare loc, ptr, m, tstart
+#declare loc, ptr, m, tstart, addr
 
 
 '-------
@@ -68,15 +71,22 @@
   tstart = ti
   m = m + 1
   gosub draw_starfield
-  if m >= 70 and m < 800 then gosub play_data_iter  ' line data
+  if m >= 70 and m < 800 then begin
+    fidx%=0
+    gosub play_data_iter  ' line data
+  bend
   gosub page_flip
+
+  if m > 850 and m < 950 then fidx%=0:gosub scroll_canvas_right
+
+  if m > 300 then begin
+    fidx%=1
+    gosub play_data_iter
+    if m > 2630 then gosub scroll_canvas_right
+  bend
 
   gosub iter_starfield
   ' cursor 0,0:print m
-
-  if m > 850 and m < 950 then gosub scroll_canvas_right
-
-  if m = 950 then poke $d020,2
 
   do while (ti-tstart < .03)
   loop
@@ -108,11 +118,20 @@
   edma 3, $fa0, 0, $51000
 
   edma 3, $fa0, 32, $52000
-  edma 3, $fa0, 0, $51000
+  edma 3, $fa0, 0, $53000
+
+  edma 3, $fa0, 32, $54000
+  edma 3, $fa0, 0, $55000
 
 
   fname$ = "ana.ln"
-  ver = 1
+  fidx% = 0
+  ver(fidx%) = 1
+  gosub load_line_file
+
+  fname$ = "silent.l"
+  fidx% = 1
+  ver(fidx%) = 2
   gosub load_line_file
 
   poke $40000, $81 ' opt = dest addr MB selector
@@ -161,8 +180,8 @@
   do
     get #2, val&
     if st then exit
-    ldata&(didx%) = val&
-    didx% = didx% + 1
+    ldata&(fidx%, didx%(fidx%)) = val&
+    didx%(fidx%) = didx%(fidx%) + 1
   loop
 
   dclose #2
@@ -173,10 +192,10 @@
 '--------------
 .line_file_init
 '--------------
-  oldx = -1 : oldy = -1 : oldoffs = 0
-  didx% = 0
-  group_flag& = 0 : rev_flag& = 0
-  offs = 0
+  oldx = -1 : oldy = -1 : oldoffs(fidx%) = 0
+  didx%(fidx%) = 0
+  group_flag& = 0 : rev_flag&(fidx%) = 0
+  offs(fidx%) = 0
   return
 
 
@@ -209,10 +228,29 @@
 '---------
 .page_flip
 '---------
+  src_addr = $54000
+  dest_addr = $50000
+  length = 4000
+  transp = 32
+  gosub transparent_dma
+
+  src_addr = $55000
+  dest_addr = $51000
+  length = 4000
+  transp = 0
+  gosub transparent_dma
+
+
   src_addr = $52000
   dest_addr = $50000
   length = 4000
   transp = 32
+  gosub transparent_dma
+
+  src_addr = $53000
+  dest_addr = $51000
+  length = 4000
+  transp = 0
   gosub transparent_dma
 
   edma 0, $fa0, $50000, $40800
@@ -229,54 +267,60 @@
 '--------------
   print "{x93}";
 
-  offs=0
-  pidx% = 0
-  if lastflag = 1 then pidx% = last_group_idx : lastflag = 0
+  offs(fidx%)=0
+  pidx%(fidx%) = 0
+  if lastflag = 1 then pidx%(fidx%) = last_group_idx : lastflag = 0
   return
 
 '--------------
 .play_data_iter
 '--------------
-  if pidx% < didx% then begin
-    val& = ldata&(pidx%) : pidx% = pidx% + 1
-    if ver=3 and val& = $ff then begin
-      if pidx% > last_group_idx then last_group_idx = pidx%
+  if pidx%(fidx%) < didx%(fidx%) then begin
+    val& = ldata&(fidx%, pidx%(fidx%))
+    pidx%(fidx%) = pidx%(fidx%) + 1
+
+    if ver(fidx%)=3 and val& = $ff then begin
+      if pidx%(fidx%) > last_group_idx then last_group_idx = pidx%(fidx%)
       goto pd_endloop
     bend
 
-    'if val& = $ff then group_flag& = 1 : goto pd_endloop
-    'if val& = $fe then group_flag& = 0 : sleep .02 : goto pd_endloop
     x = val& and $7f
-    if ver=2 then begin
+    if ver(fidx%)=2 then begin
       x = val&
-      val& = ldata&(pidx%)
-      pidx% = pidx% + 1
+      val& = ldata&(fidx%, pidx%(fidx%))
+      pidx%(fidx%) = pidx%(fidx%) + 1
       x = x + (val& and $7f) * 256
     bend
 
-    if val& and $80 then rev_flag& = 1: else rev_flag& = 0
-    y = ldata&(pidx%) : pidx% = pidx% + 1
-    a$ = chr$(ldata&(pidx%)) : pidx% = pidx% + 1
+    if val& and $80 then rev_flag&(fidx%) = 1: else rev_flag&(fidx%) = 0
+    y = ldata&(fidx%, pidx%(fidx%))
+    pidx%(fidx%) = pidx%(fidx%) + 1
 
-    if ver=2 then begin
-      do while x-offs > 78
+    a$ = chr$(ldata&(fidx%, pidx%(fidx%)))
+    pidx%(fidx%) = pidx%(fidx%) + 1
+
+    if ver(fidx%)=2 then begin
+      if x-offs(fidx%) > 78 then begin
         gosub scroll_canvas_right
-        print "{x13}";chr$(27);"qoffs=";offs;
-      loop
+        pidx%(fidx%) = pidx%(fidx%) - 4
+        return
+        ' print "{x13}";chr$(27);"qoffs=";offs(fidx%);
+      bend
     bend
 
-    xx = x-offs : yy = y: cursor xx, yy : gosub draw_char
+    xx = x-offs(fidx%) : yy = y: cursor xx, yy : gosub draw_char
 
-    if debug=1 then get key z$
-      'print "{x13}{x11}";chr$(27);"q x,y,pidx,a$=";x;y;pidx%,asc(a$)
-      'get key a$
+    debug = 0
+    if debug=1 then begin
+      print "{x13}{x11}";chr$(27);"q x,y,pidx,a$,offs=";x;y;pidx%(fidx%),asc(a$),offs(fidx%)
+      get key a$
+    bend
 
-    ' if group_flag& = 0 then sleep .02
 .pd_endloop
 
   bend
 
-  ' x = x-offs
+  x = x-offs(fidx%)
 
   return
 
@@ -290,10 +334,18 @@
   chr = asc(a$)
   gosub petscii_to_screencode
 
-  if rev_flag& = 1 then chr = chr + 128
+  if rev_flag&(fidx%) = 1 then chr = chr + 128
 
-  poke $52000 + x + y*80, chr
-  ' print a$;
+  if ver(fidx%) = 1 then begin
+    poke $52000 + xx + yy*80, chr
+    poke $53000 + xx + yy*80, 1
+  bend
+
+  if ver(fidx%) = 2 then begin
+    poke $54000 + xx + yy*80, chr
+    poke $55000 + xx + yy*80, 2
+  bend
+
   return
 
 
@@ -341,9 +393,15 @@
 '-------------------
 .scroll_canvas_right
 '-------------------
+  offs(fidx%) = offs(fidx%) + 1
+  if fidx% = 0 then addr = $52000
+  if fidx% = 1 then addr = $54000
+
   for yy = 0 to 49
-    edma OP_COPY, 79, $52001 + yy*80, $52000 + yy*80
-    poke $52000 + 79 + yy*80, 32 
+    edma OP_COPY, 79, addr+1 + yy*80, addr + yy*80
+    poke addr + 79 + yy*80, 32 
+    edma OP_COPY, 79, addr+$1001 + yy*80, addr+$1000 + yy*80
+    poke addr+$1000 + 79 + yy*80, 0
   next yy                
   return
 ÿ

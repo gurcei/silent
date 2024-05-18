@@ -8,6 +8,15 @@ DONE- Try port line drawing routine to assembly, for speed
 - Tie up all pieces of demo together
   DONE - Fade to black
   DONE- Starfield moving from right to left
+  DONE- Anathema title
+  DONE - 'The Silent Enigma' text
+  - Lyrics via 'writer'
+  - qix lines via megaplot
+  - qix squares via megaplot
+  - rotate plus greets
+  - final section: rotating cubes via megaplot
+  - fade back to original screen demo was run from
+  - Add and align music to demo
 
 Stretch ideas
 =============

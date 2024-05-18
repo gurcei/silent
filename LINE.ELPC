@@ -207,7 +207,7 @@ goto main
     cursor 0,49:print chr$(27);"qpidx=";pidx%;"[";ldata&(pidx%);ldata&(pidx%+1);ldata&(pidx%+2);
 
     val& = ldata&(pidx%) : pidx% = pidx% + 1
-    if val& = $ff then begin
+    if ver=3 and val& = $ff then begin
       gosub draw_font_guide_lines
       if pidx% > last_group_idx then last_group_idx = pidx%
       goto pd_endloop
@@ -230,6 +230,7 @@ goto main
     if ver=2 then begin
       do while x-offs > 78
         gosub scroll_canvas_right
+        print "{x13}";chr$(27);"qoffs=";offs;
       loop
     bend
 
