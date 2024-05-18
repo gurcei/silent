@@ -41,14 +41,19 @@
 #declare group_flag&, val&, rev_flag&(2) = 0
 #declare offs(2), ver(2)
 #declare lastflag, last_group_idx
-#declare oldx, oldy, oldoffs(2), x, y, a$, xx, yy, debug, z$
+#declare oldx, oldy, oldoffs(2), x, y, a$, xx, yy, dxx, dyy, debug, z$
+#declare wxx, wyy
 
-#declare chr
+#declare chr, tmp
 
 #declare src_addr, dest_addr, length, transp
 
 #declare loc, ptr, m, tstart, addr
 
+#declare char_cnt, char_idx%(60), char_width%(60), max_width
+#declare txt_k, s$, ret
+
+#declare mn_state = 0, wc_flag, wc_chr
 
 '-------
 .defines
@@ -69,6 +74,7 @@
 
 .main_loop
   tstart = ti
+
   m = m + 1
   gosub draw_starfield
   if m >= 70 and m < 800 then begin
@@ -83,6 +89,18 @@
     fidx%=1
     gosub play_data_iter
     if m > 2630 then gosub scroll_canvas_right
+  bend
+
+  if mn_state = 0 then begin
+    s$ = "In dreamland..."
+    txt_k = 1
+
+    mn_state = 1
+  bend
+
+  if mn_state = 1 then begin
+    fidx% = 2
+    gosub iter_write_text
   bend
 
   gosub iter_starfield
@@ -106,6 +124,8 @@
   poke $d018, peek($d018) and $fd
 
   print chr$(27);"5";
+
+  print "{x93}";
 
   for k = 0 to 20
     starx%(k) = int(rnd(1)*80)*256
@@ -151,6 +171,8 @@
   poke $4000f, $00    ' CMD msb (ignore)
   wpoke $40010, $0000 ' modulo (ignore)
 
+  gosub init_writer
+
   ' init var interface to assembly
   loc = $40036
 
@@ -159,6 +181,129 @@
 
   ptr = pointer(starvx%(0))
   gosub store_ptr
+  return
+
+
+'-----------
+.init_writer
+'-----------
+  txt_k = 0
+  wxx = 0 : wyy = 0
+
+  fname$ = "abc.ln"
+  fidx% = 2
+  ver(fidx%) = 3
+  gosub load_line_file
+
+  char_cnt = 0
+  char_idx%(0) = 0
+  char_width%(0) = 0
+  max_width = 0
+
+  k = 0
+  do while k < didx%(fidx%)
+    ' get x value
+    val& = ldata&(fidx%, k)
+    k=k+1
+
+    if val& = $ff then begin
+      ' keep an array of widths of each letter
+      char_width%(char_cnt)=max_width
+
+      ' print "char_width(";char_cnt;") = ";max_width
+      ' get key z$
+
+      max_width = 0
+      char_cnt=char_cnt+1
+
+      ' keep an array of indices to each drawn letter
+      char_idx%(char_cnt) = k
+      'print "char_idx%(";char_cnt;")=";k
+      'get key a$
+    bend
+
+    if val& = $ff then goto cont_loop
+
+    val& = val& and $7f
+    if val& > max_width then max_width = val&
+    
+    k=k+1  ' skip y value
+    k=k+1  ' skip char 
+
+.cont_loop
+  loop
+
+  return
+
+
+'---------------
+.iter_write_text
+'---------------
+  if wc_flag = 0 and txt_k > 0 and txt_k <= len(s$) then begin
+    chr = asc(mid$(s$, txt_k, 1))
+    ' print "{x13}";chr$(27);"qchr=";chr;
+    gosub petscii_to_screencode
+    gosub screencode_to_idx
+    ' print "fixed chr=";chr;
+    ' get key z$
+
+    if chr=32 then begin
+      wxx=wxx+7
+      txt_k = txt_k + 1
+    bend:else:begin
+      wc_flag = 1
+      wc_chr = chr
+      pidx%(fidx%) = char_idx%(chr)
+    bend
+  bend
+
+  if wc_flag = 1 then begin
+    chr = wc_chr
+    gosub iter_write_char
+    if ret = 1 then begin
+      wxx = wxx + char_width%(wc_chr) + 1
+      txt_k = txt_k + 1
+      wc_flag = 0
+    bend
+  bend
+  return
+
+
+'----------
+.iter_write_char
+'---------------
+  ' iterate over chars in string
+    ' draw current char at given x,y pos
+    ' increment x,y location
+
+  ret = 1
+
+  if pidx%(fidx%) < didx%(fidx%) and ldata&(fidx%, pidx%(fidx%)) <> $ff then begin
+
+    ' cursor 0,49
+    ' print chr$(27);"qpidx=";pidx%(fidx%);"[";ldata&(fidx%, pidx%);
+    ' print ldata&(fidx%, pidx%+1);ldata&(fidx%, pidx%+2);
+
+    val& = ldata&(fidx%, pidx%(fidx%))
+    pidx%(fidx%) = pidx%(fidx%) + 1
+
+    x = val& and $7f
+
+    if val& and $80 then rev_flag&(fidx%) = 1 : else rev_flag&(fidx%) = 0
+    y = ldata&(fidx%, pidx%(fidx%))
+    pidx%(fidx%) = pidx%(fidx%) + 1
+
+    a$ = chr$(ldata&(fidx%, pidx%(fidx%)))
+    pidx%(fidx%) = pidx%(fidx%) + 1
+
+    dxx = wxx+x : dyy = wyy+y : gosub draw_char
+
+    ' print "{x13}{x11}";chr$(27);"q x,y,pidx,a$=";x;y;pidx%(fidx%),asc(a$)
+    ' get key a$
+    ret = 0
+.pd_endloop
+  bend
+
   return
 
 
@@ -308,7 +453,7 @@
       bend
     bend
 
-    xx = x-offs(fidx%) : yy = y: cursor xx, yy : gosub draw_char
+    dxx = x-offs(fidx%) : dyy = y: gosub draw_char
 
     debug = 0
     if debug=1 then begin
@@ -337,13 +482,13 @@
   if rev_flag&(fidx%) = 1 then chr = chr + 128
 
   if ver(fidx%) = 1 then begin
-    poke $52000 + xx + yy*80, chr
-    poke $53000 + xx + yy*80, 1
+    poke $52000 + dxx + dyy*80, chr
+    poke $53000 + dxx + dyy*80, 1
   bend
 
-  if ver(fidx%) = 2 then begin
-    poke $54000 + xx + yy*80, chr
-    poke $55000 + xx + yy*80, 2
+  if ver(fidx%) = 2 or ver(fidx%) = 3 then begin
+    poke $54000 + dxx + dyy*80, chr
+    poke $55000 + dxx + dyy*80, 2
   bend
 
   return
@@ -362,6 +507,19 @@
   if chr>=$80 and chr<=$9f then chr=chr or $40:return
   if chr>=$a0 and chr<=$bf then chr=(chr and $7f) or $40:return ' $bf:return
   if chr>=$c0 and chr<=$fe then chr=chr and $7f:return
+  return
+
+
+'-----------------
+.screencode_to_idx
+'-----------------
+  if chr >= 65 and chr <= 90 then chr = chr - 65:return
+  if chr = 46 then chr = 26:return ' full-stop
+  if chr = 33 then chr = 27:return ' exclamation
+  if chr = 44 then chr = 28:return ' comma (smiley)
+  if chr = 47 then chr = 29:return ' forward slash (love heart)
+  if chr = 35 then chr = 30:return ' # hash (dhufish)
+  if chr >= 1 and chr <= 26 then chr = chr + 30
   return
 
 
