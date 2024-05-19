@@ -38,6 +38,13 @@ MULTOUT = $d778
 	sta .dest+1
 }
 
+!macro set16 .dest, .val {
+	lda #<.val
+	sta .dest
+	lda #>.val
+	sta .dest+1
+}
+
 !macro lsr16 .loc {
 	clc
 	lda .loc+1
@@ -262,6 +269,7 @@ MULTOUT = $d778
 	jmp fade_colours_to_black	// 7e0c
 	jmp iter_starfield		// 7e0f
 	jmp scroll_canvas_right		// 7e12
+	jmp page_flip			// 7e15
 
 
 //---------------------
@@ -592,8 +600,10 @@ force_yy:
 		+copy16 dest_addr, scraddr
 
 		// length = frmw
-		// lda frmw
-		// sta length   // skip this, just always use length of frmw
+		lda frmw
+		sta length
+		lda #$00
+		sta length+1
 
 		// transp = 102
 		lda #102
@@ -609,6 +619,10 @@ force_yy:
 		+copy16 dest_addr, clraddr
 
 		//length = frmw
+		lda frmw
+		sta length
+		lda #$00
+		sta length+1
 
 		// transp = $ff
 		lda #$ff
@@ -687,6 +701,59 @@ fade_colours_to_black: // (a=fadeval)
 	rts
 
 
+//------------
+iter_starfield:
+//------------
+	// prepare four pointer
+	lda #$00
+	sta FOURPTR
+	sta FOURPTR+1
+	sta FOURPTR+3
+	lda #$04
+	sta FOURPTR+2
+
+	+set1ptr_from_4ptr STARX
+	ldz #$00
+
+	+set0ptr_from_4ptr STARVX
+	lda #$01	// switch it to a 1 pointer too, just for convenience
+	sta ZEROPTR+2
+	lda #$00
+	sta ZEROPTR+3
+
+	// for k = 0 to 20
+	ldy #$00
+
+		// starx(k) = mod(starx(k) - starvx(k) +80, 80)
+-		sec
+		inz
+		lda [ONEPTR],z
+		sbc [ZEROPTR],z
+		sta [ONEPTR],z
+		dez
+		lda [ONEPTR],z
+		sbc [ZEROPTR],z
+		sta [ONEPTR],z
+
+		bpl +		// check if subtraction was negative
+
+		clc		// if negative, add 80
+		adc #80
+		sta [ONEPTR],z
+		clc
+
++
+		inz
+		inz
+
+	// next k
+	iny
+	cpy #21
+	bne -
+
+	rts
+
+
 //-------------------
 scroll_canvas_right: // (a = hi_addr)
 //-------------------
@@ -700,12 +767,13 @@ scroll_canvas_right: // (a = hi_addr)
 
 	lda #79
 	sta frmw
+	+set16 length, 79
 
 	lda #$00
 	sta tmpw
 	sta tmpw+1
 
-	// prepare four pointer as five pointer
+	// prepare four pointer
 	lda #$00
 	sta FOURPTR
 	sta FOURPTR+1
@@ -785,9 +853,9 @@ scroll_canvas_right: // (a = hi_addr)
 	rts
 
 
-//------------
-iter_starfield:
-//------------
+//---------
+page_flip:
+//---------
 	// prepare four pointer
 	lda #$00
 	sta FOURPTR
@@ -796,46 +864,113 @@ iter_starfield:
 	lda #$04
 	sta FOURPTR+2
 
-	+set1ptr_from_4ptr STARX
-	ldz #$00
+	+poke_b4_val $0b, 5	// src bank
+	+poke_b4_val $0e, 5	// dest bank
 
-	+set0ptr_from_4ptr STARVX
-	lda #$01	// switch it to a 1 pointer too, just for convenience
-	sta ZEROPTR+2
+	// src_addr = $54000
+	+set16 src_addr, $4000
+
+	// dest_addr = $50000
+	+set16 dest_addr, $0000
+
+	// length = 4000
+	+set16 length, 4000
+
+	// transp = 32
+	lda #32
+	sta transp
+
+	// gosub transparent_dma
+	jsr transparent_dma
+
+	// src_addr = $55000
+	+set16 src_addr, $5000
+
+	// dest_addr = $51000
+	+set16 dest_addr, $1000
+
+	// length = 4000
+	// transp = 0
 	lda #$00
-	sta ZEROPTR+3
+	sta transp
 
-	// for k = 0 to 20
-	ldy #$00
+	// gosub transparent_dma
+	jsr transparent_dma
 
-		// starx(k) = mod(starx(k) - starvx(k) +80, 80)
--		sec
-		inz
-		lda [ONEPTR],z
-		sbc [ZEROPTR],z
-		sta [ONEPTR],z
-		dez
-		lda [ONEPTR],z
-		sbc [ZEROPTR],z
-		sta [ONEPTR],z
+	// src_addr = $52000
+	+set16 src_addr, $2000
 
-		bpl +		// check if subtraction was negative
+	// dest_addr = $50000
+	+set16 dest_addr, $0000
 
-		clc		// if negative, add 80
-		adc #80
-		sta [ONEPTR],z
-		clc
+	// length = 4000
+	// transp = 32
+	lda #32
+	sta transp
 
-+
-		inz
-		inz
+	// gosub transparent_dma
+	jsr transparent_dma
 
-	// next k
-	iny
-	cpy #21
-	bne -
+	// src_addr = $53000
+	+set16 src_addr, $3000
 
+	// dest_addr = $51000
+	+set16 dest_addr, $1000
+
+	// length = 4000
+	// transp = 0
+	lda #$00
+	sta transp
+
+	// gosub transparent_dma
+	jsr transparent_dma
+
+	// edma 0, $fa0, $50000, $40800
+	+poke_b4_val $0b, 5	// src bank
+	+poke_b4_val $0e, 4	// dest bank
+	+set16 length, $fa0
+	+set16 src_addr, $0000
+	+set16 dest_addr, $0800
+
+	jsr plain_dma
+
+	// edma 0, $fa0, $51000, $ff80000
+	+poke_b4_val $01, $ff	// dest MB
+	+poke_b4_val $02, $06	// disable transparency
+
+	+poke_b4_val $0b, 5		// src bank
+	+poke_b4_val $0e, $08	// dest bank
+
+	+set16 src_addr, $1000
+	+set16 dest_addr, $0000
+
+	jsr transparent_dma
+
+	+poke_b4_val $01, $00	// dest MB
+	+poke_b4_val $02, $07	// enable transparency
+
+	// ' clear the offscreen buffer
+	// edma 3, $fa0, 32, $50000
+	+poke_b4_val $06, $03	// CMD lsb = FILL
+	+poke_b4_val $0e, 5	// dest bank
+	+set16 src_addr, 32	// fill value
+	+set16 dest_addr, $0000
+
+	jsr plain_dma
+
+	// edma 3, $fa0, 1, $51000
+	+set16 src_addr, 1	// fill value
+	+set16 dest_addr, $1000
+
+	jsr plain_dma
+	
+	// restore
+	+poke_b4_val $06, $00	// CMD lsb = COPY
+	+poke_b4_val $0b, 5	// src bank
+
+	// return
 	rts
+
 
 // ---------------------
 // INTERNAL ASM ROUTINES
@@ -850,8 +985,7 @@ transparent_dma:
 	+wpoke_b4 $0c, dest_addr
 
 	// wpoke $40007, length
-	+poke_b4 $07, frmw
-	+poke_b4_val $08, $00
+	+wpoke_b4 $07, length
 
 	// poke  $40004, transp
 	+poke_b4 $04, transp
@@ -881,8 +1015,7 @@ plain_dma:
 	+wpoke_b4 $0c, dest_addr
 
 	// wpoke $40007, length
-	+poke_b4 $07, frmw
-	+poke_b4_val $08, $00
+	+wpoke_b4 $07, length
 
 	// poke $d702, 4 ' dma list in bank 4
 	lda #$04
@@ -969,6 +1102,7 @@ frmw:		!byte $00
 yy:		!word $00
 src_addr:	!word $00
 dest_addr:	!word $00
+length:		!word $00
 transp:		!byte $00
 starx:		!word $00
 starvx:		!word $00

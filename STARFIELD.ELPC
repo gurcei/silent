@@ -374,37 +374,9 @@
 '---------
 .page_flip
 '---------
-  src_addr = $54000
-  dest_addr = $50000
-  length = 4000
-  transp = 32
-  gosub transparent_dma
+  vsync 10
+  bank 0 : sys $7e15 : bank 128
 
-  src_addr = $55000
-  dest_addr = $51000
-  length = 4000
-  transp = 0
-  gosub transparent_dma
-
-
-  src_addr = $52000
-  dest_addr = $50000
-  length = 4000
-  transp = 32
-  gosub transparent_dma
-
-  src_addr = $53000
-  dest_addr = $51000
-  length = 4000
-  transp = 0
-  gosub transparent_dma
-
-  edma 0, $fa0, $50000, $40800
-  edma 0, $fa0, $51000, $ff80000
-
-  ' clear the offscreen buffer
-  edma 3, $fa0, 32, $50000
-  edma 3, $fa0, 1, $51000
   return
 
 
