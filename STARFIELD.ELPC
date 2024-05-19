@@ -126,6 +126,7 @@
   print chr$(27);"5";
 
   print "{x93}";
+  poke $d020,0,0
 
   for k = 0 to 20
     starx%(k) = int(rnd(1)*80)*256
@@ -552,14 +553,10 @@
 .scroll_canvas_right
 '-------------------
   offs(fidx%) = offs(fidx%) + 1
-  if fidx% = 0 then addr = $52000
-  if fidx% = 1 then addr = $54000
+  if fidx% = 0 then addr = $20  ' $52000
+  if fidx% = 1 then addr = $40  ' $54000
 
-  for yy = 0 to 49
-    edma OP_COPY, 79, addr+1 + yy*80, addr + yy*80
-    poke addr + 79 + yy*80, 32 
-    edma OP_COPY, 79, addr+$1001 + yy*80, addr+$1000 + yy*80
-    poke addr+$1000 + 79 + yy*80, 0
-  next yy                
+  bank 0:sys $7e12, addr: bank 128
+
   return
 ÿ

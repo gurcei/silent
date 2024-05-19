@@ -255,12 +255,13 @@ MULTOUT = $d778
 // ROUTINES
 // ========
 * = $7e00
-	jmp fade_colours_to_white
-	jmp fade_between_colours
-	jmp cycle_alt_palette
-	jmp draw_petscii_frame
-	jmp fade_colours_to_black
-	jmp iter_starfield
+	jmp fade_colours_to_white	// 7e00
+	jmp fade_between_colours	// 7e03
+	jmp cycle_alt_palette		// 7e06
+	jmp draw_petscii_frame		// 7e09
+	jmp fade_colours_to_black	// 7e0c
+	jmp iter_starfield		// 7e0f
+	jmp scroll_canvas_right		// 7e12
 
 
 //---------------------
@@ -686,6 +687,104 @@ fade_colours_to_black: // (a=fadeval)
 	rts
 
 
+//-------------------
+scroll_canvas_right: // (a = hi_addr)
+//-------------------
+	// offs(fidx%) = offs(fidx%) + 1
+	// if fidx% = 0 then addr = $52000
+	// if fidx% = 1 then addr = $54000
+
+	sta data_addr+1
+	lda #$00
+	sta data_addr
+
+	lda #79
+	sta frmw
+
+	lda #$00
+	sta tmpw
+	sta tmpw+1
+
+	// prepare four pointer as five pointer
+	lda #$00
+	sta FOURPTR
+	sta FOURPTR+1
+	sta FOURPTR+3
+	lda #$04
+	sta FOURPTR+2
+
+	// prepare ZERO pointer as five pointer
+	lda #$00
+	sta ZEROPTR
+	sta ZEROPTR+1
+	sta ZEROPTR+3
+	lda #$05
+	sta ZEROPTR+2
+
+	// for yy = 0 to 49
+	ldy #$00
+
+		// edma OP_COPY, 79, addr+1 + yy*80, addr + yy*80
+-		+add16 data_addr, tmpw, dest_addr
+		+copy16 src_addr, dest_addr
+		clc
+		lda src_addr
+		adc #$01
+		sta src_addr
+		lda src_addr+1
+		adc #$00
+		sta src_addr+1
+
+		jsr plain_dma
+
+		// poke addr + 79 + yy*80, 32 
+		lda dest_addr
+		sta ZEROPTR
+		lda dest_addr+1
+		sta ZEROPTR+1
+		ldz #79
+		lda #32
+		sta [ZEROPTR],z
+
+		// edma OP_COPY, 79, addr+$1001 + yy*80, addr+$1000 + yy*80
+		clc
+		lda src_addr+1
+		adc #$10
+		sta src_addr+1
+
+		clc
+		lda dest_addr+1
+		adc #$10
+		sta dest_addr+1
+		
+		jsr plain_dma
+
+		// poke addr+$1000 + 79 + yy*80, 0
+		lda dest_addr
+		sta ZEROPTR
+		lda dest_addr+1
+		sta ZEROPTR+1
+		ldz #79
+		lda #$00
+		sta [ZEROPTR],z
+
+		clc
+		lda tmpw
+		adc #80
+		sta tmpw
+		lda tmpw+1
+		adc #$00
+		sta tmpw+1
+		
+	// next yy                
+	iny
+	cpy #50
+	lbne -
+	
+	// return
+	rts
+
+
 //------------
 iter_starfield:
 //------------
@@ -772,6 +871,33 @@ transparent_dma:
 	// return
 	rts
 
+
+plain_dma:
+//--
+	// wpoke $40009, src_addr
+	+wpoke_b4 $09, src_addr
+
+	// wpoke $4000c, dest_addr
+	+wpoke_b4 $0c, dest_addr
+
+	// wpoke $40007, length
+	+poke_b4 $07, frmw
+	+poke_b4_val $08, $00
+
+	// poke $d702, 4 ' dma list in bank 4
+	lda #$04
+	sta $d702
+
+	// poke $d701, $00 ' dma list msb
+	lda #$00
+	sta $d701
+
+	// poke $d705, $00 ' dma list lsb
+	lda #$05
+	sta $d705
+	
+	// return
+	rts
 
 flip_nibble:
 // --------

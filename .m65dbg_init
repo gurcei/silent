@@ -3,3 +3,8 @@ autocls
 wd ZEROPTR
 wd ONEPTR
 wd FOURPTR
+wd data_addr
+wb frmw
+ww tmpw
+ww src_addr
+ww dest_addr
