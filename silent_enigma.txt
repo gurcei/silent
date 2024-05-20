@@ -11,7 +11,7 @@ DONE- Try port line drawing routine to assembly, for speed
   DONE- Anathema title
   DONE - 'The Silent Enigma' text
   - Lyrics via 'writer'
-  - port scroll-right to asm
+  DONE- port scroll-right to asm
   - qix lines via megaplot
   - qix squares via megaplot
   - rotate plus greets
@@ -43,7 +43,7 @@ Credits + Greets
 - Greets to the mega65 team: gardners, deft, martin, lydon, dddaaannn and others
 - Greets to active devs this year: bisgedi, btoschi, carthibar, clockchip, deathy/BAS, Drex, EgonOlsen71, El Nebuloso, fredrikr, Geehaf, GeirS, grubi, heath_man, jim-64, jwa74, kibo, M3wP, mc64, Mirage-BD, Mr. Jones, Nobato, retroCombs, Roughnight, SirLazarus, Stigodump, TOS22, Urban Lindeskog, zeus074
 - TwoBitRetro (for pascal65), Magnus Heidenborn (for letting me port his awesome C64 BASIC 'Stranded' game to the MEGA65), Stefan Eilers (for M65Script)
-- sy20022 and mjoergen for the awesome alternate cores (C64, Gameboy, ZX Spectrum), looking forward the upcoming alternate cores you have planned! :)
+- sy2002 and mjoergen for the awesome alternate cores (C64, Gameboy, ZX Spectrum), looking forward the upcoming alternate cores you have planned! :)
 - muse/shoestring for your awesome arcade cores
 - Greets to vloggers: Retrocombs, Perifractic and 8-Bit Guy, thx for the MEGA65 review and all the best with your X-16 release :)
 
@@ -94,7 +94,7 @@ chunk18 3:51 --> 4:02 "silence..."
 
 - 1st verse
 In dreamland grandeur
-  - A little girl peaks from behind a tree
+  - A little girl peeks from behind a tree
 I held mesmerized peace
   - She stand on tip-i-toes, hand above her eyes, admiring the few from left to right
 

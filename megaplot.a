@@ -128,7 +128,8 @@ line:
 	pla
 	
 	sta x1
-	bpl +
+	cmp #160
+	bcc +
 	lda #$ff
 	sta x1+1
 
@@ -140,7 +141,8 @@ line:
 
 +	sty x2
 	tya
-	bpl +
+	cmp #160
+	bcc +
 	lda #$ff
 	sta x2+1
 
@@ -187,12 +189,14 @@ line:
 	lda #$00
 	sta sx+1
 
-	lda x1 + 1
-	cmp x2 + 1
-	bmi +
-
+	sec
 	lda x1
-	cmp x2
+	sbc x2
+	sta tmpw
+	lda x1+1
+	sbc x2+1
+	sta tmpw+1
+	
 	bmi +
 
 	lda #$ff
@@ -228,12 +232,14 @@ line:
 	lda #$00
 	sta sy+1
 
-	lda y1 + 1
-	cmp y2 + 1
-	bmi +
-
+	sec
 	lda y1
-	cmp y2
+	sbc y2
+	sta tmpw
+	lda y1+1
+	sbc y2+1
+	sta tmpw+1
+
 	bmi +
 
 	lda #$ff
@@ -287,20 +293,23 @@ pixel_loop:
 		// _e2 = 2 * _e
 + 		lda _e
 		clc
-		asl
+		rol
 		sta _e2
 		lda _e+1
-		asl
+		rol
 		sta _e2+1
 
 		// if _e2 >= ddy then begin
-		lda _e2+1
-		cmp ddy+1
-		bmi ++
-		bne +
+		sec
 		lda _e2
-		cmp ddy
-		bmi ++
+		sbc ddy
+		sta tmpw
+		lda _e2+1
+		sbc ddy+1
+		sta tmpw+1
+
+		bmi +
+
 			// if xpos = x2 then exit
 +			lda xpos
 			cmp x2
@@ -332,16 +341,16 @@ pixel_loop:
 
 
 		// if _e2 <= ddx then begin
-++		lda _e2+1
-		cmp ddx+1
-		bmi +
-		beq +
+++		sec
+		lda _e2
+		sbc ddx
+		sta tmpw
+		lda _e2+1
+		sbc ddx+1
+		sta tmpw+1
 
-		jmp pixel_loop
-
-+		lda _e2
-		cmp ddx
 		bmi +
+		ora tmpw
 		beq +
 
 		jmp pixel_loop
@@ -427,12 +436,15 @@ check_xy_in_range:
 //---------------
 				// don't draw negative x
 				lda xpos
-				bpl +
+				cmp #160
+				bcc +
+				sec
 				rts
 
 				// don't draw negative y
 +				lda ypos
 				bpl +
+				sec
 				rts
 
 +				lda xmode4080
@@ -622,3 +634,4 @@ sx:			!word $00
 sy:			!word $00
 _e:			!word $00
 _e2:			!word $00
+tmpw:			!word $00

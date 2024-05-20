@@ -50,6 +50,10 @@
 #declare cb_inca, cb_incb, ret_ang, z$, zfact
 #declare ddx, ddy, sx, sy, e, e2
 
+#declare qlidx, qlcnt
+#declare qlx1(10), qly1(10), qlx2(10), qly2(10)
+#declare qlvx1, qlvy1, qlvx2, qlvy2
+
 gosub init
 
 '----
@@ -63,6 +67,7 @@ gosub init
   print "3) many squares"
   print "4) draw cube"
   print "5) draw many cubes"
+  print "6) qix lines"
 
   get key z$
   if z$="1" then gosub draw_lines_from_centre_out
@@ -70,10 +75,45 @@ gosub init
   if z$="3" then gosub draw_many_squares
   if z$="4" then gosub draw_cube
   if z$="5" then gosub draw_many_cubes
+  if z$="6" then gosub draw_qix_lines
 
   if z$>="1" and z$<="5" then get key z$
   goto main
   end
+
+
+'--------------
+.draw_qix_lines
+'--------------
+
+  ' init
+  qlidx = 0 : qlcnt = 0
+
+.qll_loop
+
+  qlx1(qlidx) = int(rnd(1)*150) + 5
+  qly1(qlidx) = int(rnd(1)*90) + 5
+
+  qlx2(qlidx) = int(rnd(1)*150) + 5
+  qly2(qlidx) = int(rnd(1)*90) + 5
+
+  qlcnt = qlcnt + 1
+
+  x1 = qlx1(qlidx)
+  y1 = qly1(qlidx)
+  x2 = qlx2(qlidx)
+  y2 = qly2(qlidx)
+
+  cursor 0,0:print chr$(27);"qx1,y1,x2,y2=",x1,y1,x2,y2
+  gosub draw_line
+  get key a$
+
+  qlidx = mod(qlidx + 1, 10)
+
+  goto qll_loop
+  
+
+  return
 
 
 '---------------
@@ -259,49 +299,9 @@ gosub init
   y1 = mod(int(y1)+256,256)
   x2 = mod(int(x2)+256,256)
   y2 = mod(int(y2)+256,256)
-  sys $7e09, x1, y1, x2, y2, 5
+  sys $7e09, x1, y1, x2, y2
   return
   
-  ' borrowed from: www.baeldung.com/cs/bresenhams-line-algorithm
-  x1 = int(x1)
-  y1 = int(y1)
-  x2 = int(x2)
-  y2 = int(y2)
-  ddx = abs(x2-x1)
-  if x1 < x2 then sx = 1 : else sx = -1
-
-  ddy = -abs(y2-y1)
-  if y1 < y2 then sy = 1 : else sy = -1
-
-  e = ddx + ddy
-
-  cx = x1 : cy = y1
-  do while 1
-    gosub draw_pixel
-    if cx = (x2) and cy = y2 then exit
-
-  e2 = 2 * e
-  if e2 >= ddy then begin
-    if cx = x2 then exit
-    e = e + ddy
-    cx = cx + sx
-  bend
-
-  if e2 <= ddx then begin
-    if cy = y2 then exit
-    e = e + ddx
-    cy = cy + sy
-  bend
-
-    if debug=1 then begin
-      cursor 0,15:print chr$(27);"qcx =";cx;", cy =";cy
-      cursor 0,16:print chr$(27);"qddx =";ddx;", ddy =";ddy;", e=";e;", e2=";e2
-      get key a$
-    bend
-
-  loop
-  return
-
 
 '-----
 .atan2
