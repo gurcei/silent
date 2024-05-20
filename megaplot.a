@@ -17,11 +17,12 @@ MULTOUT = $d778
 
 // jump table
 // ----------
-  jmp init_and_plot	// a = x-coord, x = y-coord, y = colour
+  jmp init_and_plot // 7e00: a = x-coord, x = y-coord, y = colour
     				// (equivalent to original program's behaviour)
-  jmp init          // a 'one-time' init, so that future draw calls don't need to repeatedly init
-  jmp plot          // plot(a=colour, x=x-coord, y=y-coord)
-  jmp line          // line(a=x1, x=y1, y=x2, z=y2, s=colour)
+  jmp init          // 7e03: a 'one-time' init, so that future draw calls don't need to repeatedly init
+  jmp plot          // 7e06: plot(a=colour, x=x-coord, y=y-coord)
+  jmp line          // 7e09: line(a=x1, x=y1, y=x2, z=y2)
+  jmp set_colour    // 7e0c: set_colour(a=color)
 
 //-----------
 init_and_plot:
@@ -152,10 +153,7 @@ line:
 	lda #$ff
 	sta y2+1
 
-+	ldx #$05
-	stx colour
-
-	jsr init
++	jsr init
 
 	// borrowed from: www.baeldung.com/cs/bresenhams-line-algorithm
 
@@ -392,6 +390,12 @@ pixel_loop:
 	cli
 	rts
 
+//-------
+set_colour:
+//-------
+	sta colour
+	rts
+
 //---------------
 update_char_at_xy:
 //---------------
@@ -566,15 +570,22 @@ update_pointers_to_start_of_y_row:
 //--------------------------------
 check_for_battenburg_char_at_x_col:
 //--------------------------------
-				// y is the x coordinate to print to
+				// z is the x coordinate to print to
 				ldy screenx
+				ldz screenx
+				lda [COLPTR],z
+				cmp colour
+				beq CheckChar
+
+				ldx #$00
+				stx virtual
+
+				rts
 
 				// Is there already a plot character in the box?
 CheckChar:		// Is it in the list?  If so, which bit pattern?
 				ldx #$00
 NextChar:		lda bitpatterns,x
-				phy
-				plz
 				cmp [ROWPTR],z
 				beq CheckDone
 				inx

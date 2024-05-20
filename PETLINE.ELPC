@@ -53,6 +53,8 @@
 #declare qlidx, qlcnt
 #declare qlx1(10), qly1(10), qlx2(10), qly2(10)
 #declare qlvx1, qlvy1, qlvx2, qlvy2
+#declare qlclr
+
 
 gosub init
 
@@ -91,11 +93,15 @@ gosub init
 
 .qll_loop
 
-  qlx1(qlidx) = int(rnd(1)*150) + 5
-  qly1(qlidx) = int(rnd(1)*90) + 5
+  qlx1(qlidx) = int(rnd(1)*160)
+  qly1(qlidx) = int(rnd(1)*100)
 
-  qlx2(qlidx) = int(rnd(1)*150) + 5
-  qly2(qlidx) = int(rnd(1)*90) + 5
+  qlx2(qlidx) = int(rnd(1)*160)
+  qly2(qlidx) = int(rnd(1)*100)
+
+  qlclr = int(rnd(1)*16) + 64
+
+  sys $7e0c, qlclr
 
   qlcnt = qlcnt + 1
 
@@ -104,9 +110,9 @@ gosub init
   x2 = qlx2(qlidx)
   y2 = qly2(qlidx)
 
-  cursor 0,0:print chr$(27);"qx1,y1,x2,y2=",x1,y1,x2,y2
+  'cursor 0,0:print chr$(27);"qx1,y1,x2,y2=",x1,y1,x2,y2
   gosub draw_line
-  get key a$
+  'get key a$
 
   qlidx = mod(qlidx + 1, 10)
 
