@@ -20,9 +20,9 @@ MULTOUT = $d778
   jmp init_and_plot // 7e00: a = x-coord, x = y-coord, y = colour
     				// (equivalent to original program's behaviour)
   jmp init          // 7e03: a 'one-time' init, so that future draw calls don't need to repeatedly init
-  jmp plot          // 7e06: plot(a=colour, x=x-coord, y=y-coord)
-  jmp line          // 7e09: line(a=x1, x=y1, y=x2, z=y2)
-  jmp set_colour    // 7e0c: set_colour(a=color)
+  jmp plot          // 7e06: plot(a = x-coord, x = y-coord, y = colour)
+  jmp line          // 7e09: line(a = x1, x = y1, y = x2, z = y2)
+  jmp set_colour    // 7e0c: set_colour(a = colour)
 
 //-----------
 init_and_plot:
