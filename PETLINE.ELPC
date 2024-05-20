@@ -53,7 +53,7 @@
 #declare qlidx, qlcnt
 #declare qlx1(10), qly1(10), qlx2(10), qly2(10)
 #declare qlvx1, qlvy1, qlvx2, qlvy2
-#declare qlclr
+#declare qlclr(10), qlcurclr, kk
 
 
 gosub init
@@ -103,49 +103,57 @@ gosub init
   qlvx2 = rnd(1)*3 + .5
   qlvy2 = rnd(1)*3 + .5
 
-.qll_loop
-  ' print "{x93}";
+  qlcurclr = mod(qlcurclr + 1, 16)
+  qlclr(qlidx) = qlcurclr
 
-  ' tweak positions
-  qlx1(qlidx) = qlx1(qlidx) + qlvx1
+.qll_loop
+  vsync 0
+  print "{x93}";
+
+  for k = 0 to qlcnt - 1
+    kk = mod(qlidx + k, 10)
+
+    sys $7e0c, qlclr(kk) + 64
+
+    x1 = qlx1(kk)
+    y1 = qly1(kk)
+    x2 = qlx2(kk)
+    y2 = qly2(kk)
+
+    'cursor 0,0:print chr$(27);"qx1,y1,x2,y2=",int(x1),int(y1),int(x2),int(y2)
+    'cursor 0,1:print chr$(27);"qvx1,vy1,vx2,vy2=";qlvx1;qlvy1;qlvx2;qlvy2
+    gosub draw_line
+
+    'cursor x1/2,y1/2:print "+";
+    'cursor x2/2,y2/2:print "+";
+    'get key a$
+  next k
+
+  ' calc next line positions
+  kk = qlidx  ' old qlidx
+  qlidx = mod(qlidx + 1, 10)
+  if qlcnt < 10 then qlcnt = qlcnt + 1
+
+  qlx1(qlidx) = qlx1(kk) + qlvx1
   if qlx1(qlidx) >= 160 and qlvx1 > 0 then qlx1(qlidx)=159 : qlvx1 = -qlvx1
   if qlx1(qlidx) < 0 and qlvx1 < 0 then qlx1(qlidx)=0 : qlvx1 = -qlvx1
 
-  qly1(qlidx) = qly1(qlidx) + qlvy1
+  qly1(qlidx) = qly1(kk) + qlvy1
   if qly1(qlidx) >= 100 and qlvy1 > 0 then qly1(qlidx)=99 : qlvy1 = -qlvy1
   if qly1(qlidx) < 0 and qlvy1 < 0 then qly1(qlidx)=0 : qlvy1 = -qlvy1
 
-  qlx2(qlidx) = qlx2(qlidx) + qlvx2
+  qlx2(qlidx) = qlx2(kk) + qlvx2
   if qlx2(qlidx) >= 160 and qlvx2 > 0 then qlx2(qlidx)=159 : qlvx2 = -qlvx2
   if qlx2(qlidx) < 0 and qlvx2 < 0 then qlx2(qlidx)=0 : qlvx2 = -qlvx2
 
-  qly2(qlidx) = qly2(qlidx) + qlvy2
+  qly2(qlidx) = qly2(kk) + qlvy2
   if qly2(qlidx) >= 100 and qlvy2 > 0 then qly2(qlidx)=99 : qlvy2 = -qlvy2
   if qly2(qlidx) < 0 and qlvy2 < 0 then qly2(qlidx)=0 : qlvy2 = -qlvy2
 
-  qlclr = mod(qlclr + 1, 16)
-
-  sys $7e0c, qlclr + 64
-
-  qlcnt = qlcnt + 1
-
-  x1 = qlx1(qlidx)
-  y1 = qly1(qlidx)
-  x2 = qlx2(qlidx)
-  y2 = qly2(qlidx)
-
-  'cursor 0,0:print chr$(27);"qx1,y1,x2,y2=",int(x1),int(y1),int(x2),int(y2)
-  'cursor 0,1:print chr$(27);"qvx1,vy1,vx2,vy2=";qlvx1;qlvy1;qlvx2;qlvy2
-  gosub draw_line
-
-  'cursor x1/2,y1/2:print "+";
-  'cursor x2/2,y2/2:print "+";
-  'get key a$
-
-  ' qlidx = mod(qlidx + 1, 10)
+  qlcurclr = mod(qlcurclr + 1, 16)
+  qlclr(qlidx) = qlcurclr
 
   goto qll_loop
-  
 
   return
 
