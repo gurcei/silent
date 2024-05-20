@@ -1460,16 +1460,15 @@ init2:
 				sta yhalf
 
 				// init high word of COLPTR to be $0ff8
-				lda #$0f
+				lda #$00
 				sta COLPTR + 3
-				lda #$f8
+				lda #$05
 				sta COLPTR + 2
 
 				// init high word of ROWPTR to be LO=SCRNPTRBNK($D062) HI=SCRNPTRMB($D063.0-3)
-				lda $d063
-				and #$0f
+				lda #$00
 				sta ROWPTR + 3
-				lda $d062
+				lda #$05
 				sta ROWPTR + 2
 
 				rts
@@ -1597,15 +1596,15 @@ find_char_positions:
 //-----------------------------
 init_screen_and_colour_pointers:
 //-----------------------------
-				// ldx #<SCRNBASE
-				// ldy #>SCRNBASE
-				ldx $d060	// SCRNPTRLSB
-				ldy $d061	// SCRNPTRMSB
+				ldx #$00
+				ldy #$00
 				stx ROWPTR
 				sty ROWPTR + 1
 
-				ldx #<COLRBASE
-				ldy #>COLRBASE
+				//ldx #<COLRBASE
+				//ldy #>COLRBASE
+				ldx #$00
+				ldy #$10
 				stx COLPTR
 				sty COLPTR + 1
 				rts
