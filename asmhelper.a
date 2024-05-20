@@ -1253,7 +1253,7 @@ pixel_loop:
 		sbc ddy+1
 		sta tmpw+1
 
-		bmi +
+		bmi ++
 
 			// if xpos = x2 then exit
 +			lda xpos
