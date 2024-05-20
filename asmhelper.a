@@ -7,6 +7,14 @@ ONEPTR = $29
 FOURPTR = $18
 CLRPTR = $20
 
+// for megaplot (some overlap)
+COLRBASE = $0000 // Fixed to Bank ff8
+ROWPTR = $18
+COLPTR = $1c
+MULTINA = $d770
+MULTINB = $d774
+MULTOUT = $d778
+
 
 // BANK4 VAR INTERFACE
 // ===================
@@ -270,6 +278,13 @@ MULTOUT = $d778
 	jmp iter_starfield		// 7e0f
 	jmp scroll_canvas_right		// 7e12
 	jmp page_flip			// 7e15
+	// megaplot routines
+	// -----------------
+	jmp init_and_plot		// 7e18
+	jmp init			// 7e1b
+	jmp plot			// 7e1e
+	jmp line			// 7e21
+	jmp set_colour			// 7e24
 
 
 //---------------------
@@ -535,7 +550,7 @@ draw_petscii_frame: // (a = frmy, x = frmy1, y = frmw)
 
 	sty frmw
 
-	// prepare four pointer
+	// prepare zero pointer
 	lda #$00
 	sta ZEROPTR
 	sta ZEROPTR+1
@@ -711,6 +726,13 @@ iter_starfield:
 	sta FOURPTR+3
 	lda #$04
 	sta FOURPTR+2
+
+	// prepare zero pointer
+	lda #$00
+	sta ZEROPTR
+	sta ZEROPTR+1
+	sta ZEROPTR+2
+	sta ZEROPTR+3
 
 	+set1ptr_from_4ptr STARX
 	ldz #$00
@@ -972,6 +994,357 @@ page_flip:
 	rts
 
 
+//-----------
+init_and_plot:
+//-----------
+				pha
+				phx
+				phy
+				jsr init
+				ply
+				plx
+				pla
+
+				jsr plot
+				rts
+
+
+//---
+init:
+//---
+// populate properties and initialise
+				// 40 or 80 column screen?
+				lda #80
+				sta xmode4080
+				lda $d031
+				and #$80
+				bne +
+				lda #40
+				sta xmode4080
+
+				
++				// 25 or 50 row screen?
+				lda #50
+				sta ymode2550
+				lda $d031
+				and #$08
+				bne +
+				lda #25
+				sta ymode2550
+
+				jsr init2
+
++				rts
+
+
+//---
+plot:
+//---
+				sta xpos
+				stx ypos
+				sty colour
+
+_plot:
+				jsr init2
+
+				jsr check_xy_in_range
+				bcc +
+				rts
+
++				jsr find_char_positions	// sets screenx, screeny,
+										// xhalf and yhalf (if odd, set to $ff, if even, set to $00)
+
+
+				jsr which_char_at_xy 	// for given x,y, existing battenburg char is stored in 'virtual'
+										// (if one exists, otherwise, virtual = 0)
+
+				jsr update_char_at_xy	// based on xhalf,yhalf, decide which battenburg pixel to update
+
+				rts
+
+
+//---
+line:
+//---
+	sei
+	pha
+	lda #$00
+	sta x1+1
+	sta y1+1
+	sta x2+1
+	sta y2+1
+	pla
+	
+	sta x1
+	cmp #160
+	bcc +
+	lda #$ff
+	sta x1+1
+
++	stx y1
+	txa
+	bpl +
+	lda #$ff
+	sta y1+1
+
++	sty x2
+	tya
+	cmp #160
+	bcc +
+	lda #$ff
+	sta x2+1
+
++	stz y2
+	tza
+	bpl +
+	lda #$ff
+	sta y2+1
+
++	jsr init
+
+	// borrowed from: www.baeldung.com/cs/bresenhams-line-algorithm
+
+	// ddx = abs(x2-x1)
+	lda x2
+	sec
+	sbc x1
+	sta ddx
+
+	lda x2+1
+	sbc x1+1
+	sta ddx+1
+
+	bpl +
+
+	lda ddx
+	eor #$ff
+	clc
+	adc #$01
+	sta ddx
+
+	lda ddx+1
+	eor #$ff
+	adc #$00
+	sta ddx+1
+
+
+	// if x1 < x2 then sx = 1 : else sx = -1
++	lda #$01
+	sta sx
+	lda #$00
+	sta sx+1
+
+	sec
+	lda x1
+	sbc x2
+	sta tmpw
+	lda x1+1
+	sbc x2+1
+	sta tmpw+1
+	
+	bmi +
+
+	lda #$ff
+	sta sx
+	sta sx+1
+	
+	// ddy = -abs(y2-y1)
++	lda y2
+	sec
+	sbc y1
+	sta ddy
+
+	lda y2+1
+	sbc y1+1
+	sta ddy+1
+
+	bmi +
+
+	lda ddy
+	eor #$ff
+	clc
+	adc #$01
+	sta ddy
+
+	lda ddy+1
+	eor #$ff
+	adc #$00
+	sta ddy+1
+
+	// if y1 < y2 then sy = 1 : else sy = -1
++	lda #$01
+	sta sy
+	lda #$00
+	sta sy+1
+
+	sec
+	lda y1
+	sbc y2
+	sta tmpw
+	lda y1+1
+	sbc y2+1
+	sta tmpw+1
+
+	bmi +
+
+	lda #$ff
+	sta sy
+	sta sy+1
+	
+	// _e = ddx + ddy
++	lda ddx
+	clc
+	adc ddy
+	sta _e
+
+	lda ddx+1
+	adc ddy+1
+	sta _e+1
+	
+	// xpos = x1 : ypos = y1
+	lda x1
+	sta xpos
+	lda x1+1
+	sta xpos+1
+
+	lda y1
+	sta ypos
+	lda y1+1
+	sta ypos+1
+
+	// do while 1
+pixel_loop:
+		// gosub draw_pixel
+		jsr _plot
+
+		//if xpos = (x2) and ypos = y2 then exit
+		lda xpos
+		cmp x2
+		bne +
+		lda xpos+1
+		cmp x2+1
+		bne +
+
+		lda ypos
+		cmp y2
+		bne +
+		lda ypos+1
+		cmp y2+1
+		bne +
+
+		cli
+		rts
+	
+		// _e2 = 2 * _e
++ 		lda _e
+		clc
+		rol
+		sta _e2
+		lda _e+1
+		rol
+		sta _e2+1
+
+		// if _e2 >= ddy then begin
+		sec
+		lda _e2
+		sbc ddy
+		sta tmpw
+		lda _e2+1
+		sbc ddy+1
+		sta tmpw+1
+
+		bmi +
+
+			// if xpos = x2 then exit
++			lda xpos
+			cmp x2
+			bne +
+			lda xpos+1
+			cmp x2+1
+			bne +
+			cli
+			rts
+
+			// _e = _e + ddy
++			clc
+			lda _e
+			adc ddy
+			sta _e
+			lda _e+1
+			adc ddy+1
+			sta _e+1
+
+			// xpos = xpos + sx
+			clc
+			lda xpos
+			adc sx
+			sta xpos
+			lda xpos+1
+			adc sx+1
+			sta xpos+1
+		// bend
+
+
+		// if _e2 <= ddx then begin
+++		sec
+		lda _e2
+		sbc ddx
+		sta tmpw
+		lda _e2+1
+		sbc ddx+1
+		sta tmpw+1
+
+		bmi +
+		ora tmpw
+		beq +
+
+		jmp pixel_loop
+
++			// if ypos = y2 then exit
+			lda ypos
+			cmp y2
+			bne +
+
+			lda ypos+1
+			cmp y2+1
+			bne +
+
+			cli
+			rts
+
+			// _e = _e + ddx
++			clc
+			lda _e
+			adc ddx
+			sta _e
+			lda _e+1
+			adc ddx+1
+			sta _e+1
+
+			// ypos = ypos + sy
+			clc
+			lda ypos
+			adc sy
+			sta ypos
+			lda ypos+1
+			adc sy+1
+			sta ypos+1
+		// bend
+	
+	// loop
++	jmp pixel_loop
+
+	cli
+	rts
+
+
+//-------
+set_colour:
+//-------
+	sta colour
+	rts
+
+
 // ---------------------
 // INTERNAL ASM ROUTINES
 // ---------------------
@@ -1078,6 +1451,251 @@ calc_faded_colour:
 	rts
 
 
+//----
+init2:
+//----
+				lda #$00
+				sta virtual
+				sta xhalf
+				sta yhalf
+
+				// init high word of COLPTR to be $0ff8
+				lda #$0f
+				sta COLPTR + 3
+				lda #$f8
+				sta COLPTR + 2
+
+				// init high word of ROWPTR to be LO=SCRNPTRBNK($D062) HI=SCRNPTRMB($D063.0-3)
+				lda $d063
+				and #$0f
+				sta ROWPTR + 3
+				lda $d062
+				sta ROWPTR + 2
+
+				rts
+
+
+//---------------
+update_char_at_xy:
+//---------------
+				// if on left, bits 1 or 3
+				lda xhalf
+				bne SetRightBit  // plot must be on the right of the battenburg
+				// since bits 1 or 3 is set, we are on the left - top left or bottom left?
+				lda yhalf
+				beq SetTopLeft
+				ldx #$04 // bottom left
+				jmp Combine
+SetTopLeft:		ldx #$01 // top left	
+				jmp Combine
+
+SetRightBit:	lda yhalf
+				beq SetTopRight
+				ldx #$08
+				jmp Combine
+SetTopRight:	ldx #$02
+
+Combine:		// combine the new bit with those of any pre-existing bits 
+				txa
+				ora virtual
+				tax
+
+				// What's the character corresponding to the combined bit pattern?
+NextCharOut:	lda bitpatterns,x
+				
+Plot:			phy
+				plz
+				sta [ROWPTR],z
+				lda colour
+				sta [COLPTR],z
+
+DumpReg:		ldx ROWPTR
+				ldy ROWPTR + 1
+				ldz xhalf
+				rts
+
+//---------------
+check_xy_in_range:
+//---------------
+				// don't draw negative x
+				lda xpos
+				cmp #160
+				bcc +
+				sec
+				rts
+
+				// don't draw negative y
++				lda ypos
+				bpl +
+				sec
+				rts
+
++				lda xmode4080
+				cmp #80
+				beq ValidateX80
+
+ValidateX40:	lda xpos 
+				cmp #80
+				bcc xok
+				sec
+				rts // if out of range, don't draw
+
+				// validate values
+ValidateX80:		lda xpos
+				cmp #160
+				bcc xok
+				sec
+				rts	// if out of range, don't draw
+
+xok:			lda ymode2550
+				cmp #50
+				beq ValidateY50
+
+ValidateY25:	lda ypos
+				cmp#50
+				bcc yok
+				sec
+				rts // if out of range, don't draw
+
+ValidateY50:	lda ypos
+				cmp#100
+				bcc yok
+				sec
+				rts // if out of range, don't draw
+
+yok:			clc
+				rts
+
+
+//-----------------
+find_char_positions:
+//-----------------
+				// find character positions
+				//divide x by 2
+				clc
+				lda xpos
+				ror
+				sta screenx
+				// is it an odd number?  Then we need a right half pixel to be set
+				bcc +
+				lda #$ff
+				sta xhalf
+
+				//divide y by 2
++				clc
+				lda ypos
+				ror
+				sta screeny
+				// is it an odd number?  Then we need a bottom half pixel to be set
+				bcc +
+				lda #$ff
+				sta yhalf
+
++				rts
+
+
+//-----------------------------
+init_screen_and_colour_pointers:
+//-----------------------------
+				// ldx #<SCRNBASE
+				// ldy #>SCRNBASE
+				ldx $d060	// SCRNPTRLSB
+				ldy $d061	// SCRNPTRMSB
+				stx ROWPTR
+				sty ROWPTR + 1
+
+				ldx #<COLRBASE
+				ldy #>COLRBASE
+				stx COLPTR
+				sty COLPTR + 1
+				rts
+
+
+//-------------------------------
+update_pointers_to_start_of_y_row:
+//-------------------------------
+				ldz #$00
+				ldy #$00
+				ldx #$00
+				lda screeny
+				stq MULTINA
+
+				lda xmode4080
+				stq MULTINB
+
+				ldq MULTOUT
+
+				clc
+				tay
+				adc ROWPTR
+				sta ROWPTR
+
+				txa
+				adc ROWPTR+1
+				sta ROWPTR+1
+
+				clc
+				tya
+				adc COLPTR
+				sta COLPTR
+
+				txa
+				adc COLPTR+1
+				sta COLPTR+1
+
++				rts
+
+
+//--------------------------------
+check_for_battenburg_char_at_x_col:
+//--------------------------------
+				// z is the x coordinate to print to
+				ldy screenx
+				ldz screenx
+				lda [COLPTR],z
+				cmp colour
+				beq CheckChar
+
+				ldx #$00
+				stx virtual
+
+				rts
+
+				// Is there already a plot character in the box?
+CheckChar:		// Is it in the list?  If so, which bit pattern?
+				ldx #$00
+NextChar:		lda bitpatterns,x
+				cmp [ROWPTR],z
+				beq CheckDone
+				inx
+				cpx #$10
+				bne NextChar
+
+CheckDone:		// if we reach the end of the list there isn't a battenburg so just go ahead and plot
+				cpx #$10
+				beq +
+
+				// there is already a plot point in the character square, store its nybble representation
+				stx virtual
+
++				rts
+
+
+//--------------
+which_char_at_xy:
+//--------------
+				lda #$00
+				sta virtual
+
+				jsr init_screen_and_colour_pointers
+			
+				jsr update_pointers_to_start_of_y_row
+
+				jsr check_for_battenburg_char_at_x_col	// if exists, screen-code char stored in 'virtual'
+
+				rts
+
+
 
 
 // VARIABLES
@@ -1107,3 +1725,26 @@ transp:		!byte $00
 starx:		!word $00
 starvx:		!word $00
 
+// megaplot vars
+xmode4080:	!byte 80
+ymode2550:	!byte 50
+xpos:		!word $00
+ypos:		!word $00
+colour:		!byte $00
+x1:		!word $00
+y1:		!word $00
+x2:		!word $00
+y2:		!word $00
+ddx:		!word $00
+ddy:		!word $00
+sx:		!word $00
+sy:		!word $00
+_e:		!word $00
+_e2:		!word $00
+virtual:	!byte $00
+xhalf:		!byte $00 // ff if the point is on the right of the character square
+yhalf:		!byte $00 // ff if the point is on the bottom of the character square
+bitpatterns:	!byte $20,$7e,$7c,$e2,$7b,$61,$ff,$ec,$6c,$7f,$e1,$fb,$62,$fc,$fe,$a0
+// descriptions:      spc, TL, TR, hT, BL, vL,  /,iBR, BR,  \, vR,iBL, hB,iTR,iTL,all
+screenx:	!byte $00
+screeny:	!byte $00
