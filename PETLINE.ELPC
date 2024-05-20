@@ -91,17 +91,41 @@ gosub init
   ' init
   qlidx = 0 : qlcnt = 0
 
-.qll_loop
-
   qlx1(qlidx) = int(rnd(1)*160)
   qly1(qlidx) = int(rnd(1)*100)
 
   qlx2(qlidx) = int(rnd(1)*160)
   qly2(qlidx) = int(rnd(1)*100)
+  qlcnt = qlcnt + 1
 
-  qlclr = int(rnd(1)*16) + 64
+  qlvx1 = rnd(1)*3 + .5
+  qlvy1 = rnd(1)*3 + .5
+  qlvx2 = rnd(1)*3 + .5
+  qlvy2 = rnd(1)*3 + .5
 
-  sys $7e0c, qlclr
+.qll_loop
+  ' print "{x93}";
+
+  ' tweak positions
+  qlx1(qlidx) = qlx1(qlidx) + qlvx1
+  if qlx1(qlidx) >= 160 and qlvx1 > 0 then qlx1(qlidx)=159 : qlvx1 = -qlvx1
+  if qlx1(qlidx) < 0 and qlvx1 < 0 then qlx1(qlidx)=0 : qlvx1 = -qlvx1
+
+  qly1(qlidx) = qly1(qlidx) + qlvy1
+  if qly1(qlidx) >= 100 and qlvy1 > 0 then qly1(qlidx)=99 : qlvy1 = -qlvy1
+  if qly1(qlidx) < 0 and qlvy1 < 0 then qly1(qlidx)=0 : qlvy1 = -qlvy1
+
+  qlx2(qlidx) = qlx2(qlidx) + qlvx2
+  if qlx2(qlidx) >= 160 and qlvx2 > 0 then qlx2(qlidx)=159 : qlvx2 = -qlvx2
+  if qlx2(qlidx) < 0 and qlvx2 < 0 then qlx2(qlidx)=0 : qlvx2 = -qlvx2
+
+  qly2(qlidx) = qly2(qlidx) + qlvy2
+  if qly2(qlidx) >= 100 and qlvy2 > 0 then qly2(qlidx)=99 : qlvy2 = -qlvy2
+  if qly2(qlidx) < 0 and qlvy2 < 0 then qly2(qlidx)=0 : qlvy2 = -qlvy2
+
+  qlclr = mod(qlclr + 1, 16)
+
+  sys $7e0c, qlclr + 64
 
   qlcnt = qlcnt + 1
 
@@ -110,11 +134,15 @@ gosub init
   x2 = qlx2(qlidx)
   y2 = qly2(qlidx)
 
-  'cursor 0,0:print chr$(27);"qx1,y1,x2,y2=",x1,y1,x2,y2
+  'cursor 0,0:print chr$(27);"qx1,y1,x2,y2=",int(x1),int(y1),int(x2),int(y2)
+  'cursor 0,1:print chr$(27);"qvx1,vy1,vx2,vy2=";qlvx1;qlvy1;qlvx2;qlvy2
   gosub draw_line
+
+  'cursor x1/2,y1/2:print "+";
+  'cursor x2/2,y2/2:print "+";
   'get key a$
 
-  qlidx = mod(qlidx + 1, 10)
+  ' qlidx = mod(qlidx + 1, 10)
 
   goto qll_loop
   
