@@ -130,12 +130,14 @@
 
     sys $7e24, qlclr(kk) + 64
 
-    x1 = qlx1(kk)
-    y1 = qly1(kk)
-    x2 = qlx2(kk)
-    y2 = qly2(kk)
+    x1 = qlx1(kk) and 255
+    y1 = qly1(kk) and 255
+    x2 = qlx2(kk) and 255
+    y2 = qly2(kk) and 255
 
-    gosub draw_line
+    sys $7e21, x1, y1, x2, y2
+
+    ' gosub draw_line
   next k
 
   ' calc next line positions
@@ -265,10 +267,10 @@
   qly2(qlidx) = int(rnd(1)*100)
   qlcnt = qlcnt + 1
 
-  qlvx1 = rnd(1)*3 + .5
-  qlvy1 = rnd(1)*3 + .5
-  qlvx2 = rnd(1)*3 + .5
-  qlvy2 = rnd(1)*3 + .5
+  qlvx1 = rnd(1)*3 + 1
+  qlvy1 = rnd(1)*3 + 1
+  qlvx2 = rnd(1)*3 + 1
+  qlvy2 = rnd(1)*3 + 1
 
   qlcurclr = mod(qlcurclr + 1, 16)
   qlclr(qlidx) = qlcurclr
@@ -465,7 +467,7 @@
 '---------
 .page_flip
 '---------
-  vsync 10
+  'vsync 10
   bank 0 : sys $7e15 : bank 128
 
   return

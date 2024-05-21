@@ -1586,21 +1586,6 @@ find_char_positions:
 +				rts
 
 
-//-----------------------------
-init_screen_and_colour_pointers:
-//-----------------------------
-				ldx #$00
-				ldy #$00
-				stx ROWPTR
-				sty ROWPTR + 1
-
-				//ldx #<COLRBASE
-				//ldy #>COLRBASE
-				ldx #$00
-				ldy #$10
-				stx COLPTR
-				sty COLPTR + 1
-				rts
 
 
 //-------------------------------
@@ -1679,7 +1664,12 @@ which_char_at_xy:
 				lda #$00
 				sta virtual
 
-				jsr init_screen_and_colour_pointers
+				// jsr init_screen_and_colour_pointers
+				sta ROWPTR
+				sta ROWPTR + 1
+				sta COLPTR
+				ldy #$10
+				sty COLPTR + 1
 			
 				jsr update_pointers_to_start_of_y_row
 
