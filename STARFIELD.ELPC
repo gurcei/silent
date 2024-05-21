@@ -130,10 +130,10 @@
 
     sys $7e24, qlclr(kk) + 64
 
-    x1 = qlx1(kk) and 255
-    y1 = qly1(kk) and 255
-    x2 = qlx2(kk) and 255
-    y2 = qly2(kk) and 255
+    x1 = qlx1(kk)
+    y1 = qly1(kk)
+    x2 = qlx2(kk)
+    y2 = qly2(kk)
 
     sys $7e21, x1, y1, x2, y2
 
