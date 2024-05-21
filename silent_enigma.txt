@@ -12,8 +12,9 @@ DONE- Try port line drawing routine to assembly, for speed
   DONE - 'The Silent Enigma' text
   - Lyrics via 'writer'
   DONE- port scroll-right to asm
-  - qix lines via megaplot
+  DONE- qix lines via megaplot
   - qix squares via megaplot
+  - qix cubes via megaplot
   - rotate plus greets
   - final section: rotating cubes via megaplot
   - fade back to original screen demo was run from

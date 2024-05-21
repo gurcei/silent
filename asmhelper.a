@@ -1047,6 +1047,7 @@ plot:
 _plot:
 				jsr init2
 
+__plot:
 				jsr check_xy_in_range
 				bcc +
 				rts
@@ -1103,6 +1104,13 @@ line:
 +	jsr init
 
 	// borrowed from: www.baeldung.com/cs/bresenhams-line-algorithm
+	lda #$01
+	sta sx
+	lda #$00
+	sta sx+1
+	lda #$ff
+	sta sy
+	sta sy+1
 
 	// ddx = abs(x2-x1)
 	lda x2
@@ -1127,23 +1135,7 @@ line:
 	adc #$00
 	sta ddx+1
 
-
 	// if x1 < x2 then sx = 1 : else sx = -1
-+	lda #$01
-	sta sx
-	lda #$00
-	sta sx+1
-
-	sec
-	lda x1
-	sbc x2
-	sta tmpw
-	lda x1+1
-	sbc x2+1
-	sta tmpw+1
-	
-	bmi +
-
 	lda #$ff
 	sta sx
 	sta sx+1
@@ -1172,23 +1164,9 @@ line:
 	sta ddy+1
 
 	// if y1 < y2 then sy = 1 : else sy = -1
-+	lda #$01
+	lda #$01
 	sta sy
 	lda #$00
-	sta sy+1
-
-	sec
-	lda y1
-	sbc y2
-	sta tmpw
-	lda y1+1
-	sbc y2+1
-	sta tmpw+1
-
-	bmi +
-
-	lda #$ff
-	sta sy
 	sta sy+1
 	
 	// _e = ddx + ddy
@@ -1212,10 +1190,25 @@ line:
 	lda y1+1
 	sta ypos+1
 
+	lda #$00
+	sta virtual
+	sta xhalf
+	sta yhalf
+
 	// do while 1
 pixel_loop:
+				lda #$00
+				sta virtual
+				sta xhalf
+				sta yhalf
+				sta COLPTR + 3
+				sta ROWPTR + 3
+				lda #$05
+				sta COLPTR + 2
+				sta ROWPTR + 2
+
 		// gosub draw_pixel
-		jsr _plot
+		jsr __plot
 
 		//if xpos = (x2) and ypos = y2 then exit
 		lda xpos
