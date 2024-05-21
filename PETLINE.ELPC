@@ -54,7 +54,7 @@
 #declare qlx1(10), qly1(10), qlx2(10), qly2(10), qlx3(10), qly3(10)
 #declare qlx4(10), qly4(10)
 #declare qlvx1, qlvy1, qlvx2, qlvy2
-#declare qlclr(10), qlcurclr, kk, t, tx, ty, sides, sqinc
+#declare qlclr(10), qlcurclr, kk, t, t1, t2, tx, ty, sides, sqinc
 
 
 gosub init
@@ -283,18 +283,26 @@ gosub init
 .draw_many_cubes
 '---------------
   cb_incb = 0
-  for cb_inca = 0 to 1.9*PI/4 step PI/16
-    ' print"{x93}"
-    gosub draw_cube
-    ' sleep .02
-  next cb_inca
-
   cb_inca = 0
-  for cb_incb = 0 to 1.9*PI/2 step PI/16
-    ' print"{x93}"
+  t1 = 0
+  t2 = 0
+  pdist = 45
+
+.mc_loop
+  centrex = 80 + 45*sin(t2)
+  centrey = 50 + 15*sin(t1)
+
+  pdist = 20 - 20 * cos(t1)
+  cb_incb = PI/2 * sin(t1)
+  cb_inca = PI/2 * sin(t2)
+  t1 = t1 + .1
+  t2 = t2 + .05
+  if t1 > 2*PI then t1=t1-2*PI
+  if t2 > 2*PI then t2=t2-2*PI
+
+    print"{x93}"
     gosub draw_cube
-    ' sleep .02
-  next cb_incb
+  goto mc_loop
 
   return
   
@@ -302,7 +310,6 @@ gosub init
 '---------
 .draw_cube
 '---------
-  pdist = 45
   cbidx = 0
 
   cb_angb = atn(1/sqr(2))

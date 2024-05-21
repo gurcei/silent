@@ -6,30 +6,75 @@
 #declare s$, pidx%, didx%, ldata&(12000), ptr, val&
 #declare char_idx%(60)
 #declare char_width%(60)
-#declare char_cnt, max_width, k
+#declare char_cnt, max_width, txt_k
 #declare x, y, a$, debug=0, z$
 #declare xx, yy, chr
-
+#declare lyr$(27), lyr_idx, max_len
+#declare lyr_offs, lyr_t, offs, addr, scyy, zz
 
 '----
 .main
 '----
   gosub init
-
-  xx=0:yy=0
-  s$ = ",/#"
-  gosub write_text
-
-  xx=0:yy=15
   
-  s$ = "This is BAS!"
-  gosub write_text
+  lyr_offs = 0
+  ' xx=0:yy=0
+  ' s$ = ",/#"
+  ' gosub write_text
+
+  ' xx=0:yy=15
+  ' sleep .5
+  ' print "{x93}";
+
+  for lyr_idx = 0 to 27
+    xx = offs + 65 : yy = 0
+    zz = mod(lyr_idx, 4)
+    if zz = 0 then yy = 0
+    if zz = 1 then yy = 17
+    if zz = 2 then yy = 33
+    if zz = 3 then yy = 17
+    s$ = lyr$(lyr_idx)
+    gosub write_text
+  next lyr_idx
+
   end
 
 
 '----
 .init
 '----
+  lyr$(0) = "In dreamland..."
+  lyr$(1) = "grandeur..."
+  lyr$(2) = "I held..."
+  lyr$(3) = "mesmerised..."
+  lyr$(4) = "Peace..."
+  lyr$(5) = "Innocence..."
+  lyr$(6) = "Breathed again..."
+
+  lyr$(7) = "A mind's escape"
+  lyr$(8) = "Leave walls of tears behind..."
+  lyr$(9) = "Ethereal vision haunting still..."
+  lyr$(10) = "The solitude left me blind..."
+
+  lyr$(11) = "Beneath an open sky..."
+  lyr$(12) = "Sibilant cries of youth dying..."
+  lyr$(13) = "Enslave me with grief..."
+  lyr$(14) = "A moonlit era..."
+  lyr$(15) = "Oblivion's twilight kiss..."
+  lyr$(16) = "Wishes in lament..."
+  lyr$(17) = "Happiness in a broken vision..."
+  lyr$(18) = "Utopia..."
+  lyr$(19) = "Still unborn..."
+
+  lyr$(20) = "Tormented echoes..."
+  lyr$(21) = "of a fallen Eden..."
+  lyr$(22) = "I longed for her beauty..."
+  lyr$(23) = "Yet from dust..."
+  lyr$(24) = "She returned..."
+  lyr$(25) = "The dream..."
+  lyr$(26) = "An enigma..."
+  lyr$(27) = "Silent..."
+
   print "{x93}";
 
   xx = 0 : yy = 0
@@ -42,11 +87,11 @@
   char_width%(0) = 0
   max_width = 0
 
-  k = 0
-  do while k < didx%
+  txt_k = 0
+  do while txt_k < didx%
     ' get x value
-    val& = ldata&(k)
-    k=k+1
+    val& = ldata&(txt_k)
+    txt_k=txt_k+1
 
     if val& = $ff then begin
       ' keep an array of widths of each letter
@@ -59,7 +104,7 @@
       char_cnt=char_cnt+1
 
       ' keep an array of indices to each drawn letter
-      char_idx%(char_cnt) = k
+      char_idx%(char_cnt) = txt_k
       'print "char_idx%(";char_cnt;")=";k
       'get key a$
     bend
@@ -69,8 +114,8 @@
     val& = val& and $7f
     if val& > max_width then max_width = val&
     
-    k=k+1  ' skip y value
-    k=k+1  ' skip char 
+    txt_k=txt_k+1  ' skip y value
+    txt_k=txt_k+1  ' skip char 
 
 .cont_loop
   loop
@@ -97,20 +142,28 @@
 '----------
 .write_text
 '----------
-  for k = 1 to len(s$)
-    chr = asc(mid$(s$,k,1))
+  for txt_k = 1 to len(s$)
+    chr = asc(mid$(s$, txt_k, 1))
     ' print "{x13}";chr$(27);"qchr=";chr;
     gosub petscii_to_screencode
     gosub screencode_to_idx
     ' print "fixed chr=";chr;
 
-    if chr=32 then begin
-      xx=xx+7
+    if chr=100 then begin
+      'xx=xx+7
+      gosub scroll_canvas_right
+      gosub scroll_canvas_right
+      gosub scroll_canvas_right
+      gosub scroll_canvas_right
+      gosub scroll_canvas_right
+      gosub scroll_canvas_right
+
     bend:else:begin
       gosub write_char
       xx = xx + char_width%(chr) + 1
     bend
-  next k
+    ' get key a$
+  next txt_k
   return
 
 
@@ -138,7 +191,9 @@
   if chr = 44 then chr = 28:return ' comma (smiley)
   if chr = 47 then chr = 29:return ' forward slash (love heart)
   if chr = 35 then chr = 30:return ' # hash (dhufish)
-  if chr >= 1 and chr <= 26 then chr = chr + 30
+  if chr >= 1 and chr <= 26 then chr = chr + 30:return
+  if chr = 39 then chr = 57:return
+  if chr = 32 then chr = 100:return
   return
 
 '----------
@@ -162,7 +217,11 @@
     y = ldata&(pidx%) : pidx% = pidx% + 1
     a$ = chr$(ldata&(pidx%)) : pidx% = pidx% + 1
 
-    cursor xx+x, yy+y : gosub draw_char
+    cursor xx+x - offs, yy+y : gosub draw_char
+
+    lyr_t = lyr_t + 1
+
+    if mod(lyr_t, 3) = 0 then gosub scroll_canvas_right:xx=xx-1
 
     'print "{x13}{x11}";chr$(27);"q x,y,pidx,a$=";x;y;pidx%,asc(a$)
     'get key a$
@@ -180,5 +239,20 @@
   ' poke $40800 + x + y*80, asc(a$)
   ' poke $ff80000 + x + y*80, rcolor(1)
   print a$;
+  return
+
+
+'-------------------
+.scroll_canvas_right
+'-------------------
+  lyr_offs = lyr_offs + 1
+  addr = $40800
+
+  addr = $40800
+
+  for scyy = 0 to 49
+    edma 0, 79, addr+1 + scyy*80, addr + scyy*80
+    poke addr + 79 + scyy * 80, 32
+  next scyy
   return
 ÿ

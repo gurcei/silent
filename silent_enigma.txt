@@ -13,8 +13,8 @@ DONE- Try port line drawing routine to assembly, for speed
   - Lyrics via 'writer'
   DONE- port scroll-right to asm
   DONE- qix lines via megaplot
-  - qix squares via megaplot
-  - qix cubes via megaplot
+  DONE- qix squares via megaplot
+  DONE- qix cubes via megaplot
   - rotate plus greets
   - final section: rotating cubes via megaplot
   - fade back to original screen demo was run from
