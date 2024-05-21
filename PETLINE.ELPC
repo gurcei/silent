@@ -52,8 +52,9 @@
 
 #declare qlidx, qlcnt
 #declare qlx1(10), qly1(10), qlx2(10), qly2(10), qlx3(10), qly3(10)
+#declare qlx4(10), qly4(10)
 #declare qlvx1, qlvy1, qlvx2, qlvy2
-#declare qlclr(10), qlcurclr, kk, t
+#declare qlclr(10), qlcurclr, kk, t, tx, ty, sides, sqinc
 
 
 gosub init
@@ -71,6 +72,7 @@ gosub init
   print "5) draw many cubes"
   print "6) qix lines"
   print "7) qix triangles"
+  print "8) qix squares"
 
   get key z$
   if z$="1" then gosub draw_lines_from_centre_out
@@ -80,8 +82,9 @@ gosub init
   if z$="5" then gosub draw_many_cubes
   if z$="6" then gosub draw_qix_lines
   if z$="7" then gosub draw_qix_triangles
+  if z$="8" then gosub draw_qix_squares
 
-  if z$>="1" and z$<="5" then get key z$
+  if z$>="1" and z$<="8" then get key z$
   goto main
   end
 
@@ -160,11 +163,30 @@ gosub init
   return
 
 
-'-----------------
+'------------------
 .draw_qix_triangles
 '------------------
+  sides = 3
+  sqang = - PI / 2
+  gosub draw_qix_poly
+  return
+
+
+'----------------
+.draw_qix_squares
+'----------------
+  sides = 4
+  sqang = - 3 * PI / 4
+  gosub draw_qix_poly
+  return
+
+
+'-------------
+.draw_qix_poly
+'-------------
   ' init
   qlidx = 0
+  sqinc = 2 * PI / sides
 
   qlcnt = 1
   t = 0
@@ -173,18 +195,24 @@ gosub init
   pdist = 22.5 - 22.5 * cos(t)
   centrex = 80 : centrey = 50
 
-  pang = sqang - PI / 2
+  pang = sqang
   qlx1(qlidx) = centrex + pdist * cos(pang)
   qly1(qlidx) = centrey + pdist * sin(pang)
 
-  pang = pang + 2 * PI / 3
+  pang = pang + sqinc
   qlx2(qlidx) = centrex + pdist * cos(pang)
   qly2(qlidx) = centrey + pdist * sin(pang)
 
-  pang = pang + 2 * PI / 3
+  pang = pang + sqinc
   qlx3(qlidx) = centrex + pdist * cos(pang)
   qly3(qlidx) = centrey + pdist * sin(pang)
 
+  if sides = 4 then begin
+    pang = pang + sqinc
+    qlx4(qlidx) = centrex + pdist * cos(pang)
+    qly4(qlidx) = centrey + pdist * sin(pang)
+  bend
+  
   qlcurclr = mod(qlcurclr + 1, 16)
   qlclr(qlidx) = qlcurclr
 
@@ -206,16 +234,26 @@ gosub init
     'cursor 0,1:print chr$(27);"qvx1,vy1,vx2,vy2=";qlvx1;qlvy1;qlvx2;qlvy2
     gosub draw_line
 
-    tx = x2
-    ty = y2
+    tx = x1
+    ty = y1
 
-    x2 = qlx3(kk)
-    y2 = qly3(kk)
+    x1 = qlx3(kk)
+    y1 = qly3(kk)
     gosub draw_line
 
-    x1 = tx
-    y1 = ty
-    gosub draw_line
+    if sides = 3 then begin
+      x2 = tx
+      y2 = ty
+      gosub draw_line
+    bend:else begin  ' sides = 4
+      x2 = qlx4(kk)
+      y2 = qly4(kk)
+      gosub draw_line
+
+      x1 = tx
+      y1 = ty
+      gosub draw_line
+    bend
 
     'cursor x1/2,y1/2:print "+";
     'cursor x2/2,y2/2:print "+";
@@ -529,6 +567,9 @@ gosub init
   sys $7e03 ' init
   centrex = 80 : centrey = 50
   print chr$(27);"5";chr$(147);
+
+  ' set initial default colour for lines
+  sys $7e0c, 5
 
   zfact = cos(PI/4)
   return
