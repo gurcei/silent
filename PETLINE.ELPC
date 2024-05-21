@@ -51,9 +51,9 @@
 #declare ddx, ddy, sx, sy, e, e2
 
 #declare qlidx, qlcnt
-#declare qlx1(10), qly1(10), qlx2(10), qly2(10)
+#declare qlx1(10), qly1(10), qlx2(10), qly2(10), qlx3(10), qly3(10)
 #declare qlvx1, qlvy1, qlvx2, qlvy2
-#declare qlclr(10), qlcurclr, kk
+#declare qlclr(10), qlcurclr, kk, t
 
 
 gosub init
@@ -70,6 +70,7 @@ gosub init
   print "4) draw cube"
   print "5) draw many cubes"
   print "6) qix lines"
+  print "7) qix triangles"
 
   get key z$
   if z$="1" then gosub draw_lines_from_centre_out
@@ -78,6 +79,7 @@ gosub init
   if z$="4" then gosub draw_cube
   if z$="5" then gosub draw_many_cubes
   if z$="6" then gosub draw_qix_lines
+  if z$="7" then gosub draw_qix_triangles
 
   if z$>="1" and z$<="5" then get key z$
   goto main
@@ -154,6 +156,84 @@ gosub init
   qlclr(qlidx) = qlcurclr
 
   goto qll_loop
+
+  return
+
+
+'-----------------
+.draw_qix_triangles
+'------------------
+  ' init
+  qlidx = 0
+
+  qlcnt = 1
+  t = 0
+  pdist = 45
+.tri_loop
+  pdist = 22.5 - 22.5 * cos(t)
+  centrex = 80 : centrey = 50
+
+  pang = sqang - PI / 2
+  qlx1(qlidx) = centrex + pdist * cos(pang)
+  qly1(qlidx) = centrey + pdist * sin(pang)
+
+  pang = pang + 2 * PI / 3
+  qlx2(qlidx) = centrex + pdist * cos(pang)
+  qly2(qlidx) = centrey + pdist * sin(pang)
+
+  pang = pang + 2 * PI / 3
+  qlx3(qlidx) = centrex + pdist * cos(pang)
+  qly3(qlidx) = centrey + pdist * sin(pang)
+
+  qlcurclr = mod(qlcurclr + 1, 16)
+  qlclr(qlidx) = qlcurclr
+
+  vsync 0
+  print "{x93}";
+
+  for k = 0 to qlcnt - 1
+    ' kk = mod(qlidx + qlcnt-1 - k, 5)
+    kk = mod(qlidx + k, 5)
+
+    sys $7e0c, qlclr(kk) + 64
+
+    x1 = qlx1(kk)
+    y1 = qly1(kk)
+    x2 = qlx2(kk)
+    y2 = qly2(kk)
+
+    'cursor 0,0:print chr$(27);"qx1,y1,x2,y2=",int(x1),int(y1),int(x2),int(y2)
+    'cursor 0,1:print chr$(27);"qvx1,vy1,vx2,vy2=";qlvx1;qlvy1;qlvx2;qlvy2
+    gosub draw_line
+
+    x2 = qlx3(kk)
+    y2 = qly3(kk)
+    gosub draw_line
+
+    x1 = qlx2(kk)
+    y1 = qly2(kk)
+    gosub draw_line
+
+    'cursor x1/2,y1/2:print "+";
+    'cursor x2/2,y2/2:print "+";
+    'get key a$
+  next k
+
+  ' calc next line positions
+  kk = qlidx  ' old qlidx
+  qlidx = mod(qlidx + 1, 5)
+  if qlcnt < 5 then qlcnt = qlcnt + 1
+
+  sqang = sqang + .1
+  if sqang > 2*PI then sqang = sqang - 2*PI
+
+  qlcurclr = mod(qlcurclr + 1, 16)
+  qlclr(qlidx) = qlcurclr
+
+  t = t + .1
+  if t > 2*PI then t = t - 2*PI
+
+  goto tri_loop
 
   return
 
@@ -398,56 +478,7 @@ gosub init
   if cur_char = PIX_TR then pix = 2:return
   if cur_char = PIX_BL then pix = 4:return
   if cur_char = PIX_BR then pix = 8:return
-
-  if cur_char = PIX_INV_TL then pix=14:return
-  if cur_char = PIX_INV_TR then pix=13:return
-  if cur_char = PIX_INV_BL then pix=11:return
-  if cur_char = PIX_INV_BR then pix=7:return
-
-  if cur_char = PIX_DIAG_TL_BR then pix=9:return
-  if cur_char = PIX_DIAG_BL_TR then pix=6:return
-
-  if cur_char = PIX_HLINE_BOT then pix=12:return
-  if cur_char = PIX_HLINE_TOP then pix=3:return
-
-  if cur_char = PIX_VLINE_LEFT then pix=5:return
-  if cur_char = PIX_VLINE_RIGHT then pix=10:return
-
-  if cur_char = PIX_ALL then pix=15:return
-  return
-
-
-'-------------
-.set_on_pixels
-'-------------
-  if pix = 0 then cur_char = PIX_NONE:return
-  if pix = 1 then cur_char = PIX_TL:return
-  if pix = 2 then cur_char = PIX_TR:return
-  if pix = 3 then cur_char = PIX_HLINE_TOP:return
-  if pix = 4 then cur_char = PIX_BL:return
-  if pix = 5 then cur_char = PIX_VLINE_LEFT:return
-  if pix = 6 then cur_char = PIX_DIAG_BL_TR:return
-  if pix = 7 then cur_char = PIX_INV_BR:return
-  if pix = 8 then cur_char = PIX_BR:return
-  if pix = 9 then cur_char = PIX_DIAG_TL_BR:return
-  if pix = 10 then cur_char = PIX_VLINE_RIGHT:return
-  if pix = 11 then cur_char = PIX_INV_BL:return
-  if pix = 12 then cur_char = PIX_HLINE_BOT:return
-  if pix = 13 then cur_char = PIX_INV_TR:return
-  if pix = 14 then cur_char = PIX_INV_TL:return
-  if pix = 15 then cur_char = PIX_ALL:return
-  return
-
-
-'----
-.init
-'----
-  bank 0:bload "megaplot"
-  sys $7e03 ' init
-  centrex = 80 : centrey = 50
-  print chr$(27);"5";chr$(147);
-
-  zfact = cos(PI/4)
-  return
-  
-ÿ
+0{x8}
+±{x8B}ð{x3}l?{x88}­V{x8B}Mß{x8B}P{xA}­W{x8B}Mà{x8B}P{x2}x{x60}{x18}­é{x8B}{x6D}á{x8B}{x8D}é{x8B}­ê{x8B}{x6D}â{x8B}{x8D}ê{x8B}{x18}­V{x8B}{x6D}ç{x8B}{x8D}V{x8B}­W{x8B}{x6D}è{x8B}{x8D}W{x8B}l?{x88}x{x60}{x8D}X{x8B}{x60}£{x9}­G{x8B}ê{x92}{x18}{x1B}­H{x8B}ê{x92}{x18}£{xC}­I{x8B}ê{x92}{x18}{x1B}­J{x8B}ê{x92}{x18}£{x7}­K{x8B}ê{x92}{x18}{x1B}­L{x8B}ê{x92}{x18}£{x4}­M{x8B}ê{x92}{x18}©{x4}{x8D}{x2}W©{xF}{xA}{xA}{xA}{xA}{x8D}°{x8B}{x8A})ðjjjj
+°{x8B}{x60}­_{x8B}M­{x8B}{x90}r8­®{x8B}í¬{x8B}{x8D}±{x8B}­_{x8B}í­{x8B}{x8D}²{x8B}{x18}Û£{x18}Û£
+í{x8B}ª½ð{x8B}zûê{x92}{x18}­X{x8B}ê{x92}{x1C}¦{x18}¤{x19}«î{x8B}{x60}­T{x8B}I{xA0}{x90}{x2}8{x60}­V{x8B}{x10}{x2}8{x60}­R{x8B}Ipð{x9}­T{x8B}Ip{x90}{xB}8{x60}­T{x8B}I{xA0}{x90}{x2}8{x60}­S{x8B}I2ð{x9}­V{x8B}I2{x90}{xB}8{x60}­V{x8B}I{x64}{x90}{x2}8{x60}{x18}{x60}{x18}­T{x8B}{x6A}{x8D}ÿ
