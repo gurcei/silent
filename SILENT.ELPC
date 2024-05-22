@@ -74,7 +74,17 @@
   #declare curr_blue&(32)
   #declare fadeval, tempval
 
-#declare logo_state, frameidx, fx, fy
+#declare logo_state, frameidx, fx, fy, mirror, bas_state
+#declare frmy(3), orig_frmy(3), finish_cnt, bcnt
+#declare inc(3), inc_dir(3), data_addr%, cdata_addr%
+#declare scraddr%, clraddr%, inc%, max_frames, frm_idx
+#declare frame_addr%(25), frmx, frmy, frmw, frmh, frmx1, frmy1
+#declare sz, flip_var, upper_nibble, lower_nibble
+
+#declare rain_idx, plen, rainbowstr$, rainbow_x, rainbow_y
+#declare subtext$(2), subtext_idx = 0
+subtext$(0) = "presents..."
+subtext$(1) = "a song by..."
 
 #define FRM_B = 0
 #define FRM_A = 1
