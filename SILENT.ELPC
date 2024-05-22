@@ -66,9 +66,9 @@
 '==================
   ' palette
   ' -------
-  #declare default_red&(32)
-  #declare default_green&(32)
-  #declare default_blue&(32)
+  #declare default_red&(32), bkp_red&(32)
+  #declare default_green&(32), bkp_green&(32)
+  #declare default_blue&(32), bkp_blue&(32)
   #declare curr_red&(32)
   #declare curr_green&(32)
   #declare curr_blue&(32)
@@ -131,6 +131,7 @@ subtext$(1) = "a song by..."
 .main
 '----
   gosub init
+  gosub state_loop
 
 .main_loop
   tstart = ti
@@ -238,17 +239,23 @@ subtext$(1) = "a song by..."
       poke $d020, 0, 0
       print "{x93}";
       gosub store_curr_colours
-      for fadeval = 0 to 128
-        ' fade_colours_to_defaults
-        bank 0:vsync 10:sys $7e03, fadeval:bank 128
-        fadeval = fadeval + 1
-      next fadeval
+      gosub restore_default_palette
       logo_state = ST_ANATHEMA
+      fadeval = 0
     bend
   bend
 
   if logo_state = ST_ANATHEMA then begin
-    print "{x5}anathema!";
+      if fadeval <= 128 then begin
+        ' fade_colours_to_defaults
+        bank 0:vsync 10:sys $7e03, fadeval:bank 128
+        fadeval = fadeval + 1
+      bend
+      gosub draw_starfield
+      gosub page_flip
+      gosub iter_starfield
+
+      if fadeval = 129 then return
   bend
 
   do
@@ -599,6 +606,13 @@ subtext$(1) = "a song by..."
 #define COL2_G = $42 ' 66
 #define COL2_B = $0b ' 11
 
+  ' preserve original palette somewhere
+  for k = 0 to 31
+    bkp_red&(k) = default_red&(k)
+    bkp_green&(k) = default_green&(k)
+    bkp_blue&(k) = default_blue&(k)
+  next k
+
   for k = 12 to 21
     flip_var = COL1_R + (COL2_R-COL1_R) * (k-12)/9
     gosub flip_nibble
@@ -617,6 +631,16 @@ subtext$(1) = "a song by..."
   next k
   return
 
+
+'-----------------------
+.restore_default_palette
+'-----------------------
+  for k = 0 to 31
+    default_red&(k) = bkp_red&(k)
+    default_green&(k) = bkp_green&(k)
+    default_blue&(k) = bkp_blue&(k)
+  next k
+  return
 
 '-----------
 .flip_nibble
@@ -721,6 +745,7 @@ subtext$(1) = "a song by..."
   m = 0
 
   gosub init_baslogo
+  gosub load_data
 
   ' switch back to upper-case
   ' poke $d018, peek($d018) and $fd
@@ -992,8 +1017,6 @@ subtext$(1) = "a song by..."
 '--------------
 .play_data_init
 '--------------
-  print "{x93}";
-
   offs(fidx%)=0
   pidx%(fidx%) = 0
   if lastflag = 1 then pidx%(fidx%) = last_group_idx : lastflag = 0
