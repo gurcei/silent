@@ -86,6 +86,35 @@
 subtext$(0) = "presents..."
 subtext$(1) = "a song by..."
 
+
+.music_vars
+'----------
+#define chunk_max = 50
+#declare chunk_cnt, chunk_idx, vidx, tmpo%, row
+#declare echo_m, echo_b, echo_sz = .05, chunk_rpt, echo_delay
+#declare v$(5,chunk_max), v
+#declare song$
+#declare v1$, v2$, v3$, v4$, v5$, v6$
+#declare curr_freq, curr_dir
+
+#declare seqcnt
+#declare seq_chunk(200), seq_extra(200)
+
+#declare plyptr, plyflag, ret%, tmp$
+
+#define CMD_TEMPO = -1
+#define CMD_FILTER = -2
+#define CMD_LOOP = -3
+#define CMD_ECHO_M1 = -4   ' echo melody: voice 1 on voice 4
+#define CMD_ECHO_M2 = -5   ' echo melody: voice 1 on voice 2 + 4 + 5
+#define CMD_ECHO_B  = -6   ' echo bass:   voice 3 on voice 6
+#define CMD_ECHO_OFF = -7
+#define CMD_ECHO_SZ = -8
+#define CMD_VOL = -9
+#define CMD_DELAY = -10
+#define CMD_MAX = 11
+
+
 #define FRM_B = 0
 #define FRM_A = 1
 #define FRM_S = 2
@@ -259,6 +288,10 @@ subtext$(1) = "a song by..."
   bend
 
   do
+    ret% = 0
+    do while ret% = 0
+      gosub parse_current_seqptr
+    loop
   loop while (ti-tstart) < .03
 
   goto state_loop
@@ -744,16 +777,12 @@ subtext$(1) = "a song by..."
 '----
   m = 0
 
+  print "initialising..."
   gosub init_baslogo
   gosub load_data
 
-  ' switch back to upper-case
-  ' poke $d018, peek($d018) and $fd
-
-  ' print chr$(27);"5";
-
-  ' print "{x93}";
-  ' poke $d020,0,0
+  song$ = "enigma.p"
+  gosub load_song
 
   for k = 0 to 20
     starx%(k) = int(rnd(1)*80)*256
@@ -792,6 +821,172 @@ subtext$(1) = "a song by..."
 
   ptr = pointer(starvx%(0))
   gosub store_ptr
+  return
+
+
+'---------
+.load_song
+'---------
+  dopen #2,(song$),r,u8
+
+  ' load melody chunks
+  ' ------------------
+  input #2, chunk_cnt
+  for chunk_idx = 0 to chunk_cnt - 1
+    for vidx=0 to 5
+      input #2,v$(vidx, chunk_idx)
+    next vidx
+  next chunk_idx
+
+  input #2,tmpo%
+  
+  ' load envelopes
+  ' --------------
+  for row = 0 to 9
+    input #2, tmp$
+    input #2, tmp
+    input #2, tmp
+    input #2, tmp
+    input #2, tmp
+    input #2, tmp
+    input #2, tmp
+  next row
+  print
+
+  ' load filter presets
+  ' -------------------
+  for row = 0 to 10
+    input #2, tmp$
+    input #2, tmp
+    input #2, tmp
+    input #2, tmp
+    input #2, tmp
+    input #2, tmp
+    input #2, tmp
+    input #2, tmp
+    input #2, tmp
+  next row
+
+  ' load sequence
+  ' -------------
+  seqcnt = 0
+  input #2, seqcnt
+  row = 0
+  do while row < seqcnt
+    input #2, seq_chunk(row)
+    input #2, seq_extra(row)
+    row = row + 1
+  loop
+
+
+  dclose #2
+
+  chunk_idx = 0
+  return
+
+
+'--------------------
+.parse_current_seqptr
+'--------------------
+  ret% = 0
+  if rplay(1)<>0 then ret%=1:return
+
+  k = seq_chunk(plyptr)
+  
+  if k >= 0 then begin
+    chunk_idx = k
+    if chunk_rpt <= 0 then chunk_rpt = seq_extra(plyptr)
+    gosub play_chunk_idx
+    'sleep .1
+    ret% = 1
+  bend
+  if k = CMD_TEMPO then begin
+    k = seq_extra(plyptr)
+    tempo (k)
+    tmpo% = k
+  bend
+  if k = CMD_ECHO_M1 then echo_m = 1 : echo_delay = 0
+  if k = CMD_ECHO_M2 then echo_m = 2 : echo_delay = 0
+  if k = CMD_ECHO_B  then echo_b = 1 : echo_delay = 0
+  if k = CMD_ECHO_OFF then echo_m = 0 : echo_b = 0
+  if k = CMD_ECHO_SZ then echo_sz = seq_extra(plyptr)
+  if k = CMD_DELAY then echo_delay = 1 : echo_m = 0 : echo_b = 0
+
+  if k = CMD_VOL then v = seq_extra(plyptr) : vol v, v
+
+  if chunk_rpt > 0 then chunk_rpt = chunk_rpt - 1
+
+  if chunk_rpt <= 0 then plyptr = plyptr + 1
+
+  if k = CMD_LOOP then plyptr = 0
+
+  if plyptr >= seqcnt then plyflag = 0 : plyptr = -1
+  return
+
+
+'--------------
+.play_chunk_idx
+'--------------
+  v1$ = v$(0,chunk_idx)
+  v2$ = v$(1,chunk_idx)
+  v3$ = v$(2,chunk_idx)
+  v4$ = v$(3,chunk_idx)
+  v5$ = v$(4,chunk_idx)
+  v6$ = v$(5,chunk_idx)
+
+  if echo_delay = 1 then begin
+    play v1$
+    sleep (echo_sz)
+    play ,v2$
+    sleep (echo_sz)
+    play ,,v3$
+    sleep (echo_sz)
+    play ,,,v4$
+    sleep (echo_sz)
+    play ,,,,v5$
+    sleep (echo_sz)
+    play ,,,,,v6$
+    sleep (echo_sz)
+    return
+  bend
+
+  if echo_m = 0 and echo_b = 0 then begin
+    play v1$, v2$, v3$, v4$, v5$, v6$
+    return
+  bend
+
+  if echo_m = 1 and echo_b = 0 then begin
+    play v1$, v2$, v3$,    , v5$, v6$
+    sleep (echo_sz)
+    play    ,    ,    , v1$
+  bend
+
+  if echo_m = 1 and echo_b = 1 then begin
+    play v1$, v2$, v3$,    , v5$
+    sleep (echo_sz)
+    play    ,    ,    , v1$,    , v3$
+  bend
+
+  if echo_m = 2 and echo_b = 0 then begin
+    play v1$,    , v3$,    ,    , v6$
+    sleep (echo_sz)
+    play    ,    ,    , v1$
+    sleep (echo_sz)
+    play    , v1$
+    sleep (echo_sz)
+    play    ,    ,    ,    , v1$
+  bend
+
+  if echo_m = 2 and echo_b = 1 then begin
+    play v1$,    , v3$
+    sleep (echo_sz)
+    play    ,    ,    , v1$
+    sleep (echo_sz)
+    play    , v1$,    ,    ,    , v3$
+    sleep (echo_sz)
+    play    ,    ,    ,    , v1$
+  bend
+
   return
 
 
