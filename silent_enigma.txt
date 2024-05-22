@@ -27,6 +27,7 @@ DONE- Try port line drawing routine to assembly, for speed
   DONE - final section: rotating cubes via megaplot
   - fade back to original screen demo was run from
   - Add PAL check
+  - ROM version check
 
 baslogo.el = 621 lines
 starfield.el = 625 lines
@@ -50,17 +51,26 @@ THANKS
 - Grim Fandango for MEGAPLOT, my starting point for plotting petscii via assembly :)
 - bisgedi for sharing the MULTIPLY.ASM example use of Q register written in grubi's Mega Assembler :)
 - Nobato for initial square rotation example
+- Traymond for rekindling my interest in C64 MIDI and walking me through how to use Compute's Stereo SID Player and Editor
+- My wifey, Tram, and daughter Moana, for enduring my MEGA65 fanaticism over the years :)
 
 MEGA65 TEAM GREETS
-- Greets to the mega65 team: gardners, deft, martin, lydon, dddaaannn, trenz and others
+- Greets to the mega65 team: trenz, gardners, deft, martin, tayger, lydon, dddaaannn, and others
+- Thanks for all your hard work over the years in getting the MEGA65 into the hands of us owners
 
 ACTIVE DEVS GREETS
 - Greets to active devs this year: bisgedi, btoschi, carthibar, clockchip, deathy/BAS, Drex, EgonOlsen71, El Nebuloso, fredrikr, Geehaf, GeirS, grubi, heath_man, jim-64, jwa74, kibo, M3wP, mc64, Mirage-BD, Mr. Jones, Nobato, retroCombs, Roughnight, SirLazarus, Stigodump, TOS22, Urban Lindeskog, zeus074
 - TwoBitRetro (for pascal65), Magnus Heidenborn (for letting me port his awesome C64 BASIC 'Stranded' game to the MEGA65), Stefan Eilers (for M65Script)
+
 VHDL NINJA GREETS
 - sy2002 and mjoergen for the awesome alternate cores (C64, Gameboy, ZX Spectrum), looking forward the upcoming alternate cores you have planned! :)
 - muse/shoestring for your awesome arcade cores
+
+VLOGGER GREETS
 - Greets to vloggers: Retrocombs, Perifractic and 8-Bit Guy, thx for the MEGA65 review and all the best with your X-16 release :)
+
+WELCOME
+Welcome to all the new batch 3 MEGA65 owners! Hope you have a great time with your new machine!
 
 Anathema - The Silent Enigma
 ============================

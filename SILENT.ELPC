@@ -1,4 +1,4 @@
-#output "starfield"
+#output "silent"
 
 ' BANK4 Memory usage
 ' ------------------
@@ -62,6 +62,42 @@
 #declare x1, y1, x2, y2
 
 
+.BASLOGO.EL_defines
+'==================
+  ' palette
+  ' -------
+  #declare default_red&(32)
+  #declare default_green&(32)
+  #declare default_blue&(32)
+  #declare curr_red&(32)
+  #declare curr_green&(32)
+  #declare curr_blue&(32)
+  #declare fadeval, tempval
+
+#declare logo_state, frameidx, fx, fy
+
+#define FRM_B = 0
+#define FRM_A = 1
+#define FRM_S = 2
+#define FRM_BACKDROP = 3
+
+.offsets
+#define OFFSET_DATA_SIZE  = 0
+#define OFFSET_NUM_FRAMES = 2
+#define OFFSET_FRAME0     = 3
+
+#define FRM_OFFSET_X          = 0
+#define FRM_OFFSET_Y          = 1
+#define FRM_OFFSET_W          = 2
+#define FRM_OFFSET_H          = 3
+#define FRM_OFFSET_HITBOXES   = 4
+#define FRM_OFFSET_HB_HEAD    = 4
+#define FRM_OFFSET_HB_TORSO   = 8
+#define FRM_OFFSET_HB_FEET    = 12
+#define FRM_OFFSET_HB_ATTACK  = 16
+#define FRM_OFFSET_DATA       = 20
+
+
 '-------
 .defines
 '-------
@@ -72,6 +108,13 @@
 
 #define DST_DEC = 32
 #define SRC_DEC = 16
+
+#define ST_FADE_TO_WHITE = 0
+#define ST_DRAW_BACKDROP_ONLY = 1
+#define ST_FADE_TO_DEFAULT = 2
+#define ST_DROP_IN_B = 3
+#define ST_PRESENTS = 4
+#define ST_ANATHEMA = 5
 
 
 '----
@@ -120,6 +163,487 @@
 
   goto main_loop
   end
+
+
+'----------
+.state_loop
+'----------
+  tstart = ti
+
+  if logo_state = ST_FADE_TO_WHITE then begin
+    gosub fade_to_white
+    logo_state = ST_DRAW_BACKDROP_ONLY
+
+  bend
+  
+  if logo_state = ST_DRAW_BACKDROP_ONLY then begin
+    bank 128
+    poke $d020, 1, 1
+    gosub init_80x50
+    gosub draw_backdrop
+    gosub page_flip
+    gosub store_curr_colours
+    gosub set_palette_for_backdrop
+    fadeval=0
+    m=0
+    logo_state = ST_FADE_TO_DEFAULT
+  bend
+  
+  if logo_state = ST_FADE_TO_DEFAULT then begin
+    if fadeval <= 128 then begin
+      ' fade_colours_to_defaults
+      bank 0:vsync 10:sys $7e03, fadeval:bank 128
+      fadeval = fadeval + 1
+    bend
+
+    ' cycle_alt_palette
+    bank 0:sys $7e06:bank 128
+    m = m + 1
+
+    if m = 130 then logo_state = ST_DROP_IN_B
+  bend
+
+  if logo_state = ST_DROP_IN_B then begin
+    gosub animate_logo
+    ' cycle_alt_palette
+    bank 0:sys $7e06:bank 128
+    m = m + 1
+
+    if m > 250 then logo_state = ST_PRESENTS:fadeval = 0
+  bend
+
+  if logo_state = ST_PRESENTS then begin
+    gosub anim_draw_subtext
+    ' cycle_alt_palette
+    bank 0:sys $7e06:bank 128
+    m = m + 1
+
+    if m > 360 then begin
+      ' fade to black
+      bank 0:sys $7e0c, fadeval:bank 128
+      fadeval = fadeval + 1
+    bend
+
+    if fadeval = 128 then begin
+      poke $d020, 0, 0
+      print "{x93}";
+      gosub store_curr_colours
+      for fadeval = 0 to 128
+        ' fade_colours_to_defaults
+        bank 0:vsync 10:sys $7e03, fadeval:bank 128
+        fadeval = fadeval + 1
+      next fadeval
+      logo_state = ST_ANATHEMA
+    bend
+  bend
+
+  if logo_state = ST_ANATHEMA then begin
+    print "{x5}anathema!";
+  bend
+
+  do
+  loop while (ti-tstart) < .03
+
+  goto state_loop
+
+  return
+
+
+'----------
+.init_80x50
+'----------
+  ' switch back to upper-case
+  poke $d018, peek($d018) and $fd
+
+  ' switch to 80x50
+  ' setbit HOTREG_7, 7
+  ' poke $d031, $e8 ' 1110 1000 = H640,FAST,ATTR,V400
+  print chr$(27);"5";
+
+  ' wpoke SCRNPTRLSB, $0800
+  ' poke SCRNPTRBNK, $04
+
+  return
+
+
+'-------------
+.draw_backdrop
+'-------------
+    frameidx = FRM_BACKDROP
+    fx=-999 : fy = -999
+    mirror = 0
+    gosub draw_petscii_frame
+    return
+
+
+'------------
+.animate_logo
+'------------
+  if bas_state = 0 then begin
+    orig_frmy(0) = 6
+    orig_frmy(1) = 23
+    orig_frmy(2) = 6
+
+    frmy(0) = -44
+    frmy(1) = -69
+    frmy(2) = -107
+    bas_state = 1
+
+    inc_dir(0) = 1
+    inc(0) = 1
+
+    inc_dir(1) = 1
+    inc(1) = 1
+
+    inc_dir(2) = 1
+    inc(2) = 1
+
+    inc_dir(3) = 1
+    inc(3) = 1
+
+  bend
+
+  if bas_state = 1 then begin
+    finish_cnt = 0
+    for k = 0 to 2
+      if frmy(k) < orig_frmy(k) then begin
+        frmy(k) = frmy(k) + 2
+        if frmy(k) > orig_frmy(k) then frmy(k) = orig_frmy(k)
+      bend
+
+      if frmy(k) = orig_frmy(k) then finish_cnt = finish_cnt or 2^k
+    next k
+
+  bend
+  gosub draw_bas
+  gosub page_flip
+
+  for frameidx = 0 to 2
+    if finish_cnt and 2^frameidx and bcnt(frameidx)<3 then begin
+      inc(frameidx) = inc(frameidx) + .2 * inc_dir(frameidx)
+      if inc(frameidx) < .6 then begin
+        inc_dir(frameidx) = 1
+        bcnt(frameidx)=bcnt(frameidx)+1
+      bend
+      if inc(frameidx) > 2.9 then begin
+        inc_dir(frameidx) = -1
+        bcnt(frameidx)=bcnt(frameidx)+1
+      bend
+
+      if bcnt(frameidx) = 2 and inc(frameidx) > 1 then begin
+        inc(frameidx) = 1
+        bcnt(frameidx)=bcnt(frameidx)+1
+      bend
+    bend
+
+    bend
+  next frameidx
+  
+  return
+
+
+'------------
+.init_baslogo
+'------------
+  bank 0:bload "asmhelper":bank 128
+
+  logo_state = 0
+
+  gosub store_default_colours
+
+  inc_dir(3) = -1
+  inc(3) = 1
+
+  ' clear dma list area
+
+  for k = 0 to 20
+    poke $40000+k, 0
+  next k
+
+  poke $40000, $81 ' opt = dest addr MB selector
+  poke $40001, $00 ' default to 1st megabyte
+
+  poke $40002, $07 ' opt = enable transparency
+  poke $40003, $86 ' opt = set transparency
+  poke $40004, $20 ' transparency value
+  poke $40005, $00 ' end of options
+
+  poke $40006, $00 ' CMD lsb = COPY
+  wpoke $40007, $0000 ' length
+  wpoke $40009, $1000 ' source addr
+  poke $4000b, $05    ' source bank
+  wpoke $4000c, $1000 ' dest addr
+  poke $4000e, $05    ' dest bank
+  poke $4000f, $00    ' CMD msb (ignore)
+  wpoke $40010, $0000 ' modulo (ignore)
+
+  ' init var interface to assembly
+  loc = $40020
+
+  ptr = pointer(default_red&(0))
+  gosub store_ptr
+
+  ptr = pointer(default_green&(0))
+  gosub store_ptr
+
+  ptr = pointer(default_blue&(0))
+  gosub store_ptr
+
+  ptr = pointer(curr_red&(0))
+  gosub store_ptr
+
+  ptr = pointer(curr_green&(0))
+  gosub store_ptr
+
+  ptr = pointer(curr_blue&(0))
+  gosub store_ptr
+
+  ptr = pointer(data_addr%)
+  gosub store_ptr
+
+  ptr = pointer(cdata_addr%)
+  gosub store_ptr
+
+  ptr = pointer(scraddr%)
+  gosub store_ptr
+
+  ptr = pointer(clraddr%)
+  gosub store_ptr
+
+  ptr = pointer(inc%)
+  gosub store_ptr
+  return
+
+
+'---------
+.load_data
+'---------
+  ptr = $42000
+  
+  bload "bas.bin",p(ptr)
+  gosub init_petscii_frames
+  gosub _increment_ptr_to_next_free
+  return
+
+
+'-------------------
+.init_petscii_frames
+'-------------------
+  tmp = ptr
+  max_frames = peek(ptr + OFFSET_NUM_FRAMES)
+  'print
+  'print "ptr=";hex$(ptr + OFFSET_NUM_FRAMES)
+  ptr = ptr + OFFSET_FRAME0
+
+  'print
+  'print "- mx_frm=";max_frames;": "
+
+  frm_idx = 0
+  do while frm_idx < max_frames
+    'print frm_idx;
+    frame_addr%(frm_idx) = mod(ptr,65536)
+    frmx = peek(ptr + FRM_OFFSET_X)
+    frmy = peek(ptr + FRM_OFFSET_Y)
+    frmw = peek(ptr + FRM_OFFSET_W)
+    frmh = peek(ptr + FRM_OFFSET_H)
+
+    frmx1=frmx+frmw-1
+    frmy1=frmy+frmh-1
+
+    data_addr% = mod(ptr, 65536)
+    data_addr% = data_addr% + FRM_OFFSET_DATA
+    cdata_addr% = data_addr% + frmw * frmh
+
+    bank 4
+    for y = 0 to frmy1-frmy
+      for x = 0 to frmx1-frmx
+        if peek(data_addr% + x + y * frmw) = 102 then begin
+          poke (cdata_addr% + x + y * frmw), $ff
+        bend
+      next x
+    next y
+    bank 128
+    
+    'print "ptr=";hex$(ptr);", idx=";frm_idx;", w=";frmw;", h=";frmh
+    ptr = ptr + FRM_OFFSET_DATA + frmw * frmh * 2
+
+    'print "frm_idx=";frm_idx
+
+    frm_idx = frm_idx + 1
+  loop
+
+  ptr = tmp
+  return
+
+
+'---------------------------
+._increment_ptr_to_next_free
+'---------------------------
+  ptr = tmp
+  sz = wpeek(ptr + OFFSET_DATA_SIZE)
+  'print
+  'print "inc sz = ";sz
+  'print "ptr = ";hex$(ptr + OFFSET_DATA_SIZE)
+  ptr = ptr + sz
+
+  'get key a$
+  return
+
+
+'--------
+.draw_bas
+'--------
+  frameidx = FRM_BACKDROP
+  fx=-999 : fy = -999
+  mirror = 0
+  gosub draw_petscii_frame
+
+  frameidx = FRM_B
+  fx=-999 : fy=frmy(0)
+  mirror = 0
+  gosub draw_petscii_frame
+
+  frameidx = FRM_A
+  fx=-999 : fy=frmy(1)
+  mirror = 0
+  gosub draw_petscii_frame
+
+  frameidx = FRM_S
+  fx=-999 : fy=frmy(2)
+  mirror = 0
+  gosub draw_petscii_frame
+
+  return
+
+
+'------------------
+.draw_petscii_frame
+'------------------
+  poke $4000b, $04  ' assure source bank 4 (for original frame data)
+  if mirror = 1 then setbit $40006, 5:else clrbit $40006, 5
+  data_addr% = frame_addr%(frameidx)
+  bank 4
+  frmx = peek(data_addr% + FRM_OFFSET_X)
+  frmy = peek(data_addr% + FRM_OFFSET_Y)
+  frmw = peek(data_addr% + FRM_OFFSET_W)
+  frmh = peek(data_addr% + FRM_OFFSET_H)
+  bank 128
+
+  if fx<>-999 then frmx = fx ' override position
+  if fy<>-999 then frmy = fy
+
+  frmx1=frmx+frmw-1
+  frmy1=frmy+frmh-1
+
+  scraddr% = $0000 + frmx + (frmy+frmh-1) * 80
+  clraddr% = $1000 + frmx + (frmy+frmh-1) * 80
+  if mirror = 1 then clraddr% = clraddr% + frmw - 1
+
+  data_addr% = data_addr% + FRM_OFFSET_DATA
+  cdata_addr% = data_addr% + frmw * frmh
+  inc% = inc(frameidx) * 256
+
+  ' asm: draw_petscii_frame
+  bank 0:sys $7e09, mod(frmy+256,256), mod(frmy1+256,256), frmw
+
+  return
+
+
+.fade_to_white
+'-------------
+  for fadeval=0 to 128
+    ' fade_colours_to_white
+    bank 0:vsync 10:sys $7e00, fadeval:bank 128
+  next fadeval
+  return
+
+
+.store_default_colours
+'---------------------
+  for k = 0 to 31
+    default_red&(k)=peek($d100+k)
+    default_green&(k)=peek($d200+k)
+    default_blue&(k)=peek($d300+k)
+  next k
+  return
+
+
+.store_curr_colours
+'------------------
+  for k = 0 to 31
+    curr_red&(k)=peek($d100+k)
+    curr_green&(k)=peek($d200+k)
+    curr_blue&(k)=peek($d300+k)
+  next k
+  return
+
+
+'------------------------
+.set_palette_for_backdrop
+'------------------------
+#define COL1_R = $da ' 218
+#define COL1_G = $89 ' 137
+#define COL1_B = $00 ' 0
+
+#define COL2_R = $1b ' 27
+#define COL2_G = $42 ' 66
+#define COL2_B = $0b ' 11
+
+  for k = 12 to 21
+    flip_var = COL1_R + (COL2_R-COL1_R) * (k-12)/9
+    gosub flip_nibble
+    default_red&(k) = flip_var
+    default_red&(43-k) = flip_var
+
+    flip_var = COL1_G + (COL2_G-COL1_G) * (k-12)/9
+    gosub flip_nibble
+    default_green&(k) = flip_var
+    default_green&(43-k) = flip_var
+
+    flip_var = COL1_B + (COL2_B-COL1_B) * (k-12)/9
+    gosub flip_nibble
+    default_blue&(k) = flip_var
+    default_blue&(43-k) = flip_var
+  next k
+  return
+
+
+'-----------
+.flip_nibble
+'-----------
+  lower_nibble = flip_var and $0f
+  upper_nibble = (flip_var >> 4) and $0f
+
+  flip_var = (lower_nibble << 4) + upper_nibble
+  return
+
+
+.anim_draw_subtext
+'-----------------
+  if m = 330 then begin
+    subtext_idx = 1
+    plen = 0
+    edma 3,80,32,$40800+80*46
+  bend
+
+  if plen < len(subtext$(subtext_idx)) then begin
+    plen = plen + .25
+    rainbowstr$=left$(subtext$(subtext_idx),plen)
+    if subtext_idx = 0 then rainbow_x = 35:else rainbow_x = 33
+    rainbow_y = 46
+    gosub print_rainbow_str
+  bend
+  return
+
+
+.print_rainbow_str
+'-----------------
+  cursor rainbow_x, rainbow_y
+  for rain_idx=1 to len(rainbowstr$)
+    foreground mod(rain_idx-1,16)+16
+    print mid$(rainbowstr$,rain_idx,1);
+  next rain_idx
+  return
 
 
 '--------------
@@ -186,15 +710,15 @@
 '----
   m = 0
 
-  bank 0:bload "asmhelper":bank 128
+  gosub init_baslogo
 
   ' switch back to upper-case
-  poke $d018, peek($d018) and $fd
+  ' poke $d018, peek($d018) and $fd
 
-  print chr$(27);"5";
+  ' print chr$(27);"5";
 
-  print "{x93}";
-  poke $d020,0,0
+  ' print "{x93}";
+  ' poke $d020,0,0
 
   for k = 0 to 20
     starx%(k) = int(rnd(1)*80)*256
@@ -212,7 +736,6 @@
   edma 3, $fa0, 32, $54000
   edma 3, $fa0, 0, $55000
 
-
   fname$ = "ana.ln"
   fidx% = 0
   ver(fidx%) = 1
@@ -222,23 +745,6 @@
   fidx% = 1
   ver(fidx%) = 2
   gosub load_line_file
-
-  poke $40000, $81 ' opt = dest addr MB selector
-  poke $40001, $00 ' default to 1st megabyte
-
-  poke $40002, $07 ' opt = enable transparency
-  poke $40003, $86 ' opt = set transparency
-  poke $40004, $20 ' transparency value
-  poke $40005, $00 ' end of options
-
-  poke $40006, $00 ' CMD lsb = COPY
-  wpoke $40007, $0000 ' length
-  wpoke $40009, $1000 ' source addr
-  poke $4000b, $05    ' source bank
-  wpoke $4000c, $1000 ' dest addr
-  poke $4000e, $05    ' dest bank
-  poke $4000f, $00    ' CMD msb (ignore)
-  wpoke $40010, $0000 ' modulo (ignore)
 
   gosub init_writer
   gosub init_megaplot
