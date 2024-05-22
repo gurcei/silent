@@ -198,6 +198,13 @@ subtext$(1) = "a song by..."
   gosub iter_starfield
   ' cursor 0,0:print m
 
+  ret% = 0
+  do while ret% = 0
+    gosub parse_current_seqptr
+  loop
+
+  if plyptr = -1 then print "{x93}the end!":end
+
   do while (ti-tstart < .03)
   loop
 
