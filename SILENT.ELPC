@@ -1,0 +1,627 @@
+#output "starfield"
+
+' BANK4 Memory usage
+' ------------------
+' 4.0000 DMA-LIST
+' 4.0020 var interface to assembly
+'        0020: ptr to default_red&
+'        0022: ptr to default_green&
+'        0024: ptr to default_blue&
+'        0026: ptr to curr_red&
+'        0028: ptr to curr_green&
+'        002a: ptr to curr_blue&
+'        002c: ptr to data_addr%
+'        002e: ptr to cdata_addr%
+'        0030: ptr to scraddr%
+'        0032: ptr to clraddr%
+'        0034: ptr to inc%
+'        0036: ptr to starx%
+'        0038: ptr to starvx%
+' 4.0800 SCREEN MEMORY
+' 4.2000 PETSCII GRAPHICS for BAS logo
+
+' BANK5 Memory usage
+' ------------------
+' 5.0000 screen buffer for draw_petscii_frame
+' 5.1000 color ram buffer for draw_petscii_frame
+' 5.2000 screen buffer2 for 'anathema' layer
+' 5.4000 color ram buffer2 for 'anathema' layer
+' 5.3000 screen buffer3 for 'the silent enigma' layer
+' 5.4000 color ram buffer3 for 'the silent enigma' layer
+
+
+'--------
+.declares
+'--------
+#declare starx%(20), stary(20), starvx%(20)
+#declare k
+
+#declare fname$, val&
+#declare ldata&(2, 12288), didx%(2)=0, pidx%(2)=0, fidx%=0
+#declare group_flag&, val&, rev_flag&(2) = 0
+#declare offs(2), ver(2)
+#declare lastflag, last_group_idx
+#declare oldx, oldy, oldoffs(2), x, y, a$, xx, yy, dxx, dyy, debug, z$
+#declare wxx, wyy
+
+#declare chr, tmp
+
+#declare src_addr, dest_addr, length, transp
+
+#declare loc, ptr, m, tstart, addr
+
+#declare char_cnt, char_idx%(60), char_width%(60), max_width
+#declare txt_k, s$, ret
+
+#declare mn_state = 0, wc_flag, wc_chr
+
+#declare qlidx, qlcnt
+#declare qlx1(10), qly1(10), qlx2(10), qly2(10)
+#declare qlvx1, qlvy1, qlvx2, qlvy2
+#declare qlclr(10), qlcurclr, kk
+#declare x1, y1, x2, y2
+
+
+'-------
+.defines
+'-------
+#define OP_COPY = 0
+#define OP_MIX  = 1
+#define OP_SWAP = 2
+#define OP_FILL = 3
+
+#define DST_DEC = 32
+#define SRC_DEC = 16
+
+
+'----
+.main
+'----
+  gosub init
+
+.main_loop
+  tstart = ti
+
+  m = m + 1
+  gosub draw_starfield
+  if m >= 70 and m < 800 then begin
+    fidx%=0
+    gosub play_data_iter  ' line data
+  bend
+  gosub page_flip
+
+  gosub draw_qix_lines
+
+  if m > 850 and m < 950 then fidx%=0:gosub scroll_canvas_right
+
+  if m > 300 then begin
+    fidx%=1
+    gosub play_data_iter
+    if m > 2630 then gosub scroll_canvas_right
+  bend
+
+  if mn_state = 0 then begin
+    s$ = "In dreamland..."
+    txt_k = 1
+
+    mn_state = 1
+  bend
+
+  if mn_state = 1 then begin
+    fidx% = 2
+    gosub iter_write_text
+  bend
+
+  gosub iter_starfield
+  ' cursor 0,0:print m
+
+  do while (ti-tstart < .03)
+  loop
+
+  goto main_loop
+  end
+
+
+'--------------
+.draw_qix_lines
+'--------------
+  for k = 0 to qlcnt - 1
+    kk = mod(qlidx + k, 10)
+
+    sys $7e24, qlclr(kk) + 64
+
+    x1 = qlx1(kk)
+    y1 = qly1(kk)
+    x2 = qlx2(kk)
+    y2 = qly2(kk)
+
+    sys $7e21, x1, y1, x2, y2
+
+    ' gosub draw_line
+  next k
+
+  ' calc next line positions
+  kk = qlidx  ' old qlidx
+  qlidx = mod(qlidx + 1, 10)
+  if qlcnt < 10 then qlcnt = qlcnt + 1
+
+  qlx1(qlidx) = qlx1(kk) + qlvx1
+  if qlx1(qlidx) >= 160 and qlvx1 > 0 then qlx1(qlidx)=159 : qlvx1 = -qlvx1
+  if qlx1(qlidx) < 0 and qlvx1 < 0 then qlx1(qlidx)=0 : qlvx1 = -qlvx1
+
+  qly1(qlidx) = qly1(kk) + qlvy1
+  if qly1(qlidx) >= 100 and qlvy1 > 0 then qly1(qlidx)=99 : qlvy1 = -qlvy1
+  if qly1(qlidx) < 0 and qlvy1 < 0 then qly1(qlidx)=0 : qlvy1 = -qlvy1
+
+  qlx2(qlidx) = qlx2(kk) + qlvx2
+  if qlx2(qlidx) >= 160 and qlvx2 > 0 then qlx2(qlidx)=159 : qlvx2 = -qlvx2
+  if qlx2(qlidx) < 0 and qlvx2 < 0 then qlx2(qlidx)=0 : qlvx2 = -qlvx2
+
+  qly2(qlidx) = qly2(kk) + qlvy2
+  if qly2(qlidx) >= 100 and qlvy2 > 0 then qly2(qlidx)=99 : qlvy2 = -qlvy2
+  if qly2(qlidx) < 0 and qlvy2 < 0 then qly2(qlidx)=0 : qlvy2 = -qlvy2
+
+  qlcurclr = mod(qlcurclr + 1, 16)
+  qlclr(qlidx) = qlcurclr
+
+  return
+
+
+'---------
+.draw_line
+'---------
+  bank 0
+  sys $7e1b
+  x1 = mod(int(x1)+256,256)
+  y1 = mod(int(y1)+256,256)
+  x2 = mod(int(x2)+256,256)
+  y2 = mod(int(y2)+256,256)
+  sys $7e21, x1, y1, x2, y2
+  bank 128
+  return
+
+
+'----
+.init
+'----
+  m = 0
+
+  bank 0:bload "asmhelper":bank 128
+
+  ' switch back to upper-case
+  poke $d018, peek($d018) and $fd
+
+  print chr$(27);"5";
+
+  print "{x93}";
+  poke $d020,0,0
+
+  for k = 0 to 20
+    starx%(k) = int(rnd(1)*80)*256
+    stary(k) = int(rnd(1)*50)
+    starvx%(k) = (rnd(1)*4 + .5)*256
+  next k
+
+  ' clear the offscreen buffer
+  edma 3, $fa0, 32, $50000
+  edma 3, $fa0, 0, $51000
+
+  edma 3, $fa0, 32, $52000
+  edma 3, $fa0, 0, $53000
+
+  edma 3, $fa0, 32, $54000
+  edma 3, $fa0, 0, $55000
+
+
+  fname$ = "ana.ln"
+  fidx% = 0
+  ver(fidx%) = 1
+  gosub load_line_file
+
+  fname$ = "silent.l"
+  fidx% = 1
+  ver(fidx%) = 2
+  gosub load_line_file
+
+  poke $40000, $81 ' opt = dest addr MB selector
+  poke $40001, $00 ' default to 1st megabyte
+
+  poke $40002, $07 ' opt = enable transparency
+  poke $40003, $86 ' opt = set transparency
+  poke $40004, $20 ' transparency value
+  poke $40005, $00 ' end of options
+
+  poke $40006, $00 ' CMD lsb = COPY
+  wpoke $40007, $0000 ' length
+  wpoke $40009, $1000 ' source addr
+  poke $4000b, $05    ' source bank
+  wpoke $4000c, $1000 ' dest addr
+  poke $4000e, $05    ' dest bank
+  poke $4000f, $00    ' CMD msb (ignore)
+  wpoke $40010, $0000 ' modulo (ignore)
+
+  gosub init_writer
+  gosub init_megaplot
+
+  ' init var interface to assembly
+  loc = $40036
+
+  ptr = pointer(starx%(0))
+  gosub store_ptr
+
+  ptr = pointer(starvx%(0))
+  gosub store_ptr
+  return
+
+
+'-------------
+.init_megaplot
+'-------------
+  ' init
+  qlidx = 0 : qlcnt = 0
+
+  qlx1(qlidx) = int(rnd(1)*160)
+  qly1(qlidx) = int(rnd(1)*100)
+
+  qlx2(qlidx) = int(rnd(1)*160)
+  qly2(qlidx) = int(rnd(1)*100)
+  qlcnt = qlcnt + 1
+
+  qlvx1 = rnd(1)*3 + 1
+  qlvy1 = rnd(1)*3 + 1
+  qlvx2 = rnd(1)*3 + 1
+  qlvy2 = rnd(1)*3 + 1
+
+  qlcurclr = mod(qlcurclr + 1, 16)
+  qlclr(qlidx) = qlcurclr
+
+  return
+
+
+'-----------
+.init_writer
+'-----------
+  txt_k = 0
+  wxx = 0 : wyy = 0
+
+  fname$ = "abc.ln"
+  fidx% = 2
+  ver(fidx%) = 3
+  gosub load_line_file
+
+  char_cnt = 0
+  char_idx%(0) = 0
+  char_width%(0) = 0
+  max_width = 0
+
+  k = 0
+  do while k < didx%(fidx%)
+    ' get x value
+    val& = ldata&(fidx%, k)
+    k=k+1
+
+    if val& = $ff then begin
+      ' keep an array of widths of each letter
+      char_width%(char_cnt)=max_width
+
+      ' print "char_width(";char_cnt;") = ";max_width
+      ' get key z$
+
+      max_width = 0
+      char_cnt=char_cnt+1
+
+      ' keep an array of indices to each drawn letter
+      char_idx%(char_cnt) = k
+      'print "char_idx%(";char_cnt;")=";k
+      'get key a$
+    bend
+
+    if val& = $ff then goto cont_loop
+
+    val& = val& and $7f
+    if val& > max_width then max_width = val&
+    
+    k=k+1  ' skip y value
+    k=k+1  ' skip char 
+
+.cont_loop
+  loop
+
+  return
+
+
+'---------------
+.iter_write_text
+'---------------
+  if wc_flag = 0 and txt_k > 0 and txt_k <= len(s$) then begin
+    chr = asc(mid$(s$, txt_k, 1))
+    ' print "{x13}";chr$(27);"qchr=";chr;
+    gosub petscii_to_screencode
+    gosub screencode_to_idx
+    ' print "fixed chr=";chr;
+    ' get key z$
+
+    if chr=32 then begin
+      wxx=wxx+7
+      txt_k = txt_k + 1
+    bend:else:begin
+      wc_flag = 1
+      wc_chr = chr
+      pidx%(fidx%) = char_idx%(chr)
+    bend
+  bend
+
+  if wc_flag = 1 then begin
+    chr = wc_chr
+    gosub iter_write_char
+    if ret = 1 then begin
+      wxx = wxx + char_width%(wc_chr) + 1
+      txt_k = txt_k + 1
+      wc_flag = 0
+    bend
+  bend
+  return
+
+
+'----------
+.iter_write_char
+'---------------
+  ' iterate over chars in string
+    ' draw current char at given x,y pos
+    ' increment x,y location
+
+  ret = 1
+
+  if pidx%(fidx%) < didx%(fidx%) and ldata&(fidx%, pidx%(fidx%)) <> $ff then begin
+
+    ' cursor 0,49
+    ' print chr$(27);"qpidx=";pidx%(fidx%);"[";ldata&(fidx%, pidx%);
+    ' print ldata&(fidx%, pidx%+1);ldata&(fidx%, pidx%+2);
+
+    val& = ldata&(fidx%, pidx%(fidx%))
+    pidx%(fidx%) = pidx%(fidx%) + 1
+
+    x = val& and $7f
+
+    if val& and $80 then rev_flag&(fidx%) = 1 : else rev_flag&(fidx%) = 0
+    y = ldata&(fidx%, pidx%(fidx%))
+    pidx%(fidx%) = pidx%(fidx%) + 1
+
+    a$ = chr$(ldata&(fidx%, pidx%(fidx%)))
+    pidx%(fidx%) = pidx%(fidx%) + 1
+
+    dxx = wxx+x : dyy = wyy+y : gosub draw_char
+
+    ' print "{x13}{x11}";chr$(27);"q x,y,pidx,a$=";x;y;pidx%(fidx%),asc(a$)
+    ' get key a$
+    ret = 0
+.pd_endloop
+  bend
+
+  return
+
+
+'---------
+.store_ptr
+'---------
+  wpoke loc, ptr
+  loc = loc + 2
+  return
+
+
+'--------------
+.load_line_file
+'-------------- ' (fname$)
+  if fname$ = "" then return
+  gosub line_file_init
+  dopen #2,(fname$),r,u8
+
+  do
+    get #2, val&
+    if st then exit
+    ldata&(fidx%, didx%(fidx%)) = val&
+    didx%(fidx%) = didx%(fidx%) + 1
+  loop
+
+  dclose #2
+  gosub play_data_init
+  return
+
+
+'--------------
+.line_file_init
+'--------------
+  oldx = -1 : oldy = -1 : oldoffs(fidx%) = 0
+  didx%(fidx%) = 0
+  group_flag& = 0 : rev_flag&(fidx%) = 0
+  offs(fidx%) = 0
+  return
+
+
+'--------------
+.draw_starfield
+'--------------
+  for k = 0 to 20
+    poke $50000 + starx%(k)/256 + stary(k) * 80, 46  ' dot
+  next k
+  return
+
+
+'--------------
+.iter_starfield
+'--------------
+  bank 0:sys $7e0f:bank 128
+
+  'for k = 0 to 20
+  '  starx(k) = mod( (starx(k)-starvx(k)) + 80, 80)
+  'next k
+
+  'cursor 0,0
+  'for k = 0 to 20
+  '  print int(starx%(k)/256), stary(k)
+  'next k
+  'get key a$
+  return
+
+
+'---------
+.page_flip
+'---------
+  'vsync 10
+  bank 0 : sys $7e15 : bank 128
+
+  return
+
+
+'--------------
+.play_data_init
+'--------------
+  print "{x93}";
+
+  offs(fidx%)=0
+  pidx%(fidx%) = 0
+  if lastflag = 1 then pidx%(fidx%) = last_group_idx : lastflag = 0
+  return
+
+'--------------
+.play_data_iter
+'--------------
+  if pidx%(fidx%) < didx%(fidx%) then begin
+    val& = ldata&(fidx%, pidx%(fidx%))
+    pidx%(fidx%) = pidx%(fidx%) + 1
+
+    if ver(fidx%)=3 and val& = $ff then begin
+      if pidx%(fidx%) > last_group_idx then last_group_idx = pidx%(fidx%)
+      goto pd_endloop
+    bend
+
+    x = val& and $7f
+    if ver(fidx%)=2 then begin
+      x = val&
+      val& = ldata&(fidx%, pidx%(fidx%))
+      pidx%(fidx%) = pidx%(fidx%) + 1
+      x = x + (val& and $7f) * 256
+    bend
+
+    if val& and $80 then rev_flag&(fidx%) = 1: else rev_flag&(fidx%) = 0
+    y = ldata&(fidx%, pidx%(fidx%))
+    pidx%(fidx%) = pidx%(fidx%) + 1
+
+    a$ = chr$(ldata&(fidx%, pidx%(fidx%)))
+    pidx%(fidx%) = pidx%(fidx%) + 1
+
+    if ver(fidx%)=2 then begin
+      if x-offs(fidx%) > 78 then begin
+        gosub scroll_canvas_right
+        pidx%(fidx%) = pidx%(fidx%) - 4
+        return
+        ' print "{x13}";chr$(27);"qoffs=";offs(fidx%);
+      bend
+    bend
+
+    dxx = x-offs(fidx%) : dyy = y: gosub draw_char
+
+    debug = 0
+    if debug=1 then begin
+      print "{x13}{x11}";chr$(27);"q x,y,pidx,a$,offs=";x;y;pidx%(fidx%),asc(a$),offs(fidx%)
+      get key a$
+    bend
+
+.pd_endloop
+
+  bend
+
+  x = x-offs(fidx%)
+
+  return
+
+
+'---------
+.draw_char
+'---------
+  ' poke $40800 + x + y*80, asc(a$)
+  ' poke $ff80000 + x + y*80, rcolor(1)
+  
+  chr = asc(a$)
+  gosub petscii_to_screencode
+
+  if rev_flag&(fidx%) = 1 then chr = chr + 128
+
+  if ver(fidx%) = 1 then begin
+    poke $52000 + dxx + dyy*80, chr
+    poke $53000 + dxx + dyy*80, 1
+  bend
+
+  if ver(fidx%) = 2 or ver(fidx%) = 3 then begin
+    poke $54000 + dxx + dyy*80, chr
+    poke $55000 + dxx + dyy*80, 2
+  bend
+
+  return
+
+
+'---------------------
+.petscii_to_screencode
+'---------------------
+  ' Based on the table here:
+  ' https://sta.c64.org/cbm64pettoscr.html
+  ' - seems like I needed to do a repair to it on the $a0-->$bf range
+  if chr>=$00 and chr<=$1f then chr=chr or $80:return
+  if chr>=$20 and chr<=$3f then return
+  if chr>=$40 and chr<=$5f then chr=chr and $bf:return
+  if chr>=$60 and chr<=$7f then chr=chr and $df:return
+  if chr>=$80 and chr<=$9f then chr=chr or $40:return
+  if chr>=$a0 and chr<=$bf then chr=(chr and $7f) or $40:return ' $bf:return
+  if chr>=$c0 and chr<=$fe then chr=chr and $7f:return
+  return
+
+
+'-----------------
+.screencode_to_idx
+'-----------------
+  if chr >= 65 and chr <= 90 then chr = chr - 65:return
+  if chr = 46 then chr = 26:return ' full-stop
+  if chr = 33 then chr = 27:return ' exclamation
+  if chr = 44 then chr = 28:return ' comma (smiley)
+  if chr = 47 then chr = 29:return ' forward slash (love heart)
+  if chr = 35 then chr = 30:return ' # hash (dhufish)
+  if chr >= 1 and chr <= 26 then chr = chr + 30
+  return
+
+
+'---------------
+.transparent_dma
+'---------------
+  wpoke $40009, src_addr
+  wpoke $4000c, dest_addr
+  wpoke $40007, length
+  poke  $40004, transp
+  poke $d702, 4 ' dma list in bank 4
+  poke $d701, $00 ' dma list msb
+  poke $d705, $00 ' dma list lsb
+
+  return
+
+
+'------------------
+.scroll_canvas_left
+'------------------
+  for yy = 0 to 49
+    edma OP_COPY+DST_DEC+SRC_DEC, {x5F}
+           79, $52000 + yy*80 + 78, $52000 + yy*80 + 79
+    poke $52000 + yy*80, 32 
+  next yy
+  return
+
+
+'-------------------
+.scroll_canvas_right
+'-------------------
+  offs(fidx%) = offs(fidx%) + 1
+  if fidx% = 0 then addr = $20  ' $52000
+  if fidx% = 1 then addr = $40  ' $54000
+
+  bank 0:sys $7e12, addr: bank 128
+
+  return
+ÿ

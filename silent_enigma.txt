@@ -10,19 +10,26 @@ DONE- Try port line drawing routine to assembly, for speed
   DONE- Starfield moving from right to left
   DONE- Anathema title
   DONE - 'The Silent Enigma' text
-  - Lyrics via 'writer'
+  DONE - Lyrics via 'writer'
   DONE- port scroll-right to asm
   DONE- qix lines via megaplot
   DONE- qix squares via megaplot
   DONE- qix cubes via megaplot
-  - rotate plus greets
-  - final section: rotating cubes via megaplot
-  - fade back to original screen demo was run from
   - Add and align music to demo
+    DONE- make silent.el from starfield.el
+    - add music routine in
+      - assess source code line size
+    - add bas logo
+    - add writer logic
+    - iron them all out
+    - add qix triangle, square and cube logic
+    - rotate plus greets
+  DONE - final section: rotating cubes via megaplot
+  - fade back to original screen demo was run from
   - Add PAL check
 
 baslogo.el = 621 lines
-starfield.el = 563 lines
+starfield.el = 625 lines
 rotate.el = 196 lines
 
 
@@ -36,14 +43,21 @@ Stretch ideas
 
 Credits + Greets
 ================
+
+THANKS
 - thanks to retrocombs for showcasing the demo on his channel!
 - deathy for being so passionate about developing for the MEGA65
 - Grim Fandango for MEGAPLOT, my starting point for plotting petscii via assembly :)
 - bisgedi for sharing the MULTIPLY.ASM example use of Q register written in grubi's Mega Assembler :)
 - Nobato for initial square rotation example
-- Greets to the mega65 team: gardners, deft, martin, lydon, dddaaannn and others
+
+MEGA65 TEAM GREETS
+- Greets to the mega65 team: gardners, deft, martin, lydon, dddaaannn, trenz and others
+
+ACTIVE DEVS GREETS
 - Greets to active devs this year: bisgedi, btoschi, carthibar, clockchip, deathy/BAS, Drex, EgonOlsen71, El Nebuloso, fredrikr, Geehaf, GeirS, grubi, heath_man, jim-64, jwa74, kibo, M3wP, mc64, Mirage-BD, Mr. Jones, Nobato, retroCombs, Roughnight, SirLazarus, Stigodump, TOS22, Urban Lindeskog, zeus074
 - TwoBitRetro (for pascal65), Magnus Heidenborn (for letting me port his awesome C64 BASIC 'Stranded' game to the MEGA65), Stefan Eilers (for M65Script)
+VHDL NINJA GREETS
 - sy2002 and mjoergen for the awesome alternate cores (C64, Gameboy, ZX Spectrum), looking forward the upcoming alternate cores you have planned! :)
 - muse/shoestring for your awesome arcade cores
 - Greets to vloggers: Retrocombs, Perifractic and 8-Bit Guy, thx for the MEGA65 review and all the best with your X-16 release :)
