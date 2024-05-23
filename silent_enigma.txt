@@ -18,7 +18,7 @@ DONE- Try port line drawing routine to assembly, for speed
   - Add and align music to demo
     DONE- make silent.el from starfield.el
     DONE- add music routine in
-      - assess source code line size
+      DONE- assess source code line size
     DONE- add bas logo
     - add writer logic
     - iron them all out
@@ -28,6 +28,7 @@ DONE- Try port line drawing routine to assembly, for speed
   - fade back to original screen demo was run from
   - Add PAL check
   - ROM version check
+  - Improve autoboot.c65 menu system to be more polished and friendly (like our intro disks)
 
 baslogo.el = 621 lines
 starfield.el = 625 lines

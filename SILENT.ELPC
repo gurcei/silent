@@ -154,6 +154,7 @@ subtext$(1) = "a song by..."
 #define ST_DROP_IN_B = 3
 #define ST_PRESENTS = 4
 #define ST_ANATHEMA = 5
+#define ST_MAIN = 6
 
 
 '----
@@ -161,8 +162,11 @@ subtext$(1) = "a song by..."
 '----
   gosub init
   gosub state_loop
+  end
 
-.main_loop
+'-------------
+.iter_maindemo
+'-------------
   tstart = ti
 
   m = m + 1
@@ -203,13 +207,9 @@ subtext$(1) = "a song by..."
     gosub parse_current_seqptr
   loop
 
-  if plyptr = -1 then print "{x93}the end!":end
+  if plyptr = -1 and rplay(1)=0 then print "{x93}the end!":end
 
-  do while (ti-tstart < .03)
-  loop
-
-  goto main_loop
-  end
+  return
 
 
 '----------
@@ -291,7 +291,11 @@ subtext$(1) = "a song by..."
       gosub page_flip
       gosub iter_starfield
 
-      if fadeval = 129 then return
+      if fadeval = 129 then logo_state = ST_MAIN : m = 0
+  bend
+
+  if logo_state = ST_MAIN then begin
+    gosub iter_maindemo
   bend
 
   do
@@ -795,10 +799,6 @@ subtext$(1) = "a song by..."
   song$ = "enigma.p"
   gosub load_song
 
-  do while ret% = 0
-    gosub parse_current_seqptr
-  loop
-
   for k = 0 to 20
     starx%(k) = int(rnd(1)*80)*256
     stary(k) = int(rnd(1)*50)
@@ -904,6 +904,7 @@ subtext$(1) = "a song by..."
 .parse_current_seqptr
 '--------------------
   ret% = 0
+  if plyptr = -1 then ret%=1:return
   if rplay(1)<>0 then ret%=1:return
 
   k = seq_chunk(plyptr)
