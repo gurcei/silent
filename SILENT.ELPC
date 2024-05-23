@@ -611,6 +611,10 @@ subtext$(1) = "a song by..."
   for fadeval=0 to 128
     ' fade_colours_to_white
     bank 0:vsync 10:sys $7e00, fadeval:bank 128
+
+    do while ret% = 0
+      gosub parse_current_seqptr
+    loop
   next fadeval
   return
 
@@ -790,6 +794,10 @@ subtext$(1) = "a song by..."
 
   song$ = "enigma.p"
   gosub load_song
+
+  do while ret% = 0
+    gosub parse_current_seqptr
+  loop
 
   for k = 0 to 20
     starx%(k) = int(rnd(1)*80)*256
@@ -1210,7 +1218,6 @@ subtext$(1) = "a song by..."
 '---------
 .page_flip
 '---------
-  'vsync 10
   bank 0 : sys $7e15 : bank 128
 
   return

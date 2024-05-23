@@ -17,9 +17,9 @@ DONE- Try port line drawing routine to assembly, for speed
   DONE- qix cubes via megaplot
   - Add and align music to demo
     DONE- make silent.el from starfield.el
-    - add music routine in
+    DONE- add music routine in
       - assess source code line size
-    - add bas logo
+    DONE- add bas logo
     - add writer logic
     - iron them all out
     - add qix triangle, square and cube logic
@@ -33,6 +33,7 @@ baslogo.el = 621 lines
 starfield.el = 625 lines
 rotate.el = 196 lines
 
+silent.el = 1374 lines
 
 Stretch ideas
 =============

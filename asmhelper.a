@@ -290,7 +290,7 @@ MULTOUT = $d778
 //---------------------
 fade_colours_to_white: // (a=fadeval)
 //---------------------
-	sei
+	//sei
 	// store a into fadeval
 	sta fadeval+1
 	lda #$00
@@ -329,7 +329,7 @@ fade_colours_to_white: // (a=fadeval)
 //---------------------
 fade_between_colours: // (a=fadeval)
 //---------------------
-	sei
+	//sei
 	// store a into fadeval
 	sta fadeval+1
 	lda #$00
@@ -680,7 +680,7 @@ nextlp:
 //---------------------
 fade_colours_to_black: // (a=fadeval)
 //---------------------
-	sei
+	//sei
 	// store a into fadeval
 	sta fadeval+1
 	lda #$00
@@ -1067,7 +1067,7 @@ __plot:
 //---
 line:
 //---
-	sei
+	//sei
 	pha
 	lda #$00
 	sta x1+1

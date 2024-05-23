@@ -1,7 +1,7 @@
 all: megaplot.prg asmhelper.prg
 	c1541 -attach "silent.d81" -read ana.ln,s ana.ln
 	c1541 -attach "silent.d81" -read silent.l,s silent.l
-	c1541 -attach "silent.d81" -read abc.ln,s abc.ln
+	# c1541 -attach "silent.d81" -read abc.ln,s abc.ln
 	# c1541 -attach "silent.d81" -read bas01.ln,s bas01.ln
 	# c1541 -attach "silent.d81" -read bas02.ln,s bas02.ln
 	# c1541 -attach "silent.d81" -read lyr01.ln,s lyr01.ln
@@ -15,7 +15,7 @@ all: megaplot.prg asmhelper.prg
 	c1541 -attach "silent.d81" -delete asmhelper -write asmhelper.prg asmhelper
 
 xemu:
-	/c/projs/xemu/build/bin/xmega65.native -rom /c/Users/phuon/Downloads/920385.bin -hdosvirt -uartmon :4510 -8 silent.d81 &> /dev/null &
+	/c/projs/xemu/build/bin/xmega65.native -rom /c/projs/mega65-rom/newrom.bin -hdosvirt -uartmon :4510 -8 silent.d81 &> /dev/null &
 
 fast_xemu:
 	/c/projs/xemu/build/bin/xmega65.native -rom /c/Users/phuon/Downloads/920385.bin -hdosvirt -uartmon :4510 -fastclock 200 -8 silent.d81 &> /dev/null &
