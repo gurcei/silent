@@ -153,8 +153,11 @@ subtext$(1) = "a song by..."
 #define ST_FADE_TO_DEFAULT = 2
 #define ST_DROP_IN_B = 3
 #define ST_PRESENTS = 4
-#define ST_ANATHEMA = 5
-#define ST_MAIN = 6
+#define ST_FADE_TO_STARS = 5
+#define ST_DRAW_ANATHEMA = 6
+#define ST_DRAW_SONG_TITLE = 7
+#define ST_SHOW_QIX_LINES = 8
+#define ST_SHOW_LYRICS =9
 
 
 '----
@@ -276,12 +279,12 @@ subtext$(1) = "a song by..."
       print "{x93}";
       gosub store_curr_colours
       gosub restore_default_palette
-      logo_state = ST_ANATHEMA
+      logo_state = ST_FADE_TO_STARS
       fadeval = 0
     bend
   bend
 
-  if logo_state = ST_ANATHEMA then begin
+  if logo_state = ST_FADE_TO_STARS then begin
       if fadeval <= 128 then begin
         ' fade_colours_to_defaults
         bank 0:vsync 10:sys $7e03, fadeval:bank 128
@@ -291,11 +294,48 @@ subtext$(1) = "a song by..."
       gosub page_flip
       gosub iter_starfield
 
-      if fadeval = 129 then logo_state = ST_MAIN : m = 0
+      if fadeval = 129 then logo_state = ST_DRAW_ANATHEMA : m = 0
   bend
 
-  if logo_state = ST_MAIN then begin
-    gosub iter_maindemo
+  if logo_state = ST_DRAW_ANATHEMA then begin
+    ' gosub iter_maindemo
+    m = m + 1
+    gosub draw_starfield
+
+    ' draw anathema logo
+    fidx%=0
+    gosub play_data_iter  ' line data
+
+    gosub page_flip
+    gosub iter_starfield
+
+    if m = 720 then begin
+      logo_state = ST_DRAW_SONG_TITLE
+      m = 0
+      offs(1) = -25
+    bend
+  bend
+
+  if logo_state = ST_DRAW_SONG_TITLE then begin
+    m = m + 1
+    gosub draw_starfield
+
+    ' scroll off anathema
+    if m > 150 and m < 230 then fidx%=0:gosub scroll_canvas_right
+
+    ' draw song title
+    if m > 10 and m < 1900 then begin
+      fidx%=1
+      gosub play_data_iter
+      gosub play_data_iter
+      if mod(m, 4) = 0 then gosub scroll_canvas_right
+      ' if m > 1910 then gosub scroll_canvas_right
+    bend
+
+    if plyptr >= 9 then gosub draw_qix_lines
+
+    gosub page_flip
+    gosub iter_starfield
   bend
 
   do
