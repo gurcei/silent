@@ -27,7 +27,7 @@ DONE- Try port line drawing routine to assembly, for speed
   DONE - final section: rotating cubes via megaplot
   - fade back to original screen demo was run from
   - Add PAL check
-  - ROM version check
+  - ROM version check (dddaaannn's new upcoming experimental rom)
   - Improve autoboot.c65 menu system to be more polished and friendly (like our intro disks)
 
 baslogo.el = 621 lines
@@ -48,13 +48,15 @@ Credits + Greets
 ================
 
 THANKS
-- thanks to retrocombs for showcasing the demo on his channel!
-- deathy for being so passionate about developing for the MEGA65
+- thanks to retrocombs for showcasing the demo on his channel and your endless passion for the MEGA65!
+- deathy for putting so much passion into your MEGA65 projects!
 - Grim Fandango for MEGAPLOT, my starting point for plotting petscii via assembly :)
 - bisgedi for sharing the MULTIPLY.ASM example use of Q register written in grubi's Mega Assembler :)
 - Nobato for initial square rotation example
+- dddaaannn for preparing a new rom with the SYS basic irq tweak under short notice!
 - Traymond for rekindling my interest in C64 MIDI and walking me through how to use Compute's Stereo SID Player and Editor
 - My wifey, Tram, and daughter Moana, for enduring my MEGA65 fanaticism over the years :)
+- My ResMed buddies, for the wonderful 5 years together!
 
 MEGA65 TEAM GREETS
 - Greets to the mega65 team: trenz, gardners, deft, martin, tayger, lydon, dddaaannn, and others

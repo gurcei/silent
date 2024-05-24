@@ -15,6 +15,7 @@ MULTINA = $d770
 MULTINB = $d774
 MULTOUT = $d778
 
+ROM_INIT_STATUS = $1104
 
 // BANK4 VAR INTERFACE
 // ===================
@@ -289,12 +290,13 @@ MULTOUT = $d778
 
 //---------------------
 fade_colours_to_white: // (a=fadeval)
-//---------------------
 	//sei
 	// store a into fadeval
 	sta fadeval+1
 	lda #$00
 	sta fadeval
+
+	jsr map_in_basic_irq
 
 	// prepare four pointer
 	lda #$00
@@ -322,7 +324,7 @@ fade_colours_to_white: // (a=fadeval)
 	lbne -
 
 	// return
-	cli
+	jsr restore_old_map
 	rts
 
 
@@ -334,6 +336,8 @@ fade_between_colours: // (a=fadeval)
 	sta fadeval+1
 	lda #$00
 	sta fadeval
+
+	jsr map_in_basic_irq
 
 	// prepare four pointer
 	lda #$00
@@ -365,13 +369,15 @@ blue:
 	lbne kloop
 
 	// return
-	cli
+	jsr restore_old_map
 	rts
 
 
 //---------------
 cycle_alt_palette:
 //---------------
+	jsr map_in_basic_irq
+
 	// prepare four pointer
 	lda #$00
 	sta FOURPTR
@@ -529,6 +535,7 @@ do_default:
 	sta [ONEPTR],z
 
 	//return
+	jsr restore_old_map
 	rts
 
 
@@ -549,6 +556,8 @@ draw_petscii_frame: // (a = frmy, x = frmy1, y = frmw)
 	sta frmy1
 
 	sty frmw
+
+	jsr map_in_basic_irq
 
 	// prepare zero pointer
 	lda #$00
@@ -583,6 +592,7 @@ foryyloop:
 		//if scraddr < 0 then goto for_skip
 		lda scraddr+1
 		bpl +
+		jsr restore_old_map
 		rts
 
 		// if yy < frmy then yy = frmy
@@ -666,6 +676,7 @@ force_yy:
 	lda yy+1
 	cmp frmy+1
 	bne nextlp
+	jsr restore_old_map
 	rts
 
 nextlp:
@@ -674,6 +685,7 @@ nextlp:
 	jmp foryyloop
 	
 	// return
+	jsr restore_old_map
 	rts
 
 
@@ -685,6 +697,8 @@ fade_colours_to_black: // (a=fadeval)
 	sta fadeval+1
 	lda #$00
 	sta fadeval
+
+	jsr map_in_basic_irq
 
 	// prepare four pointer
 	lda #$00
@@ -712,13 +726,15 @@ fade_colours_to_black: // (a=fadeval)
 	lbne -
 
 	// return
-	cli
+	jsr restore_old_map
 	rts
 
 
 //------------
 iter_starfield:
 //------------
+	jsr map_in_basic_irq
+
 	// prepare four pointer
 	lda #$00
 	sta FOURPTR
@@ -773,6 +789,7 @@ iter_starfield:
 	cpy #21
 	bne -
 
+	jsr restore_old_map
 	rts
 
 
@@ -786,6 +803,8 @@ scroll_canvas_right: // (a = hi_addr)
 	sta data_addr+1
 	lda #$00
 	sta data_addr
+
+	jsr map_in_basic_irq
 
 	lda #79
 	sta frmw
@@ -872,12 +891,15 @@ scroll_canvas_right: // (a = hi_addr)
 	lbne -
 	
 	// return
+	jsr restore_old_map
 	rts
 
 
 //---------
 page_flip:
 //---------
+	jsr map_in_basic_irq
+
 	// prepare four pointer
 	lda #$00
 	sta FOURPTR
@@ -991,6 +1013,7 @@ page_flip:
 	+poke_b4_val $0b, 5	// src bank
 
 	// return
+	jsr restore_old_map
 	rts
 
 
@@ -1067,7 +1090,6 @@ __plot:
 //---
 line:
 //---
-	//sei
 	pha
 	lda #$00
 	sta x1+1
@@ -1100,6 +1122,8 @@ line:
 	bpl +
 	lda #$ff
 	sta y2+1
+
+	jsr map_in_basic_irq
 
 +	jsr init
 
@@ -1225,7 +1249,7 @@ pixel_loop:
 		cmp y2+1
 		bne +
 
-		cli
+		jsr restore_old_map
 		rts
 	
 		// _e2 = 2 * _e
@@ -1255,7 +1279,7 @@ pixel_loop:
 			lda xpos+1
 			cmp x2+1
 			bne +
-			cli
+			jsr restore_old_map
 			rts
 
 			// _e = _e + ddy
@@ -1302,7 +1326,7 @@ pixel_loop:
 			cmp y2+1
 			bne +
 
-			cli
+			jsr restore_old_map
 			rts
 
 			// _e = _e + ddx
@@ -1327,7 +1351,7 @@ pixel_loop:
 	// loop
 +	jmp pixel_loop
 
-	cli
+	jsr restore_old_map
 	rts
 
 
@@ -1341,6 +1365,47 @@ set_colour:
 // ---------------------
 // INTERNAL ASM ROUTINES
 // ---------------------
+
+map_in_basic_irq:
+//--------------
+  // store current map
+  sei
+  ldy #$01
+  lda #$74
+  sta $d640
+  clv
+
+  // map in basic (so that basic_irq will run)
+  lda #$00
+  ldx #$e3
+  ldy #$00
+  ldz #$b3
+  map
+  eom
+
+  // dodgy tweak to basic's "init_status" flag to assure basic_irq will run
+  // TODO: Remove these workarounds once new rom exists that optionally allows basic irq's to run
+  lda #$01
+  sta ROM_INIT_STATUS
+  cli
+
+  rts
+
+restore_old_map:
+//--------------
+  sei
+  lda #$00
+  sta ROM_INIT_STATUS
+
+  lda $0101
+  ldx $0100
+  ldy $0103
+  ldz $0102
+  map
+  eom
+  cli
+
+  rts
 
 transparent_dma:
 //-------------
