@@ -1036,6 +1036,22 @@ subtext$(1) = "a song by..."
   return
 
 
+'-----
+.atan2
+'-----
+  if diffx = 0 then begin
+    if diffy<0 then angle = - PI/2
+    if diffy>0 then angle = PI/2
+  bend:else begin
+    tanval = diffy / diffx
+    angle = atn(tanval)  ' this is range -90deg to 90deg
+    if diffx<0 then begin
+     if diffy<0 then angle = angle - PI:else angle = angle + PI
+    bend
+  bend
+  return
+
+
 '---------
 .draw_line
 '---------
