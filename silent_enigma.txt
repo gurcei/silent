@@ -29,6 +29,12 @@ DONE- Try port line drawing routine to assembly, for speed
   - Add PAL check
   - ROM version check (dddaaannn's new upcoming experimental rom)
   - Improve autoboot.c65 menu system to be more polished and friendly (like our intro disks)
+  - mention in boot menu that demo requires a tweaked rom, presently available at:
+    - gurce.net/999999.bin (version 999999)
+    - rename to "MEGA659.ROM"
+      (yes, add the extra '9' at the end, that's not a typo!)
+    - place this on your sd-card
+    - Reboot your MEGA65 while holding down the 9 key (to load this alternate rom)
 
 baslogo.el = 621 lines
 starfield.el = 625 lines
