@@ -67,7 +67,7 @@
 #declare cb_anga, cb_angb, cbidx, cbtmp, pz
 #declare cb_inca, cb_incb, ret_ang, zfact
 #declare px(10), py(10), plen, pang, pidx, pdist
-#declare qix_state
+#declare qix_state, qix_k
 
 #declare PI = 3.141592654269
 
@@ -318,10 +318,23 @@ subtext$(1) = "a song by..."
       qix_state = 1
       qlidx = 0
       qlcnt = 1
+      sides = 3
+      sqang = - PI / 2
+      sqinc = 2 * PI / sides
       t = 0
     bend
 
-    if qix_state = 1 then gosub draw_qix_triangles
+    if qix_state = 1 and plyptr = 14 then begin
+      qix_state = 2
+      qlidx = 0
+      qlcnt = 1
+      sides = 4
+      sqang = - 3 * PI / 4
+      sqinc = 2 * PI / sides
+      t = 0
+    bend
+
+    if qix_state = 1 or qix_state = 2 then gosub draw_qix_poly
 
     if qix_state = 0 and plyptr >= 9 then gosub draw_qix_lines
 
@@ -804,30 +817,9 @@ subtext$(1) = "a song by..."
   return
 
 
-'------------------
-.draw_qix_triangles
-'------------------
-  sides = 3
-  sqang = - PI / 2
-  gosub draw_qix_poly
-  return
-
-
-'----------------
-.draw_qix_squares
-'----------------
-  sides = 4
-  sqang = - 3 * PI / 4
-  gosub draw_qix_poly
-  return
-
-
 '-------------
 .draw_qix_poly
 '-------------
-  ' init
-  sqinc = 2 * PI / sides
-
   pdist = 22.5 - 22.5 * cos(t)
   centrex = 80 : centrey = 50
 
@@ -852,9 +844,8 @@ subtext$(1) = "a song by..."
   qlcurclr = mod(qlcurclr + 1, 16)
   qlclr(qlidx) = qlcurclr
 
-  for k = 0 to qlcnt - 1
-    ' kk = mod(qlidx + qlcnt-1 - k, 5)
-    kk = mod(qlidx + k, 5)
+  for qix_k = 0 to qlcnt - 1
+    kk = mod(qlidx - (qlcnt-1) + qix_k + 5, 5)
 
     sys $7e24, qlclr(kk) + 64
 
@@ -863,8 +854,6 @@ subtext$(1) = "a song by..."
     x2 = qlx2(kk)
     y2 = qly2(kk)
 
-    'cursor 0,0:print chr$(27);"qx1,y1,x2,y2=",int(x1),int(y1),int(x2),int(y2)
-    'cursor 0,1:print chr$(27);"qvx1,vy1,vx2,vy2=";qlvx1;qlvy1;qlvx2;qlvy2
     gosub draw_line
 
     tx = x1
@@ -888,7 +877,7 @@ subtext$(1) = "a song by..."
       gosub draw_line
     bend
 
-  next k
+  next qix_k
 
   ' calc next line positions
   kk = qlidx  ' old qlidx
