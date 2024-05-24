@@ -56,11 +56,19 @@
 #declare mn_state = 0, wc_flag, wc_chr
 
 #declare qlidx, qlcnt
-#declare qlx1(10), qly1(10), qlx2(10), qly2(10)
+#declare qlx1(10), qly1(10), qlx2(10), qly2(10), qlx3(10), qly3(10)
+#declare qlx4(10), qly4(10)
 #declare qlvx1, qlvy1, qlvx2, qlvy2
-#declare qlclr(10), qlcurclr, kk
-#declare x1, y1, x2, y2
+#declare qlclr(10), qlcurclr, kk, t, t1, t2, tx, ty, sides, sqinc
+#declare x1, y1, x2, y2, sqang
 
+#declare diffx, diffy, deltax, deltay, tanval, angle
+#declare centrex, centrey, centrez
+#declare cb_anga, cb_angb, cbidx, cbtmp, pz
+#declare cb_inca, cb_incb, ret_ang, zfact
+#declare px(10), py(10), plen, pang, pidx, pdist
+
+#declare PI = 3.141592654269
 
 .BASLOGO.EL_defines
 '==================
@@ -170,25 +178,6 @@ subtext$(1) = "a song by..."
 '-------------
 .iter_maindemo
 '-------------
-  tstart = ti
-
-  m = m + 1
-  gosub draw_starfield
-  if m >= 70 and m < 800 then begin
-    fidx%=0
-    gosub play_data_iter  ' line data
-  bend
-  gosub page_flip
-
-  gosub draw_qix_lines
-
-  if m > 850 and m < 950 then fidx%=0:gosub scroll_canvas_right
-
-  if m > 300 then begin
-    fidx%=1
-    gosub play_data_iter
-    if m > 2630 then gosub scroll_canvas_right
-  bend
 
   if mn_state = 0 then begin
     s$ = "In dreamland..."
@@ -201,14 +190,6 @@ subtext$(1) = "a song by..."
     fidx% = 2
     gosub iter_write_text
   bend
-
-  gosub iter_starfield
-  ' cursor 0,0:print m
-
-  ret% = 0
-  do while ret% = 0
-    gosub parse_current_seqptr
-  loop
 
   if plyptr = -1 and rplay(1)=0 then print "{x93}the end!":end
 
@@ -810,6 +791,248 @@ subtext$(1) = "a song by..."
   qlcurclr = mod(qlcurclr + 1, 16)
   qlclr(qlidx) = qlcurclr
 
+  return
+
+
+'------------------
+.draw_qix_triangles
+'------------------
+  sides = 3
+  sqang = - PI / 2
+  gosub draw_qix_poly
+  return
+
+
+'----------------
+.draw_qix_squares
+'----------------
+  sides = 4
+  sqang = - 3 * PI / 4
+  gosub draw_qix_poly
+  return
+
+
+'-------------
+.draw_qix_poly
+'-------------
+  ' init
+  qlidx = 0
+  sqinc = 2 * PI / sides
+
+  qlcnt = 1
+  t = 0
+  pdist = 45
+.tri_loop
+  pdist = 22.5 - 22.5 * cos(t)
+  centrex = 80 : centrey = 50
+
+  pang = sqang
+  qlx1(qlidx) = centrex + pdist * cos(pang)
+  qly1(qlidx) = centrey + pdist * sin(pang)
+
+  pang = pang + sqinc
+  qlx2(qlidx) = centrex + pdist * cos(pang)
+  qly2(qlidx) = centrey + pdist * sin(pang)
+
+  pang = pang + sqinc
+  qlx3(qlidx) = centrex + pdist * cos(pang)
+  qly3(qlidx) = centrey + pdist * sin(pang)
+
+  if sides = 4 then begin
+    pang = pang + sqinc
+    qlx4(qlidx) = centrex + pdist * cos(pang)
+    qly4(qlidx) = centrey + pdist * sin(pang)
+  bend
+  
+  qlcurclr = mod(qlcurclr + 1, 16)
+  qlclr(qlidx) = qlcurclr
+
+  vsync 0
+  print "{x93}";
+
+  for k = 0 to qlcnt - 1
+    ' kk = mod(qlidx + qlcnt-1 - k, 5)
+    kk = mod(qlidx + k, 5)
+
+    sys $7e0c, qlclr(kk) + 64
+
+    x1 = qlx1(kk)
+    y1 = qly1(kk)
+    x2 = qlx2(kk)
+    y2 = qly2(kk)
+
+    'cursor 0,0:print chr$(27);"qx1,y1,x2,y2=",int(x1),int(y1),int(x2),int(y2)
+    'cursor 0,1:print chr$(27);"qvx1,vy1,vx2,vy2=";qlvx1;qlvy1;qlvx2;qlvy2
+    gosub draw_line
+
+    tx = x1
+    ty = y1
+
+    x1 = qlx3(kk)
+    y1 = qly3(kk)
+    gosub draw_line
+
+    if sides = 3 then begin
+      x2 = tx
+      y2 = ty
+      gosub draw_line
+    bend:else begin  ' sides = 4
+      x2 = qlx4(kk)
+      y2 = qly4(kk)
+      gosub draw_line
+
+      x1 = tx
+      y1 = ty
+      gosub draw_line
+    bend
+
+    'cursor x1/2,y1/2:print "+";
+    'cursor x2/2,y2/2:print "+";
+    'get key a$
+  next k
+
+  ' calc next line positions
+  kk = qlidx  ' old qlidx
+  qlidx = mod(qlidx + 1, 5)
+  if qlcnt < 5 then qlcnt = qlcnt + 1
+
+  sqang = sqang + .1
+  if sqang > 2*PI then sqang = sqang - 2*PI
+
+  qlcurclr = mod(qlcurclr + 1, 16)
+  qlclr(qlidx) = qlcurclr
+
+  t = t + .1
+  if t > 2*PI then t = t - 2*PI
+
+  goto tri_loop
+
+  return
+
+
+'---------------
+.draw_many_cubes
+'---------------
+  cb_incb = 0
+  cb_inca = 0
+  t1 = 0
+  t2 = 0
+  pdist = 45
+
+.mc_loop
+  centrex = 80 + 45*sin(t2)
+  centrey = 50 + 15*sin(t1)
+
+  pdist = 20 - 20 * cos(t1)
+  cb_incb = PI/2 * sin(t1)
+  cb_inca = PI/2 * sin(t2)
+  t1 = t1 + .1
+  t2 = t2 + .05
+  if t1 > 2*PI then t1=t1-2*PI
+  if t2 > 2*PI then t2=t2-2*PI
+
+    print"{x93}"
+    gosub draw_cube
+  goto mc_loop
+
+  return
+  
+
+'---------
+.draw_cube
+'---------
+  cbidx = 0
+
+  cb_angb = atn(1/sqr(2))
+  for cb_anga = PI / 4 to 1.9 * PI step PI/2
+    cbtmp = pdist * cos(cb_angb)
+    pz = cbtmp * sin(cb_anga)
+    py(cbidx) = pdist * sin(cb_angb)
+    px(cbidx) = cbtmp * cos(cb_anga)
+    gosub rotate_inca
+    gosub rotate_incb
+    px(cbidx) = centrex + px(cbidx) - pz * zfact / 4
+    py(cbidx) = centrey + py(cbidx) + pz * zfact
+
+    'print "px(";cbidx;")=";px(cbidx);", py(";cbidx;")=";py(cbidx)
+    cbidx = cbidx + 1
+  next cb_anga 
+
+  plen = 4
+  gosub draw_poly
+
+  ' draw lines from poly
+  cbidx = 0
+  cb_angb = -atn(1/sqr(2))
+  for cb_anga = PI / 4 to 1.9 * PI step PI/2
+    x1 = px(cbidx)
+    y1 = py(cbidx)
+
+    cbtmp = pdist * cos(cb_angb)
+    pz = cbtmp * sin(cb_anga)
+    py(cbidx) = pdist * sin(cb_angb)
+    px(cbidx) = cbtmp * cos(cb_anga)
+    gosub rotate_inca
+    gosub rotate_incb
+    px(cbidx) = centrex + px(cbidx) - pz * zfact / 4
+    py(cbidx) = centrey + py(cbidx) + pz * zfact
+
+    x2 = px(cbidx)
+    y2 = py(cbidx)
+
+    gosub draw_line
+    cbidx = cbidx + 1
+  next cb_anga
+
+  plen = 4
+  gosub draw_poly
+
+  return
+
+
+'---------
+.draw_poly
+'---------
+  for pidx = 0 to plen-2
+    x1 = px(pidx) : y1 = py(pidx)
+    x2 = px(pidx+1) : y2 = py(pidx+1)
+    ' print "x1=";x1;", y1=";y1;", x2=";x2;", y2=";y2
+    ' get key a$
+    gosub draw_line
+  next pidx
+
+  x1 = px(plen-1) : y1 = py(plen-1)
+  x2 = px(0) : y2 = py(0)
+  gosub draw_line
+
+  return
+
+
+'-----------
+.rotate_inca
+'-----------
+  ' rotate along y-axis by inca
+  diffx = px(cbidx)
+  diffy = pz
+  cbtmp = sqr(diffx*diffx + diffy*diffy)
+  gosub atan2  ' returns angle
+  angle = angle + cb_inca
+  px(cbidx) = cbtmp * cos(angle)
+  pz = cbtmp * sin(angle) 
+  return
+
+
+'-----------
+.rotate_incb
+'-----------
+  ' rotate along z-axis by incb
+  diffx = px(cbidx)
+  diffy = py(cbidx)
+  cbtmp = sqr(diffx*diffx + diffy*diffy)
+  gosub atan2  ' returns angle
+  angle = angle + cb_incb
+  px(cbidx) = cbtmp * cos(angle)
+  py(cbidx) = cbtmp * sin(angle) 
   return
 
 
