@@ -67,6 +67,7 @@
 #declare cb_anga, cb_angb, cbidx, cbtmp, pz
 #declare cb_inca, cb_incb, ret_ang, zfact
 #declare px(10), py(10), plen, pang, pidx, pdist
+#declare qix_state
 
 #declare PI = 3.141592654269
 
@@ -313,7 +314,16 @@ subtext$(1) = "a song by..."
       ' if m > 1910 then gosub scroll_canvas_right
     bend
 
-    if plyptr >= 9 then gosub draw_qix_lines
+    if qix_state = 0 and plyptr = 12 then begin
+      qix_state = 1
+      qlidx = 0
+      qlcnt = 1
+      t = 0
+    bend
+
+    if qix_state = 1 then gosub draw_qix_triangles
+
+    if qix_state = 0 and plyptr >= 9 then gosub draw_qix_lines
 
     gosub page_flip
     gosub iter_starfield
@@ -816,13 +826,8 @@ subtext$(1) = "a song by..."
 .draw_qix_poly
 '-------------
   ' init
-  qlidx = 0
   sqinc = 2 * PI / sides
 
-  qlcnt = 1
-  t = 0
-  pdist = 45
-.tri_loop
   pdist = 22.5 - 22.5 * cos(t)
   centrex = 80 : centrey = 50
 
@@ -847,14 +852,11 @@ subtext$(1) = "a song by..."
   qlcurclr = mod(qlcurclr + 1, 16)
   qlclr(qlidx) = qlcurclr
 
-  vsync 0
-  print "{x93}";
-
   for k = 0 to qlcnt - 1
     ' kk = mod(qlidx + qlcnt-1 - k, 5)
     kk = mod(qlidx + k, 5)
 
-    sys $7e0c, qlclr(kk) + 64
+    sys $7e24, qlclr(kk) + 64
 
     x1 = qlx1(kk)
     y1 = qly1(kk)
@@ -886,9 +888,6 @@ subtext$(1) = "a song by..."
       gosub draw_line
     bend
 
-    'cursor x1/2,y1/2:print "+";
-    'cursor x2/2,y2/2:print "+";
-    'get key a$
   next k
 
   ' calc next line positions
@@ -904,8 +903,6 @@ subtext$(1) = "a song by..."
 
   t = t + .1
   if t > 2*PI then t = t - 2*PI
-
-  goto tri_loop
 
   return
 
@@ -931,7 +928,6 @@ subtext$(1) = "a song by..."
   if t1 > 2*PI then t1=t1-2*PI
   if t2 > 2*PI then t2=t2-2*PI
 
-    print"{x93}"
     gosub draw_cube
   goto mc_loop
 
