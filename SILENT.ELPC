@@ -403,7 +403,7 @@ subtext$(1) = "a song by..."
         if frmy(k) > orig_frmy(k) then frmy(k) = orig_frmy(k)
       bend
 
-      if frmy(k) = orig_frmy(k) then finish_cnt = finish_cnt or 2^k
+      if frmy(k) = orig_frmy(k) then finish_cnt = (finish_cnt) or 2^k
     next k
 
   bend
