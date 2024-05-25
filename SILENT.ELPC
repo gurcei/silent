@@ -109,7 +109,7 @@ subtext$(1) = "a song by..."
 #declare seqcnt
 #declare seq_chunk(200), seq_extra(200)
 
-#declare plyptr, plyflag, ret%, tmp$
+#declare plyptr, plyflag, ret%, tmp$, playidx%
 
 #define CMD_TEMPO = -1
 #define CMD_FILTER = -2
@@ -314,7 +314,7 @@ subtext$(1) = "a song by..."
       ' if m > 1910 then gosub scroll_canvas_right
     bend
 
-    if qix_state = 0 and plyptr = 12 then begin
+    if qix_state = 0 and playidx% = 10 then begin
       qix_state = 1
       qlidx = 0
       qlcnt = 1
@@ -324,7 +324,7 @@ subtext$(1) = "a song by..."
       t = 0
     bend
 
-    if qix_state = 1 and plyptr = 14 then begin
+    if qix_state = 1 and playidx% = 13 then begin
       qix_state = 2
       qlidx = 0
       qlcnt = 1
@@ -336,8 +336,9 @@ subtext$(1) = "a song by..."
 
     if qix_state = 1 or qix_state = 2 then gosub draw_qix_poly
 
-    if qix_state = 0 and plyptr >= 9 then gosub draw_qix_lines
+    if qix_state = 0 and playidx% >= 7 then gosub draw_qix_lines
 
+    ' todo: at playidx% = 15 we start to fade to black
     gosub page_flip
     gosub iter_starfield
   bend
@@ -1177,7 +1178,7 @@ subtext$(1) = "a song by..."
     chunk_idx = k
     if chunk_rpt <= 0 then chunk_rpt = seq_extra(plyptr)
     gosub play_chunk_idx
-    'sleep .1
+    playidx% = playidx% + 1
     ret% = 1
   bend
   if k = CMD_TEMPO then begin
