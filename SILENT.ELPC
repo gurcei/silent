@@ -115,35 +115,36 @@ subtext$(1) = "a song by..."
 '-----------
 #declare lyr$(27), lyr_idx, max_len
 #declare lyr_offs, lyr_t, addr, scyy, zz, wc_space, chrclr, wcclr=2
+#declare itercnt
 
   lyr$(0) = "In dreamland..."
-  lyr$(1) = "grandeur..."
-  lyr$(2) = "I held..."
-  lyr$(3) = "mesmerised..."
-  lyr$(4) = "Peace..."
-  lyr$(5) = "Innocence..."
-  lyr$(6) = "Breathed again..."
+  lyr$(1) = "Grandeur..."
+  lyr$(2) = "I held"
+  lyr$(3) = "Mesmerised"
+  lyr$(4) = "Peace"
+  lyr$(5) = "Innocence"
+  lyr$(6) = "Breathed again"
 
   lyr$(7) = "A mind's escape"
-  lyr$(8) = "Leave walls of tears behind..."
-  lyr$(9) = "Ethereal vision haunting still..."
-  lyr$(10) = "The solitude left me blind..."
+  lyr$(8) = "Leave walls of tears behind"
+  lyr$(9) = "Ethereal vision haunting still"
+  lyr$(10) = "The solitude left me blind"
 
-  lyr$(11) = "Beneath an open sky..."
-  lyr$(12) = "Sibilant cries of youth dying..."
-  lyr$(13) = "Enslave me with grief..."
-  lyr$(14) = "A moonlit era..."
-  lyr$(15) = "Oblivion's twilight kiss..."
-  lyr$(16) = "Wishes in lament..."
-  lyr$(17) = "Happiness in a broken vision..."
-  lyr$(18) = "Utopia..."
-  lyr$(19) = "Still unborn..."
+  lyr$(11) = "Beneath an open sky"
+  lyr$(12) = "Sibilant cries of youth dying"
+  lyr$(13) = "Enslave me with grief"
+  lyr$(14) = "A moonlit era"
+  lyr$(15) = "Oblivion's twilight kiss"
+  lyr$(16) = "Wishes in lament"
+  lyr$(17) = "Happiness in a broken vision"
+  lyr$(18) = "Utopia"
+  lyr$(19) = "Still unborn"
 
-  lyr$(20) = "Tormented echoes..."
-  lyr$(21) = "of a fallen Eden..."
-  lyr$(22) = "I longed for her beauty..."
-  lyr$(23) = "Yet from dust..."
-  lyr$(24) = "She returned..."
+  lyr$(20) = "Tormented echoes"
+  lyr$(21) = "of a fallen Eden"
+  lyr$(22) = "I longed for her beauty"
+  lyr$(23) = "Yet from dust"
+  lyr$(24) = "She returned"
   lyr$(25) = "The dream..."
   lyr$(26) = "An enigma..."
   lyr$(27) = "Silent..."
@@ -309,7 +310,7 @@ subtext$(1) = "a song by..."
     gosub page_flip
     gosub iter_starfield
 
-    if m = 720 then begin
+    if m = 570 then begin
       logo_state = ST_DRAW_SONG_TITLE
       m = 0
       offs(1) = -25
@@ -320,17 +321,28 @@ subtext$(1) = "a song by..."
     m = m + 1
     gosub draw_starfield
 
+    if m<150 then begin
+      fidx%=0
+      chrclr=1
+      gosub play_data_iter
+    bend
+
     ' scroll off anathema
     if m > 150 and m < 230 then fidx%=0:gosub scroll_canvas_right
 
     ' draw song title
-    if m > 10 and m < 1900 then begin
+    if m < 500 then begin
       fidx%=1
       chrclr = 2
       gosub play_data_iter
       gosub play_data_iter
-      if mod(m, 4) = 0 then gosub scroll_canvas_right
-      ' if m > 1910 then gosub scroll_canvas_right
+      gosub play_data_iter
+      gosub play_data_iter
+      gosub play_data_iter
+      gosub play_data_iter
+      gosub play_data_iter
+      gosub play_data_iter
+      gosub scroll_canvas_right
     bend
 
     if qix_state = 0 and playidx% = 10 then begin
@@ -361,7 +373,7 @@ subtext$(1) = "a song by..."
 
     if playidx% >= 7 then begin
       if s$ = "" then begin
-        wxx = 55 : wyy = 0
+        wxx = 50 : wyy = 0
         zz = mod(lyr_idx, 2)
         if zz = 1 then wyy = 33
         s$ = lyr$(lyr_idx)
@@ -374,9 +386,6 @@ subtext$(1) = "a song by..."
       fidx% = 2
       chrclr = wcclr
       gosub iter_write_text
-      if ret = 0 then gosub iter_write_text
-      if ret = 0 then gosub iter_write_text
-      if ret = 0 then gosub iter_write_text
     bend
 
     gosub page_flip
@@ -1392,15 +1401,15 @@ subtext$(1) = "a song by..."
 '---------------
   ret = 0
 
-  if wc_space>0 then begin
-    wxx=wxx+1
-    wc_space=wc_space-1
-
-    lyr_t = lyr_t + 1
-    if mod(lyr_t, 3) = 0 then gosub scroll_canvas_right:wxx=wxx-1
-
-    return
-  bend
+  'if wc_space>0 then begin
+  '  wxx=wxx+1
+  '  wc_space=wc_space-1
+  '
+  '  lyr_t = lyr_t + 1
+  '  if mod(lyr_t, 1) = 0 then gosub scroll_canvas_right:wxx=wxx-1
+  '
+  '  return
+  'bend
 
   if wc_flag = 0 and txt_k > 0 and txt_k <= len(s$) then begin
     chr = asc(mid$(s$, txt_k, 1))
@@ -1411,8 +1420,10 @@ subtext$(1) = "a song by..."
     ' get key z$
 
     if chr=100 then begin
-      wc_space = 7
+      ' wc_space = 7
+      wxx=wxx+6
       txt_k = txt_k + 1
+      gosub scroll_canvas_right:wxx=wxx-1
     bend:else:begin
       wc_flag = 1
       wc_chr = chr
@@ -1443,34 +1454,35 @@ subtext$(1) = "a song by..."
 
   ret = 1
 
-  if pidx%(fidx%) < didx%(fidx%) and ldata&(fidx%, pidx%(fidx%)) <> $ff then begin
+  for itercnt = 0 to 3
+    if pidx%(fidx%) < didx%(fidx%) and ldata&(fidx%, pidx%(fidx%)) <> $ff then begin
 
-    ' cursor 0,49
-    ' print chr$(27);"qpidx=";pidx%(fidx%);"[";ldata&(fidx%, pidx%);
-    ' print ldata&(fidx%, pidx%+1);ldata&(fidx%, pidx%+2);
+      ' cursor 0,49
+      ' print chr$(27);"qpidx=";pidx%(fidx%);"[";ldata&(fidx%, pidx%);
+      ' print ldata&(fidx%, pidx%+1);ldata&(fidx%, pidx%+2);
 
-    val& = ldata&(fidx%, pidx%(fidx%))
-    pidx%(fidx%) = pidx%(fidx%) + 1
+      val& = ldata&(fidx%, pidx%(fidx%))
+      pidx%(fidx%) = pidx%(fidx%) + 1
 
-    x = val& and $7f
+      x = val& and $7f
 
-    if val& and $80 then rev_flag&(fidx%) = 1 : else rev_flag&(fidx%) = 0
-    y = ldata&(fidx%, pidx%(fidx%))
-    pidx%(fidx%) = pidx%(fidx%) + 1
+      if val& and $80 then rev_flag&(fidx%) = 1 : else rev_flag&(fidx%) = 0
+      y = ldata&(fidx%, pidx%(fidx%))
+      pidx%(fidx%) = pidx%(fidx%) + 1
 
-    a$ = chr$(ldata&(fidx%, pidx%(fidx%)))
-    pidx%(fidx%) = pidx%(fidx%) + 1
+      a$ = chr$(ldata&(fidx%, pidx%(fidx%)))
+      pidx%(fidx%) = pidx%(fidx%) + 1
 
-    dxx = wxx+x : dyy = wyy+y : gosub draw_char
+      dxx = wxx+x : dyy = wyy+y : gosub draw_char
 
-    lyr_t = lyr_t + 1
-    if mod(lyr_t, 3) = 0 then gosub scroll_canvas_right:wxx=wxx-1
+      ' print "{x13}{x11}";chr$(27);"q x,y,pidx,a$=";x;y;pidx%(fidx%),asc(a$)
+      ' get key a$
+      ret = 0
+    bend
+  next itercnt
 
-    ' print "{x13}{x11}";chr$(27);"q x,y,pidx,a$=";x;y;pidx%(fidx%),asc(a$)
-    ' get key a$
-    ret = 0
-.pd_endloop
-  bend
+  lyr_t = lyr_t + 1
+  gosub scroll_canvas_right:wxx=wxx-1
 
   return
 

@@ -20,7 +20,7 @@ DONE- Try port line drawing routine to assembly, for speed
     DONE- add music routine in
       DONE- assess source code line size
     DONE- add bas logo
-    - add writer logic
+    DONE- add writer logic
     - iron them all out
     - add qix triangle, square and cube logic
     - rotate plus greets
