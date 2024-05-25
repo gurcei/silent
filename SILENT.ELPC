@@ -203,8 +203,7 @@ subtext$(1) = "a song by..."
 #define ST_FADE_TO_STARS = 5
 #define ST_DRAW_ANATHEMA = 6
 #define ST_DRAW_SONG_TITLE = 7
-#define ST_SHOW_QIX_LINES = 8
-#define ST_SHOW_LYRICS =9
+#define ST_FADE_TO_ROTATE = 8
 
 
 '----
@@ -365,14 +364,27 @@ subtext$(1) = "a song by..."
       t = 0
     bend
 
-    if qix_state = 1 or qix_state = 2 then gosub draw_qix_poly
+    if qix_state >= 1 and qix_state <= 3 then gosub draw_qix_poly
 
     if qix_state = 0 and playidx% >= 7 then gosub draw_qix_lines
 
-    ' todo: at playidx% = 15 we start to fade to black
+    if qix_state = 2 and playidx% = 16 then begin
+      ' start fade to black
+      qix_state = 3
+      fadeval = 0
+      gosub store_curr_colours
+      gosub set_default_palette_to_black
+    bend
+
+    if qix_state = 3 then begin
+      ' fade to black
+      bank 0:sys $7e03, fadeval:bank 128
+      fadeval = fadeval + 1
+      if fadeval = 129 then logo_state = ST_FADE_TO_ROTATE
+    bend
 
     if playidx% >= 7 then begin
-      if s$ = "" then begin
+      if s$ = "" and lyr_idx>-1 then begin
         wxx = 50 : wyy = 0
         zz = mod(lyr_idx, 2)
         if zz = 1 then wyy = 33
@@ -392,6 +404,10 @@ subtext$(1) = "a song by..."
     gosub iter_starfield
   bend
 
+  if logo_state = ST_FADE_TO_ROTATE then begin
+    
+  bend
+
   do
     ret% = 0
     do while ret% = 0
@@ -403,6 +419,13 @@ subtext$(1) = "a song by..."
 
   return
 
+.set_default_palette_to_black
+  for k = 0 to 31
+    default_red&(k) = 0
+    default_green&(k) = 0
+    default_blue&(k) = 0
+  next k
+  return
 
 '----------
 .init_80x50
