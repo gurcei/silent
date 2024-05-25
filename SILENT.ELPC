@@ -111,6 +111,43 @@ subtext$(1) = "a song by..."
 
 #declare plyptr, plyflag, ret%, tmp$, playidx%
 
+.writer_vars
+'-----------
+#declare lyr$(27), lyr_idx, max_len
+#declare lyr_offs, lyr_t, addr, scyy, zz, wc_space, chrclr, wcclr=2
+
+  lyr$(0) = "In dreamland..."
+  lyr$(1) = "grandeur..."
+  lyr$(2) = "I held..."
+  lyr$(3) = "mesmerised..."
+  lyr$(4) = "Peace..."
+  lyr$(5) = "Innocence..."
+  lyr$(6) = "Breathed again..."
+
+  lyr$(7) = "A mind's escape"
+  lyr$(8) = "Leave walls of tears behind..."
+  lyr$(9) = "Ethereal vision haunting still..."
+  lyr$(10) = "The solitude left me blind..."
+
+  lyr$(11) = "Beneath an open sky..."
+  lyr$(12) = "Sibilant cries of youth dying..."
+  lyr$(13) = "Enslave me with grief..."
+  lyr$(14) = "A moonlit era..."
+  lyr$(15) = "Oblivion's twilight kiss..."
+  lyr$(16) = "Wishes in lament..."
+  lyr$(17) = "Happiness in a broken vision..."
+  lyr$(18) = "Utopia..."
+  lyr$(19) = "Still unborn..."
+
+  lyr$(20) = "Tormented echoes..."
+  lyr$(21) = "of a fallen Eden..."
+  lyr$(22) = "I longed for her beauty..."
+  lyr$(23) = "Yet from dust..."
+  lyr$(24) = "She returned..."
+  lyr$(25) = "The dream..."
+  lyr$(26) = "An enigma..."
+  lyr$(27) = "Silent..."
+
 #define CMD_TEMPO = -1
 #define CMD_FILTER = -2
 #define CMD_LOOP = -3
@@ -175,26 +212,6 @@ subtext$(1) = "a song by..."
   gosub init
   gosub state_loop
   end
-
-'-------------
-.iter_maindemo
-'-------------
-
-  if mn_state = 0 then begin
-    s$ = "In dreamland..."
-    txt_k = 1
-
-    mn_state = 1
-  bend
-
-  if mn_state = 1 then begin
-    fidx% = 2
-    gosub iter_write_text
-  bend
-
-  if plyptr = -1 and rplay(1)=0 then print "{x93}the end!":end
-
-  return
 
 
 '----------
@@ -286,6 +303,7 @@ subtext$(1) = "a song by..."
 
     ' draw anathema logo
     fidx%=0
+    chrclr=1
     gosub play_data_iter  ' line data
 
     gosub page_flip
@@ -308,6 +326,7 @@ subtext$(1) = "a song by..."
     ' draw song title
     if m > 10 and m < 1900 then begin
       fidx%=1
+      chrclr = 2
       gosub play_data_iter
       gosub play_data_iter
       if mod(m, 4) = 0 then gosub scroll_canvas_right
@@ -339,6 +358,27 @@ subtext$(1) = "a song by..."
     if qix_state = 0 and playidx% >= 7 then gosub draw_qix_lines
 
     ' todo: at playidx% = 15 we start to fade to black
+
+    if playidx% >= 7 then begin
+      if s$ = "" then begin
+        wxx = 55 : wyy = 0
+        zz = mod(lyr_idx, 2)
+        if zz = 1 then wyy = 33
+        s$ = lyr$(lyr_idx)
+        lyr_idx = lyr_idx + 1
+        txt_k = 1
+        wcclr = wcclr + 1
+        if wcclr > 15 then wcclr = 3
+      bend
+
+      fidx% = 2
+      chrclr = wcclr
+      gosub iter_write_text
+      if ret = 0 then gosub iter_write_text
+      if ret = 0 then gosub iter_write_text
+      if ret = 0 then gosub iter_write_text
+    bend
+
     gosub page_flip
     gosub iter_starfield
   bend
@@ -1350,6 +1390,18 @@ subtext$(1) = "a song by..."
 '---------------
 .iter_write_text
 '---------------
+  ret = 0
+
+  if wc_space>0 then begin
+    wxx=wxx+1
+    wc_space=wc_space-1
+
+    lyr_t = lyr_t + 1
+    if mod(lyr_t, 3) = 0 then gosub scroll_canvas_right:wxx=wxx-1
+
+    return
+  bend
+
   if wc_flag = 0 and txt_k > 0 and txt_k <= len(s$) then begin
     chr = asc(mid$(s$, txt_k, 1))
     ' print "{x13}";chr$(27);"qchr=";chr;
@@ -1358,8 +1410,8 @@ subtext$(1) = "a song by..."
     ' print "fixed chr=";chr;
     ' get key z$
 
-    if chr=32 then begin
-      wxx=wxx+7
+    if chr=100 then begin
+      wc_space = 7
       txt_k = txt_k + 1
     bend:else:begin
       wc_flag = 1
@@ -1372,8 +1424,10 @@ subtext$(1) = "a song by..."
     chr = wc_chr
     gosub iter_write_char
     if ret = 1 then begin
+      ret = 0
       wxx = wxx + char_width%(wc_chr) + 1
       txt_k = txt_k + 1
+      if txt_k > len(s$) then ret = 1: s$=""
       wc_flag = 0
     bend
   bend
@@ -1408,6 +1462,9 @@ subtext$(1) = "a song by..."
     pidx%(fidx%) = pidx%(fidx%) + 1
 
     dxx = wxx+x : dyy = wyy+y : gosub draw_char
+
+    lyr_t = lyr_t + 1
+    if mod(lyr_t, 3) = 0 then gosub scroll_canvas_right:wxx=wxx-1
 
     ' print "{x13}{x11}";chr$(27);"q x,y,pidx,a$=";x;y;pidx%(fidx%),asc(a$)
     ' get key a$
@@ -1561,14 +1618,14 @@ subtext$(1) = "a song by..."
 
   if rev_flag&(fidx%) = 1 then chr = chr + 128
 
-  if ver(fidx%) = 1 then begin
+  if ver(fidx%) = 1 or ver(fidx%) = 3 then begin
     poke $52000 + dxx + dyy*80, chr
-    poke $53000 + dxx + dyy*80, 1
+    poke $53000 + dxx + dyy*80, chrclr
   bend
 
-  if ver(fidx%) = 2 or ver(fidx%) = 3 then begin
+  if ver(fidx%) = 2 then begin
     poke $54000 + dxx + dyy*80, chr
-    poke $55000 + dxx + dyy*80, 2
+    poke $55000 + dxx + dyy*80, chrclr
   bend
 
   return
@@ -1599,7 +1656,9 @@ subtext$(1) = "a song by..."
   if chr = 44 then chr = 28:return ' comma (smiley)
   if chr = 47 then chr = 29:return ' forward slash (love heart)
   if chr = 35 then chr = 30:return ' # hash (dhufish)
-  if chr >= 1 and chr <= 26 then chr = chr + 30
+  if chr >= 1 and chr <= 26 then chr = chr + 30:return
+  if chr = 39 then chr = 57:return
+  if chr = 32 then chr = 100:return
   return
 
 
@@ -1634,6 +1693,7 @@ subtext$(1) = "a song by..."
   offs(fidx%) = offs(fidx%) + 1
   if fidx% = 0 then addr = $20  ' $52000
   if fidx% = 1 then addr = $40  ' $54000
+  if fidx% = 2 then addr = $20
 
   bank 0:sys $7e12, addr: bank 128
 
