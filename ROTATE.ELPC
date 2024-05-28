@@ -1,8 +1,8 @@
 ' rotate screen contents
 #output "rotate"
-
-' 4.0000 = 96x96 clrbox canvas (9216 bytes)
-' 4.2400 = free
+' 4.0800 = screen pointer
+' 4.4000 = 96x96 clrbox canvas (9216 bytes)
+' 4.6400 = free
 
 .defines
 '-------
@@ -22,6 +22,7 @@
 #define PI = 3.1415926535
 #declare pl_rad, pl_ang, pl_dir, pl_clr
 #declare a$
+#declare state
 
 .main
 '----
@@ -36,46 +37,39 @@
 .init
 '----
   ^^bload "asmrotate",b0
-  ' print chr$(27);"5";chr$(147);
+  print chr$(27);"5";chr$(147);
   ang = 2*PI + .1
+
+  state = 0
   pl_rad = 0
   pl_ang = 0
   pl_dir = 0
   pl_clr = 0
 
-  ' switch to 80x50
-  bank 128
-  setbit HOTREG_7, 7
-  poke $d031, $e8 ' 1110 1000 = H640,FAST,ATTR,V400
-
-  ' move SCRNPTR to bank4 - $8000
-  wpoke SCRNPTRLSB, $8000
-  poke SCRNPTRBNK,$04
-
   ' clear 80x50 chars and colour ram
-  edma 3, 4000, 160, $48000
+  edma 3, 4000, 160, $40800
   edma 3, 4000, 6, $ff80000
-  ' for idx=0 to 3999:poke $48000+idx,160:poke $ff80000+idx,6:next idx
+  ' for idx=0 to 3999:poke $44000+idx,160:poke $ff80000+idx,6:next idx
 
   return
 
 
 .dummy_content
 '-------------
-  edma OP_FILL, 96*96, 0, $40000
+  edma OP_FILL, 96*96, 0, $44000
 
-  'poke $40000 + 48*96, 1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6
+  'poke $44000 + 48*96, 1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6
 
   'for t = 0 to 50
   '  colr = int(rnd(1)*16)
   '  x = int(rnd(1)*96)
   '  y = int(rnd(1)*96)
-  '  poke $40000 + x + y * 96, colr
+  '  poke $44000 + x + y * 96, colr
   'next t
 
   'for y = 0 to 96
   '  for x = 0 to 95
-  '    poke $40000 + x + y * 96, mod(y, 16)
+  '    poke $44000 + x + y * 96, mod(y, 16)
   '  next x
   'next y
 
@@ -106,6 +100,7 @@
 .draw_content
 '------------
   gosub plot_iteration
+  gosub plot_iteration
   gosub asm_rotation
   ' gosub basic_rotation
 
@@ -117,21 +112,22 @@
 
   return
 
+
 .plot_iteration
 '--------------
   x = 48 + cos(pl_ang) * pl_rad
   y = 48 + sin(pl_ang) * pl_rad
 
-  poke $40000 + x + int(y) * 96, pl_clr + 64
+  poke $44000 + x + int(y) * 96, pl_clr + 64
 
-  pl_ang = pl_ang + .05
+  pl_ang = pl_ang + .025
   if pl_ang > 2 * PI then pl_ang = pl_ang - 2 * PI
 
-  pl_rad = pl_rad + .1
-  if pl_rad > 20 then begin
+  pl_rad = pl_rad + .05
+  if pl_rad > 30 then begin
     pl_rad=0
     pl_clr = pl_clr + 1
-    if pl_clr = 16 then pl_clr = 0
+    if pl_clr = 16 then state = state + 1
     pl_ang = .3926 * pl_clr
   bend
 
@@ -176,7 +172,7 @@
     cx = tx
     cy = ty
     for x = 0 to 79
-      poke $ff80000 + x + y1add, peek($40000 + cx/65536 + int(cy/65536) * 96)
+      poke $ff80000 + x + y1add, peek($44000 + cx/65536 + int(cy/65536) * 96)
       cx = cx + xinc
       cy = cy + yinc
     next x

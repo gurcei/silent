@@ -40,6 +40,8 @@ DONE- Try port line drawing routine to assembly, for speed
       (yes, add the extra '9' at the end, that's not a typo!)
     - place this on your sd-card
     - Reboot your MEGA65 while holding down the 9 key (to load this alternate rom)
+DONE- Allow Eleven to support .prj file for multi-file compilation
+DONE- Push Eleven improvements into main eleven repo
 
 baslogo.el = 621 lines
 starfield.el = 625 lines
