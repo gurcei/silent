@@ -1,0 +1,8 @@
+' silent2.el is just an extension of silent.el
+' to work around the max 2000 source line limitations of eleven
+
+.proj_test
+'---------
+  poke $d020, 2, 2
+  end
+ÿ

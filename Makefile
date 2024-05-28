@@ -13,6 +13,11 @@ all: megaplot.prg asmhelper.prg
 	c1541 -attach "silent.d81" -read bas.dat bas.dat
 	c1541 -attach "silent.d81" -delete megaplot -write megaplot.prg megaplot
 	c1541 -attach "silent.d81" -delete asmhelper -write asmhelper.prg asmhelper
+	c1541 -attach "silent.d81" -read 11.defaults -read 11.edit -read 11.parse -read 11.post -read 11.settings -read 11boot.c65 autoboot.c65
+
+push_eleven:
+	c1541 -attach "/c/Users/phuon/AppData/Roaming/xemu-lgb/mega65/hdos/11.D81" -delete 11.defaults -delete 11.edit -delete 11.parse -delete 11.post -delete 11.settings -delete autoboot.c65
+	c1541 -attach "/c/Users/phuon/AppData/Roaming/xemu-lgb/mega65/hdos/11.D81" -write 11.defaults -write 11.edit -write 11.parse -write 11.post -write 11.settings -write autoboot.c65
 
 xemu:
 	/c/projs/xemu/build/bin/xmega65.native -rom /c/projs/mega65-rom/newrom.bin -hdosvirt -uartmon :4510 -8 silent.d81 &> /dev/null &

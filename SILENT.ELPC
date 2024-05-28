@@ -209,6 +209,7 @@ subtext$(1) = "a song by..."
 '----
 .main
 '----
+  gosub proj_test
   gosub init
   gosub state_loop
   end
