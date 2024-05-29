@@ -25,6 +25,9 @@
 #declare state
 
 #declare greet_cnt, greets$(330)
+#declare greet_line, greet_x, line_x, chr, myclr
+#declare rbw_clr, rbw_flag
+#declare ret
 
 
 .main
@@ -34,8 +37,53 @@
 .mn_loop
   gosub rotate_logic
   gosub draw_content
+  gosub iter_greet_txt
+  gosub iter_greet_txt
+  gosub iter_greet_txt
+  gosub iter_greet_txt
   gosub page_flip
   goto mn_loop
+
+
+.iter_greet_txt
+'--------------
+  ret = 0
+  if greet_line > greet_cnt then return
+
+  if greet_x > len(greets$(greet_line)) then begin
+    line_x = 0
+    greet_x = 1
+    greet_line = greet_line + 1
+
+    ' scroll up
+    edma 0, $f50, $52050, $52000
+    edma 0, $f50, $53050, $53000
+    edma 3, 80, 32, $52f50
+    edma 3, 80, 0, $53f50
+    ret = 1
+  bend
+
+  if ret=1 then goto iter_greet_txt
+
+  chr = asc(mid$(greets$(greet_line), greet_x, 1))
+
+  gosub petscii_to_screencode
+
+  if chr = 27 then rbw_flag=1:greet_x=greet_x+1 : goto iter_greet_txt  ' [ char
+  if chr = 29 then rbw_flag=0:greet_x=greet_x+1 : goto iter_greet_txt  ' ] char
+
+  if rbw_flag then rbw_clr = mod(rbw_clr+1, 16):myclr = rbw_clr:else myclr = 1
+
+  if chr<>32 then begin
+    poke $52f50 + line_x, chr
+    poke $53f50 + line_x, myclr + rbw_flag * 64
+  bend
+
+  greet_x = greet_x + 1
+  line_x = line_x + 1
+
+  return
+
 
 .page_flip
 '---------
@@ -47,6 +95,8 @@
 '----
   ^^bload "asmrotate",b0
   bank 0:bload "asmhelper":bank 128
+
+  greet_x = 1
 
   print chr$(27);"5";chr$(147);
   ang = 2*PI + .1
@@ -103,7 +153,7 @@
 
   greet_cnt = 0
   do
-    input #2, greets$(greet_cnt)
+    line input #2, greets$(greet_cnt)
     if st then exit
 
     greet_cnt = greet_cnt + 1
@@ -220,5 +270,21 @@
 
   get key a$
 
+  return
+
+
+'---------------------
+.petscii_to_screencode
+'---------------------
+  ' Based on the table here:
+  ' https://sta.c64.org/cbm64pettoscr.html
+  ' - seems like I needed to do a repair to it on the $a0-->$bf range
+  if chr>=$00 and chr<=$1f then chr=chr or $80:return
+  if chr>=$20 and chr<=$3f then return
+  if chr>=$40 and chr<=$5f then chr=chr and $bf:return
+  if chr>=$60 and chr<=$7f then chr=chr and $df:return
+  if chr>=$80 and chr<=$9f then chr=chr or $40:return
+  if chr>=$a0 and chr<=$bf then chr=(chr and $7f) or $40:return ' $bf:return
+  if chr>=$c0 and chr<=$fe then chr=chr and $7f:return
   return
 ÿ
