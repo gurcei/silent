@@ -41,14 +41,11 @@
   gosub rotate_logic
   gosub draw_content
 
-  ' bank 0 : sys $7e27 : bank 128
-
-  ' gosub iter_greet_txt
-  ' gosub iter_greet_txt
-  ' gosub iter_greet_txt
-  ' gosub iter_greet_txt
-  ' gosub iter_greet_txt
-  ' gosub iter_greet_txt
+  bank 0
+  for k = 0 to 5
+    sys $7e27
+  next k
+  bank 128
 
   bank 0 : sys $7e06,16: bank 128
   gosub page_flip
@@ -109,8 +106,6 @@
   print chr$(27);"5";chr$(147);
   ang = 2*PI + .1
 
-  gosub load_greets
-
   state = 0
   pl_rad = 0
   pl_ang = 0
@@ -118,8 +113,10 @@
   pl_clr = 0
 
   ' clear 80x50 chars and colour ram
-  edma 3, 4000, 160, $40800
-  edma 3, 4000, 6, $ff80000
+  ' edma 3, 4000, 32, $40800
+  ' edma 3, 4000, 6, $ff80000
+
+  gosub load_greets
 
   ' clear 96x96 array
   edma OP_FILL, 96*96, 0, $44000
@@ -276,7 +273,7 @@
   wpoke $1a14, mod(tyinc, 65536)
   wpoke $1a16, tyinc/65536
 
-  ' bank 0:sys $1800:bank 128
+  bank 0:sys $1800:bank 128
 
   return
 

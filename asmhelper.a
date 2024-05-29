@@ -1424,7 +1424,7 @@ igt_restart:
     jsr plain_dma
 
     // edma 3, 80, 0, $53f50
-    +set16 src_addr, 32
+    +set16 src_addr, 0
     +set16 dest_addr, $3f50
     jsr plain_dma
 
