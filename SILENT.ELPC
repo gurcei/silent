@@ -220,7 +220,7 @@ subtext$(1) = "a song by..."
 .main
 '----
   gosub init
-  logo_state = ST_FADE_TO_ROTATE
+  ' logo_state = ST_FADE_TO_ROTATE
   gosub state_loop
   end
 
@@ -236,6 +236,8 @@ subtext$(1) = "a song by..."
 
   bend
   
+  ' - - - - -
+
   if logo_state = ST_DRAW_BACKDROP_ONLY then begin
     bank 128
     poke $d020, 1, 1
@@ -249,6 +251,8 @@ subtext$(1) = "a song by..."
     logo_state = ST_FADE_TO_DEFAULT
   bend
   
+  ' - - - - -
+
   if logo_state = ST_FADE_TO_DEFAULT then begin
     if fadeval <= 128 then begin
       ' fade_colours_to_defaults
@@ -263,6 +267,8 @@ subtext$(1) = "a song by..."
     if m = 130 then logo_state = ST_DROP_IN_B
   bend
 
+  ' - - - - -
+
   if logo_state = ST_DROP_IN_B then begin
     gosub animate_logo
     ' cycle_alt_palette
@@ -271,6 +277,8 @@ subtext$(1) = "a song by..."
 
     if m > 250 then logo_state = ST_PRESENTS:fadeval = 0
   bend
+
+  ' - - - - -
 
   if logo_state = ST_PRESENTS then begin
     gosub anim_draw_subtext
@@ -294,6 +302,8 @@ subtext$(1) = "a song by..."
     bend
   bend
 
+  ' - - - - -
+
   if logo_state = ST_FADE_TO_STARS then begin
       if fadeval <= 128 then begin
         ' fade_colours_to_defaults
@@ -306,6 +316,8 @@ subtext$(1) = "a song by..."
 
       if fadeval = 129 then logo_state = ST_DRAW_ANATHEMA : m = 0
   bend
+
+  ' - - - - -
 
   if logo_state = ST_DRAW_ANATHEMA then begin
     ' gosub iter_maindemo
@@ -326,6 +338,8 @@ subtext$(1) = "a song by..."
       offs(1) = -25
     bend
   bend
+
+  ' - - - - -
 
   if logo_state = ST_DRAW_SONG_TITLE then begin
     m = m + 1
@@ -400,6 +414,7 @@ subtext$(1) = "a song by..."
         edma 3, $fa0, 0, $55000
         palette restore
         gosub store_curr_colours
+        gosub restore_default_palette
         fadeval = 0
         m = 0
       bend
@@ -429,8 +444,9 @@ subtext$(1) = "a song by..."
 
   bend
 
+  ' - - - - -
+
   if logo_state = ST_FADE_TO_ROTATE then begin
-    m = m + 1
     gosub rotate_logic
     gosub draw_content
     
@@ -446,9 +462,9 @@ subtext$(1) = "a song by..."
     gosub page_flip
     edma 3, $fa0, 160, $50000
 
-    if m > 300 and fadeval < 128 then begin
-      bank 0 : sys $7e0c, fadeval : bank 128
-      fadeval = fadeval + 1
+    if playidx%=27 and fadeval < 128 then begin
+      if fadeval >=0 then bank 0 : sys $7e0c, fadeval : bank 128
+      fadeval = fadeval + 2
     bend
 
     if fadeval = 128 then begin
@@ -477,7 +493,9 @@ subtext$(1) = "a song by..."
 
   return
 
+
 .set_default_palette_to_black
+'----------------------------
   for k = 0 to 31
     default_red&(k) = 0
     default_green&(k) = 0
