@@ -183,6 +183,14 @@ subtext$(1) = "a song by..."
 #define FRM_OFFSET_HB_ATTACK  = 16
 #define FRM_OFFSET_DATA       = 20
 
+.greets_vars
+
+#declare greet_cnt, greets$(330)
+#declare greet_line, greet_x, line_x, chr, myclr
+#declare rbw_clr, rbw_flag, plt_iter
+#declare ang, xinc, yinc, txinc, tyinc, xfrac, yfrac
+#declare box_ang, cx, cy, hyp
+#declare pl_rad, pl_ang, pl_dir, pl_clr
 
 '-------
 .defines
@@ -371,16 +379,20 @@ subtext$(1) = "a song by..."
     if qix_state = 2 and playidx% = 16 then begin
       ' start fade to black
       qix_state = 3
-      fadeval = 0
+      fadeval = -30
       gosub store_curr_colours
       gosub set_default_palette_to_black
     bend
 
     if qix_state = 3 then begin
       ' fade to black
-      bank 0:sys $7e03, fadeval:bank 128
-      fadeval = fadeval + 1
-      if fadeval = 129 then logo_state = ST_FADE_TO_ROTATE
+      if fadeval >= 0 then bank 0:sys $7e03, fadeval:bank 128
+      fadeval = fadeval + 2
+      if fadeval >= 129 then begin
+        logo_state = ST_FADE_TO_ROTATE
+        print "{x93}";
+        palette restore
+      bend
     bend
 
     if playidx% >= 7 then begin
@@ -405,7 +417,14 @@ subtext$(1) = "a song by..."
   bend
 
   if logo_state = ST_FADE_TO_ROTATE then begin
-    
+    gosub rotate_logic
+    gosub draw_content
+    gosub iter_greet_txt
+
+    ' colour cycle
+    bank 0:sys $7e06, 16:bank 128
+    gosub page_flip
+
   bend
 
   do
@@ -1135,6 +1154,8 @@ subtext$(1) = "a song by..."
 
   song$ = "enigma.p"
   gosub load_song
+
+  gosub init_rotate
 
   for k = 0 to 20
     starx%(k) = int(rnd(1)*80)*256

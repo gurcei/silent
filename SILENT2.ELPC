@@ -1,8 +1,174 @@
 ' silent2.el is just an extension of silent.el
 ' to work around the max 2000 source line limitations of eleven
 
-.proj_test
-'---------
-  poke $d020, 2, 2
-  end
+.init_rotate
+'-----------
+  ^^bload "asmrotate",b0
+
+  greet_x = 1
+
+  ang = 2*PI + .1
+
+  gosub load_greets
+
+  pl_rad = 0
+  pl_ang = 0
+  pl_dir = 0
+  pl_clr = 0
+
+  ' clear 80x50 chars and colour ram
+  edma 3, 4000, 160, $40800
+  edma 3, 4000, 6, $ff80000
+
+  ' clear 96x96 array
+  edma OP_FILL, 96*96, 0, $44000
+
+  return
+
+
+.iter_greet_txt
+'--------------
+  ret = 0
+  if greet_line > greet_cnt then return
+
+  if greet_x > len(greets$(greet_line)) then begin
+    line_x = 0
+    greet_x = 1
+    greet_line = greet_line + 1
+
+    ' scroll up
+    edma 0, $f50, $52050, $52000
+    edma 0, $f50, $53050, $53000
+    edma 3, 80, 32, $52f50
+    edma 3, 80, 0, $53f50
+    ret = 1
+  bend
+
+  if ret=1 then goto iter_greet_txt
+
+  chr = asc(mid$(greets$(greet_line), greet_x, 1))
+
+  gosub petscii_to_screencode
+
+  if chr = 27 then rbw_flag=1:greet_x=greet_x+1 : goto iter_greet_txt  ' [ char
+  if chr = 29 then rbw_flag=0:greet_x=greet_x+1 : goto iter_greet_txt  ' ] char
+
+  if rbw_flag then rbw_clr = mod(rbw_clr+1, 16):myclr = rbw_clr:else myclr = 1
+
+  if chr<>32 then begin
+    poke $52f50 + line_x, chr
+    poke $53f50 + line_x, myclr + rbw_flag * 64
+  bend
+
+  greet_x = greet_x + 1
+  line_x = line_x + 1
+
+  return
+
+
+
+.load_greets
+'-----------
+  dopen #2,"greets.t",r,u8
+
+  greet_cnt = 0
+  do
+    line input #2, greets$(greet_cnt)
+    if st then exit
+
+    greet_cnt = greet_cnt + 1
+  loop
+
+  dclose #2
+  return
+
+
+.rotate_logic
+'------------
+  ang = ang - .1
+  if ang < 0 then ang = ang + (2 * PI)
+  hyp = sqr(25*25+40*40) * 65536
+  xinc = cos(ang) * 65536
+  yinc = sin(ang) * 65536
+  txinc = cos(ang+PI/2) * 65536
+  tyinc = sin(ang+PI/2) * 65536
+  box_ang = atn(-25/-40)+ PI +ang
+  if box_ang < 0 then box_ang = box_ang + (2 * PI)
+  tx = hyp * cos(box_ang) + 48 * 65536
+  ty = hyp * sin(box_ang) + 48 * 65536
+  cx = tx
+  cy = ty
+  xfrac = 0
+  yfrac = 0
+  return
+
+
+.draw_content
+'------------
+  gosub plot_iteration
+
+  gosub asm_rotation
+  ' gosub basic_rotation
+
+  'cursor 0,0:print chr$(27);"q tx=";tx;", ty=";ty;
+  'cursor 0,1:print chr$(27);"q ang=";ang;", hyp=";hyp;
+  'cursor 0,2:print chr$(27);"q xinc=";xinc;", yinc=";yinc;
+  'cursor 0,3:print chr$(27);"q txinc=";txinc;", tyinc=";tyinc;
+  'get key a$
+
+  return
+
+
+.plot_iteration
+'--------------
+  for plt_iter = 0 to 6
+    x = 48 + cos(pl_ang) * pl_rad
+    y = 48 + sin(pl_ang) * pl_rad
+
+    poke $44000 + x + int(y) * 96, pl_clr + 64
+
+    pl_ang = pl_ang + .025
+    if pl_ang > 2 * PI then pl_ang = pl_ang - 2 * PI
+
+    pl_rad = pl_rad + .05
+    if pl_rad > 30 then begin
+      pl_rad=0
+      pl_clr = pl_clr + 1
+      pl_ang = .3926 * pl_clr
+    bend
+
+  next plt_iter
+
+  return
+
+
+.asm_rotation
+'------------
+  ' ASSEMBLY version
+  if xinc < 0 then xinc = xinc + 4294967296
+  if yinc < 0 then yinc = yinc + 4294967296
+  if txinc < 0 then txinc = txinc + 4294967296
+  if tyinc < 0 then tyinc = tyinc + 4294967296
+
+  wpoke $1a00, mod(tx,65536)
+  wpoke $1a02, tx/65536
+
+  wpoke $1a04, mod(ty, 65536)
+  wpoke $1a06, ty/65536
+
+  wpoke $1a08, mod(xinc,65536)
+  wpoke $1a0a, xinc/65536
+
+  wpoke $1a0c, mod(yinc, 65536)
+  wpoke $1a0e, yinc/65536
+
+  wpoke $1a10, mod(txinc, 65536)
+  wpoke $1a12, txinc/65536
+
+  wpoke $1a14, mod(tyinc, 65536)
+  wpoke $1a16, tyinc/65536
+
+  bank 0:sys $1800:bank 128
+
+  return
 ÿ

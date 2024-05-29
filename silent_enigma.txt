@@ -23,11 +23,11 @@ DONE- Try port line drawing routine to assembly, for speed
     DONE- add writer logic
     - iron them all out
     - add qix triangle, square and cube logic
-    - rotate plus greets
+    DONE- rotate plus greets
   DONE - final section: rotating cubes via megaplot
   - fade back to original screen demo was run from
   - Add PAL check
-  - ROM version check (dddaaannn's new upcoming experimental rom)
+  - ROM version check (my experimental 999999.bin rom)
   - core version check (insist to run only on a specific dev core containing some needed fixes)
     (fixes for hyppo get/set map, and also fix for booting to MEGA659.ROM)
 
