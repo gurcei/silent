@@ -220,6 +220,7 @@ subtext$(1) = "a song by..."
 .main
 '----
   gosub init
+  logo_state = ST_FADE_TO_ROTATE
   gosub state_loop
   end
 
@@ -390,7 +391,7 @@ subtext$(1) = "a song by..."
       ' fade to black
       if fadeval >= 0 then bank 0:sys $7e03, fadeval:bank 128
       fadeval = fadeval + 2
-      if fadeval >= 129 then begin
+      if fadeval >=129 and lyr_idx = 12 then begin
         logo_state = ST_FADE_TO_ROTATE
         print "{x93}";chr$(14);
         edma 3, $fa0, 32, $52000
@@ -398,10 +399,13 @@ subtext$(1) = "a song by..."
         edma 3, $fa0, 32, $54000
         edma 3, $fa0, 0, $55000
         palette restore
+        gosub store_curr_colours
+        fadeval = 0
+        m = 0
       bend
     bend
 
-    if playidx% >= 7 and logo_state = ST_DRAW_SONG_TITLE then begin
+    if playidx%>=7 and lyr_idx<12 and logo_state=ST_DRAW_SONG_TITLE then begin
       if s$ = "" and lyr_idx>-1 then begin
         wxx = 50 : wyy = 0
         zz = mod(lyr_idx, 2)
@@ -426,6 +430,7 @@ subtext$(1) = "a song by..."
   bend
 
   if logo_state = ST_FADE_TO_ROTATE then begin
+    m = m + 1
     gosub rotate_logic
     gosub draw_content
     
@@ -440,6 +445,24 @@ subtext$(1) = "a song by..."
     bank 0:sys $7e06, 16:bank 128
     gosub page_flip
     edma 3, $fa0, 160, $50000
+
+    if m > 300 and fadeval < 128 then begin
+      bank 0 : sys $7e0c, fadeval : bank 128
+      fadeval = fadeval + 1
+    bend
+
+    if fadeval = 128 then begin
+      print "{x93}";chr$(142);  ' switch back to upper-case
+      gosub store_curr_colours
+      gosub restore_default_palette
+      logo_state = ST_FADE_TO_STARS
+      fadeval = 0
+
+      edma 3, $fa0, 32, $52000
+      edma 3, $fa0, 0, $53000
+      edma 3, $fa0, 32, $54000
+      edma 3, $fa0, 0, $55000
+    bend
 
   bend
 
@@ -781,6 +804,10 @@ subtext$(1) = "a song by..."
     default_red&(k)=peek($d100+k)
     default_green&(k)=peek($d200+k)
     default_blue&(k)=peek($d300+k)
+
+    bkp_red&(k)=peek($d100+k)
+    bkp_green&(k)=peek($d200+k)
+    bkp_blue&(k)=peek($d300+k)
   next k
   return
 
@@ -805,13 +832,6 @@ subtext$(1) = "a song by..."
 #define COL2_R = $1b ' 27
 #define COL2_G = $42 ' 66
 #define COL2_B = $0b ' 11
-
-  ' preserve original palette somewhere
-  for k = 0 to 31
-    bkp_red&(k) = default_red&(k)
-    bkp_green&(k) = default_green&(k)
-    bkp_blue&(k) = default_blue&(k)
-  next k
 
   for k = 12 to 21
     flip_var = COL1_R + (COL2_R-COL1_R) * (k-12)/9
