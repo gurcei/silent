@@ -1387,6 +1387,7 @@ igt_restart:
 	adc #$01
 	sta gt_ptr
 	lda gt_ptr+1
+	adc #$00
 	sta gt_ptr+1
 
   //if chr = $ff then begin
@@ -1453,7 +1454,7 @@ igt_restart:
 
 //  if rbw_flag then rbw_clr = mod(rbw_clr+1, 16):myclr = rbw_clr:else myclr = 1
 +	lda rbw_flag
-	bne +
+	beq +
 
 	clc
 	lda rbw_clr
@@ -1470,7 +1471,7 @@ igt_plot:
   // if chr<>32 then begin
   	lda chr
 	cmp #32
-	bne +
+	beq igt_incr
 
     // poke $52f50 + line_x, chr
     lda #$50
@@ -1500,6 +1501,7 @@ igt_plot:
 
   // bend
 
+igt_incr:
   // line_x = line_x + 1
 +	inc line_x
 
@@ -1904,7 +1906,7 @@ bitpatterns:	!byte $20,$7e,$7c,$e2,$7b,$61,$ff,$ec,$6c,$7f,$e1,$fb,$62,$fc,$fe,$
 screenx:	!byte $00
 screeny:	!byte $00
 chr:		!byte $00
-gt_ptr:		!word $7000, $0040	// defaults to $047000
+gt_ptr:		!word $7000, $0004	// defaults to $047000
 line_x:		!byte $00
 rbw_flag:	!byte $00
 rbw_clr:	!byte $00

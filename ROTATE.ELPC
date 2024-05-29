@@ -41,7 +41,7 @@
   gosub rotate_logic
   gosub draw_content
 
-  bank 0 : sys $7e27 : bank 128
+  ' bank 0 : sys $7e27 : bank 128
 
   ' gosub iter_greet_txt
   ' gosub iter_greet_txt
