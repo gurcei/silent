@@ -26,7 +26,7 @@
 
 #declare greet_cnt, greets$(330)
 #declare greet_line, greet_x, line_x, chr, myclr
-#declare rbw_clr, rbw_flag
+#declare rbw_clr, rbw_flag, plt_iter
 #declare ret
 
 
@@ -41,6 +41,11 @@
   gosub iter_greet_txt
   gosub iter_greet_txt
   gosub iter_greet_txt
+  gosub iter_greet_txt
+  gosub iter_greet_txt
+  gosub iter_greet_txt
+
+  bank 0 : sys $7e06,16: bank 128
   gosub page_flip
   goto mn_loop
 
@@ -187,7 +192,7 @@
 .draw_content
 '------------
   gosub plot_iteration
-  gosub plot_iteration
+
   gosub asm_rotation
   ' gosub basic_rotation
 
@@ -202,21 +207,24 @@
 
 .plot_iteration
 '--------------
-  x = 48 + cos(pl_ang) * pl_rad
-  y = 48 + sin(pl_ang) * pl_rad
+  for plt_iter = 0 to 6
+    x = 48 + cos(pl_ang) * pl_rad
+    y = 48 + sin(pl_ang) * pl_rad
 
-  poke $44000 + x + int(y) * 96, pl_clr + 64
+    poke $44000 + x + int(y) * 96, pl_clr + 64
 
-  pl_ang = pl_ang + .025
-  if pl_ang > 2 * PI then pl_ang = pl_ang - 2 * PI
+    pl_ang = pl_ang + .025
+    if pl_ang > 2 * PI then pl_ang = pl_ang - 2 * PI
 
-  pl_rad = pl_rad + .05
-  if pl_rad > 30 then begin
-    pl_rad=0
-    pl_clr = pl_clr + 1
-    if pl_clr = 16 then state = state + 1
-    pl_ang = .3926 * pl_clr
-  bend
+    pl_rad = pl_rad + .05
+    if pl_rad > 30 then begin
+      pl_rad=0
+      pl_clr = pl_clr + 1
+      if pl_clr = 16 then state = state + 1
+      pl_ang = .3926 * pl_clr
+    bend
+
+  next plt_iter
 
   return
 

@@ -371,7 +371,9 @@ blue:
 
 //---------------
 cycle_alt_palette:
-//---------------
+//---------------  // a = base colour to start from (e.g. y=12 means cycle from 12 to 31(
+	tay
+
 	// prepare four pointer
 	lda #$00
 	sta FOURPTR
@@ -381,17 +383,18 @@ cycle_alt_palette:
 	sta FOURPTR+2
 
 	// tempr = peek($d100+12)
-	lda $d100+12
+	lda $d100,y
 	sta tempr
 	// tempg = peek($d200+12)
-	lda $d200+12
+	lda $d200,y
 	sta tempg
 	// tempb = peek($d300+12)
-	lda $d300+12
+	lda $d300,y
 	sta tempb
 
 	// for k = 12 to 30
-	ldx #12
+	tya
+	tax
 		// poke $d100+k, peek($d100+k+1)
 -		lda $d101,x
 		sta $d100,x
@@ -419,7 +422,8 @@ cycle_alt_palette:
 	// ----------------------------
 
 do_curr:
-	ldz #12
+	tya
+	taz
 	// tempr = curr_red&(12)
 	+set1ptr_from_4ptr CURR_RED
 	lda [ONEPTR],z
@@ -434,7 +438,8 @@ do_curr:
 	sta tempb
 
 	// for k = 12 to 30
-	ldz #12
+	tya
+	taz
 		// curr_red&(k) = curr_red&(k+1)
 -		+set1ptr_from_4ptr CURR_RED
 		inz
@@ -475,7 +480,8 @@ do_curr:
 	// ----------------------------
 
 do_default:
-	ldz #12
+	tya
+	taz
 	// tempr = default_red&(12)
 	+set1ptr_from_4ptr DEFAULT_RED
 	lda [ONEPTR],z
@@ -490,7 +496,8 @@ do_default:
 	sta tempb
 
 	// for k = 12 to 30
-	ldz #12
+	tya
+	taz
 		// default_red&(k) = default_red&(k+1)
 -		+set1ptr_from_4ptr DEFAULT_RED
 		inz

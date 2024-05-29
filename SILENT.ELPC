@@ -209,7 +209,6 @@ subtext$(1) = "a song by..."
 '----
 .main
 '----
-  gosub proj_test
   gosub init
   gosub state_loop
   end
@@ -246,8 +245,8 @@ subtext$(1) = "a song by..."
       fadeval = fadeval + 1
     bend
 
-    ' cycle_alt_palette
-    bank 0:sys $7e06:bank 128
+    ' cycle_alt_palette from colour 12 to 31
+    bank 0:sys $7e06, 12:bank 128
     m = m + 1
 
     if m = 130 then logo_state = ST_DROP_IN_B
@@ -256,7 +255,7 @@ subtext$(1) = "a song by..."
   if logo_state = ST_DROP_IN_B then begin
     gosub animate_logo
     ' cycle_alt_palette
-    bank 0:sys $7e06:bank 128
+    bank 0:sys $7e06, 12:bank 128
     m = m + 1
 
     if m > 250 then logo_state = ST_PRESENTS:fadeval = 0
@@ -265,7 +264,7 @@ subtext$(1) = "a song by..."
   if logo_state = ST_PRESENTS then begin
     gosub anim_draw_subtext
     ' cycle_alt_palette
-    bank 0:sys $7e06:bank 128
+    bank 0:sys $7e06, 12:bank 128
     m = m + 1
 
     if m > 360 then begin
