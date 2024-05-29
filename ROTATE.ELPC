@@ -24,6 +24,8 @@
 #declare a$
 #declare state
 
+#declare greet_cnt, greets$(330)
+
 
 .main
 '----
@@ -48,6 +50,8 @@
 
   print chr$(27);"5";chr$(147);
   ang = 2*PI + .1
+
+  gosub load_greets
 
   state = 0
   pl_rad = 0
@@ -90,6 +94,22 @@
   poke $4000f, $00    ' CMD msb (ignore)
   wpoke $40010, $0000 ' modulo (ignore)
 
+  return
+
+
+.load_greets
+'-----------
+  dopen #2,"greets.t",r,u8
+
+  greet_cnt = 0
+  do
+    input #2, greets$(greet_cnt)
+    if st then exit
+
+    greet_cnt = greet_cnt + 1
+  loop
+
+  dclose #2
   return
 
 
