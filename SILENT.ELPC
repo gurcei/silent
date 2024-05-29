@@ -19,6 +19,8 @@
 '        0038: ptr to starvx%
 ' 4.0800 SCREEN MEMORY
 ' 4.2000 PETSCII GRAPHICS for BAS logo
+' 4.4000 96x96 colourbox canvas used for rotating spiral (9216)
+' 4.7000 greetings strings
 
 ' BANK5 Memory usage
 ' ------------------
@@ -185,7 +187,7 @@ subtext$(1) = "a song by..."
 
 .greets_vars
 
-#declare greet_cnt, greets$(330)
+#declare greet_cnt, greet$, gt_ptr
 #declare greet_line, greet_x, line_x, chr, myclr
 #declare rbw_clr, rbw_flag, plt_iter
 #declare ang, xinc, yinc, txinc, tyinc, xfrac, yfrac
@@ -335,10 +337,10 @@ subtext$(1) = "a song by..."
     bend
 
     ' scroll off anathema
-    if m > 150 and m < 230 then fidx%=0:gosub scroll_canvas_right
+    if m > 150 and m < 230 then fidx%=0:gosub scroll_canvas_right:gosub scroll_canvas_right
 
     ' draw song title
-    if m < 500 then begin
+    if m > 10 and m < 510 then begin
       fidx%=1
       chrclr = 2
       gosub play_data_iter
@@ -379,7 +381,7 @@ subtext$(1) = "a song by..."
     if qix_state = 2 and playidx% = 16 then begin
       ' start fade to black
       qix_state = 3
-      fadeval = -30
+      fadeval = -80
       gosub store_curr_colours
       gosub set_default_palette_to_black
     bend
@@ -390,12 +392,16 @@ subtext$(1) = "a song by..."
       fadeval = fadeval + 2
       if fadeval >= 129 then begin
         logo_state = ST_FADE_TO_ROTATE
-        print "{x93}";
+        print "{x93}";chr$(14);
+        edma 3, $fa0, 32, $52000
+        edma 3, $fa0, 0, $53000
+        edma 3, $fa0, 32, $54000
+        edma 3, $fa0, 0, $55000
         palette restore
       bend
     bend
 
-    if playidx% >= 7 then begin
+    if playidx% >= 7 and logo_state = ST_DRAW_SONG_TITLE then begin
       if s$ = "" and lyr_idx>-1 then begin
         wxx = 50 : wyy = 0
         zz = mod(lyr_idx, 2)
@@ -412,18 +418,28 @@ subtext$(1) = "a song by..."
       gosub iter_write_text
     bend
 
-    gosub page_flip
-    gosub iter_starfield
+    if logo_state = ST_DRAW_SONG_TITLE then begin
+      gosub page_flip
+      gosub iter_starfield
+    bend
+
   bend
 
   if logo_state = ST_FADE_TO_ROTATE then begin
     gosub rotate_logic
     gosub draw_content
-    gosub iter_greet_txt
+    
+    ' sys iter_greet_text
+    bank 0
+    for k = 0 to 5
+      sys $7e27
+    next k
+    bank 128
 
     ' colour cycle
     bank 0:sys $7e06, 16:bank 128
     gosub page_flip
+    edma 3, $fa0, 160, $50000
 
   bend
 
@@ -1370,17 +1386,17 @@ subtext$(1) = "a song by..."
   ' init
   qlidx = 0 : qlcnt = 0
 
-  qlx1(qlidx) = int(rnd(1)*160)
-  qly1(qlidx) = int(rnd(1)*100)
+  qlx1(qlidx) = 112 ' int(rnd(1)*160)
+  qly1(qlidx) = 57  ' int(rnd(1)*100)
 
-  qlx2(qlidx) = int(rnd(1)*160)
-  qly2(qlidx) = int(rnd(1)*100)
+  qlx2(qlidx) = 66  ' int(rnd(1)*160)
+  qly2(qlidx) = 18  ' int(rnd(1)*100)
   qlcnt = qlcnt + 1
 
-  qlvx1 = rnd(1)*3 + 1
-  qlvy1 = rnd(1)*3 + 1
-  qlvx2 = rnd(1)*3 + 1
-  qlvy2 = rnd(1)*3 + 1
+  qlvx1 = 3.1369572  ' rnd(1)*3 + 1
+  qlvy1 = 2.2788597  ' rnd(1)*3 + 1
+  qlvx2 = 1.6861211  ' rnd(1)*3 + 1
+  qlvy2 = 3.4780043  ' rnd(1)*3 + 1
 
   qlcurclr = mod(qlcurclr + 1, 16)
   qlclr(qlidx) = qlcurclr

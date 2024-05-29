@@ -16,55 +16,10 @@
   pl_dir = 0
   pl_clr = 0
 
-  ' clear 80x50 chars and colour ram
-  edma 3, 4000, 160, $40800
-  edma 3, 4000, 6, $ff80000
-
   ' clear 96x96 array
   edma OP_FILL, 96*96, 0, $44000
 
   return
-
-
-.iter_greet_txt
-'--------------
-  ret = 0
-  if greet_line > greet_cnt then return
-
-  if greet_x > len(greets$(greet_line)) then begin
-    line_x = 0
-    greet_x = 1
-    greet_line = greet_line + 1
-
-    ' scroll up
-    edma 0, $f50, $52050, $52000
-    edma 0, $f50, $53050, $53000
-    edma 3, 80, 32, $52f50
-    edma 3, 80, 0, $53f50
-    ret = 1
-  bend
-
-  if ret=1 then goto iter_greet_txt
-
-  chr = asc(mid$(greets$(greet_line), greet_x, 1))
-
-  gosub petscii_to_screencode
-
-  if chr = 27 then rbw_flag=1:greet_x=greet_x+1 : goto iter_greet_txt  ' [ char
-  if chr = 29 then rbw_flag=0:greet_x=greet_x+1 : goto iter_greet_txt  ' ] char
-
-  if rbw_flag then rbw_clr = mod(rbw_clr+1, 16):myclr = rbw_clr:else myclr = 1
-
-  if chr<>32 then begin
-    poke $52f50 + line_x, chr
-    poke $53f50 + line_x, myclr + rbw_flag * 64
-  bend
-
-  greet_x = greet_x + 1
-  line_x = line_x + 1
-
-  return
-
 
 
 .load_greets
@@ -72,12 +27,30 @@
   dopen #2,"greets.t",r,u8
 
   greet_cnt = 0
+  gt_ptr = $47000
+
   do
-    line input #2, greets$(greet_cnt)
+    line input #2, greet$
     if st then exit
+
+    k = 1
+
+    do while k <= len(greet$)
+      chr = asc(mid$(greet$, k, 1))
+      gosub petscii_to_screencode
+
+      poke gt_ptr, chr : gt_ptr = gt_ptr + 1
+      k = k + 1
+    loop
+
+    poke gt_ptr, $ff : gt_ptr = gt_ptr + 1  ' $ff = marker for end of string
 
     greet_cnt = greet_cnt + 1
   loop
+
+  poke gt_ptr, $00  ' $00 = marker for end of greetings text
+
+  gt_ptr = $47000
 
   dclose #2
   return
