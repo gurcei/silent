@@ -66,7 +66,6 @@ THANKS
 - Grim Fandango for MEGAPLOT, my starting point for plotting petscii via assembly :)
 - bisgedi for sharing the MULTIPLY.ASM example use of Q register written in grubi's Mega Assembler :)
 - Nobato for initial square rotation example
-- dddaaannn for preparing a new rom with the SYS basic irq tweak under short notice!
 - Traymond for rekindling my interest in C64 MIDI and walking me through how to use Compute's Stereo SID Player and Editor
 - My wifey, Tram, and daughter Moana, for enduring my MEGA65 fanaticism over the years :)
 - My ResMed buddies, for the wonderful 5 years together!

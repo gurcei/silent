@@ -7,6 +7,7 @@ all: megaplot.prg asmhelper.prg
 	# c1541 -attach "silent.d81" -read lyr01.ln,s lyr01.ln
 	# c1541 -attach "silent.d81" -read lyr02.ln,s lyr02.ln
 	# c1541 -attach "silent.d81" -read lyr03.ln,s lyr03.ln
+	c1541 -attach "silent.d81" -read greets.t,s greets.t
 	c1541 -attach "silent.d81" -read enigma.p,s enigma.p
 	c1541 -attach "silent.d81" -read rotate.asm,s rotate.asm
 	c1541 -attach "silent.d81" -read bas.bin bas.bin
