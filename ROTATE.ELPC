@@ -24,10 +24,13 @@
 #declare a$
 #declare state
 
-#declare greet_cnt, greets$(330)
+#declare greet_cnt, greet$
 #declare greet_line, greet_x, line_x, chr, myclr
 #declare rbw_clr, rbw_flag, plt_iter
 #declare ret
+
+#declare gt_ptr
+#declare k
 
 
 .main
@@ -43,7 +46,6 @@
   gosub iter_greet_txt
   gosub iter_greet_txt
   gosub iter_greet_txt
-  gosub iter_greet_txt
 
   bank 0 : sys $7e06,16: bank 128
   gosub page_flip
@@ -53,12 +55,14 @@
 .iter_greet_txt
 '--------------
   ret = 0
-  if greet_line > greet_cnt then return
 
-  if greet_x > len(greets$(greet_line)) then begin
+  chr = peek(gt_ptr)
+  if chr = $00 then return
+
+  gt_ptr = gt_ptr + 1
+
+  if chr = $ff then begin
     line_x = 0
-    greet_x = 1
-    greet_line = greet_line + 1
 
     ' scroll up
     edma 0, $f50, $52050, $52000
@@ -69,10 +73,6 @@
   bend
 
   if ret=1 then goto iter_greet_txt
-
-  chr = asc(mid$(greets$(greet_line), greet_x, 1))
-
-  gosub petscii_to_screencode
 
   if chr = 27 then rbw_flag=1:greet_x=greet_x+1 : goto iter_greet_txt  ' [ char
   if chr = 29 then rbw_flag=0:greet_x=greet_x+1 : goto iter_greet_txt  ' ] char
@@ -157,12 +157,30 @@
   dopen #2,"greets.t",r,u8
 
   greet_cnt = 0
+  gt_ptr = $47000
+
   do
-    line input #2, greets$(greet_cnt)
+    line input #2, greet$
     if st then exit
+
+    k = 1
+
+    do while k <= len(greet$)
+      chr = asc(mid$(greet$, k, 1))
+      gosub petscii_to_screencode
+
+      poke gt_ptr, chr : gt_ptr = gt_ptr + 1
+      k = k + 1
+    loop
+
+    poke gt_ptr, $ff : gt_ptr = gt_ptr + 1  ' $ff = marker for end of string
 
     greet_cnt = greet_cnt + 1
   loop
+
+  poke gt_ptr, $00  ' $00 = marker for end of greetings text
+
+  gt_ptr = $47000
 
   dclose #2
   return
