@@ -285,6 +285,9 @@ MULTOUT = $d778
 	jmp plot			// 7e1e
 	jmp line			// 7e21
 	jmp set_colour			// 7e24
+	// rotate routines
+	// ---------------
+	jmp iter_greet_text		// 7e27
 
 
 //---------------------
@@ -1345,6 +1348,169 @@ set_colour:
 	rts
 
 
+//-------------
+iter_greet_text:
+//-------------
+  // ret = 0
+
+	// prepare four pointer
+	lda #$00
+	sta FOURPTR
+	sta FOURPTR+1
+	sta FOURPTR+3
+	lda #$04
+	sta FOURPTR+2
+
+igt_restart:
+  // store gt_ptr in CLRPTR
+  lda gt_ptr
+  sta CLRPTR
+  lda gt_ptr+1
+  sta CLRPTR+1
+  lda gt_ptr+2
+  sta CLRPTR+2
+  lda gt_ptr+3
+  sta CLRPTR+3
+
+  // chr = peek(gt_ptr)
+  ldz #$00
+  lda [CLRPTR],z
+  sta chr
+
+  // if chr = $00 then return
+  bne +
+  rts
+
+  // gt_ptr = gt_ptr + 1
++	clc
+	lda gt_ptr
+	adc #$01
+	sta gt_ptr
+	lda gt_ptr+1
+	sta gt_ptr+1
+
+  //if chr = $ff then begin
+  lda chr
+  cmp #$ff
+  lbne +
+    // line_x = 0
+    lda #$00
+    sta line_x
+
+    //' scroll up
+    // edma 0, $f50, $52050, $52000
+    +poke_b4_val $06, $00	// CMD lsb = COPY
+    +poke_b4_val $0b, 5	// src bank
+    +poke_b4_val $0e, 5	// dest bank
+    +set16 length, $f50
+
+    +set16 src_addr, $2050
+    +set16 dest_addr, $2000
+    jsr plain_dma
+
+    // edma 0, $f50, $53050, $53000
+
+    +set16 src_addr, $3050
+    +set16 dest_addr, $3000
+    jsr plain_dma
+
+    // edma 3, 80, 32, $52f50
+    +poke_b4_val $06, $03	// CMD lsb = FILL
+    +set16 length, 80
+
+    +set16 src_addr, 32
+    +set16 dest_addr, $2f50
+    jsr plain_dma
+
+    // edma 3, 80, 0, $53f50
+    +set16 src_addr, 32
+    +set16 dest_addr, $3f50
+    jsr plain_dma
+
+    // ret = 1
+  // bend
+
+  // if ret=1 then goto iter_greet_txt
+  jmp igt_restart
+
+ // if chr = 27 then rbw_flag=1: goto iter_greet_txt  ' [ char
++	lda chr
+	cmp #27
+	bne +
+
+	lda #$01
+	sta rbw_flag
+	jmp igt_restart
+
+  // if chr = 29 then rbw_flag=0: goto iter_greet_txt  ' ] char
++	lda chr
+	cmp #29
+	bne +
+
+	lda #$00
+	sta rbw_flag
+	jmp igt_restart
+
+//  if rbw_flag then rbw_clr = mod(rbw_clr+1, 16):myclr = rbw_clr:else myclr = 1
++	lda rbw_flag
+	bne +
+
+	clc
+	lda rbw_clr
+	adc #$01
+	and #$0f
+	sta rbw_clr
+	sta myclr
+	jmp igt_plot
+
++	lda #$01
+	sta myclr
+
+igt_plot:
+  // if chr<>32 then begin
+  	lda chr
+	cmp #32
+	bne +
+
+    // poke $52f50 + line_x, chr
+    lda #$50
+    sta CLRPTR
+    lda #$2f
+    sta CLRPTR+1
+    lda #$05
+    sta CLRPTR+2
+
+    ldz line_x
+
+    lda chr
+    sta [CLRPTR],z
+
+    // poke $53f50 + line_x, myclr + rbw_flag * 64
+    lda #$3f
+    sta CLRPTR+1
+
+    lda myclr
+
+    ldx rbw_flag
+    beq +
+
+    ora #$40
+
++   sta [CLRPTR],z
+
+  // bend
+
+  // line_x = line_x + 1
++	inc line_x
+
+	// restore
+	+poke_b4_val $06, $00	// CMD lsb = COPY
+	+poke_b4_val $0b, 5	// src bank
+
+  // return
+	rts
+
+
 // ---------------------
 // INTERNAL ASM ROUTINES
 // ---------------------
@@ -1737,3 +1903,9 @@ bitpatterns:	!byte $20,$7e,$7c,$e2,$7b,$61,$ff,$ec,$6c,$7f,$e1,$fb,$62,$fc,$fe,$
 // descriptions:      spc, TL, TR, hT, BL, vL,  /,iBR, BR,  \, vR,iBL, hB,iTR,iTL,all
 screenx:	!byte $00
 screeny:	!byte $00
+chr:		!byte $00
+gt_ptr:		!word $7000, $0040	// defaults to $047000
+line_x:		!byte $00
+rbw_flag:	!byte $00
+rbw_clr:	!byte $00
+myclr:		!byte $00

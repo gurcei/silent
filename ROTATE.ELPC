@@ -40,12 +40,15 @@
 .mn_loop
   gosub rotate_logic
   gosub draw_content
-  gosub iter_greet_txt
-  gosub iter_greet_txt
-  gosub iter_greet_txt
-  gosub iter_greet_txt
-  gosub iter_greet_txt
-  gosub iter_greet_txt
+
+  bank 0 : sys $7e27 : bank 128
+
+  ' gosub iter_greet_txt
+  ' gosub iter_greet_txt
+  ' gosub iter_greet_txt
+  ' gosub iter_greet_txt
+  ' gosub iter_greet_txt
+  ' gosub iter_greet_txt
 
   bank 0 : sys $7e06,16: bank 128
   gosub page_flip
@@ -273,7 +276,7 @@
   wpoke $1a14, mod(tyinc, 65536)
   wpoke $1a16, tyinc/65536
 
-  bank 0:sys $1800:bank 128
+  ' bank 0:sys $1800:bank 128
 
   return
 
