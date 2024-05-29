@@ -27,16 +27,23 @@
 .main
 '----
   gosub init
-  gosub dummy_content
 .mn_loop
   gosub rotate_logic
   gosub draw_content
+  gosub page_flip
   goto mn_loop
 
+.page_flip
+'---------
+  bank 0:sys $7e15:bank 128
+  edma 3, $fa0, 32+128, $50000
+  return
 
 .init
 '----
   ^^bload "asmrotate",b0
+  bank 0:bload "asmhelper":bank 128
+
   print chr$(27);"5";chr$(147);
   ang = 2*PI + .1
 
@@ -49,29 +56,37 @@
   ' clear 80x50 chars and colour ram
   edma 3, 4000, 160, $40800
   edma 3, 4000, 6, $ff80000
-  ' for idx=0 to 3999:poke $44000+idx,160:poke $ff80000+idx,6:next idx
 
-  return
-
-
-.dummy_content
-'-------------
+  ' clear 96x96 array
   edma OP_FILL, 96*96, 0, $44000
 
-  'poke $44000 + 48*96, 1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6
+  ' clear the offscreen buffer
+  edma 3, $fa0, 32+128, $50000
+  edma 3, $fa0, 0, $51000
 
-  'for t = 0 to 50
-  '  colr = int(rnd(1)*16)
-  '  x = int(rnd(1)*96)
-  '  y = int(rnd(1)*96)
-  '  poke $44000 + x + y * 96, colr
-  'next t
+  edma 3, $fa0, 32, $52000
+  edma 3, $fa0, 0, $53000
 
-  'for y = 0 to 96
-  '  for x = 0 to 95
-  '    poke $44000 + x + y * 96, mod(y, 16)
-  '  next x
-  'next y
+  edma 3, $fa0, 32, $54000
+  edma 3, $fa0, 0, $55000
+
+  ' prepare dma list info
+  poke $40000, $81 ' opt = dest addr MB selector
+  poke $40001, $00 ' default to 1st megabyte
+
+  poke $40002, $07 ' opt = enable transparency
+  poke $40003, $86 ' opt = set transparency
+  poke $40004, $20 ' transparency value
+  poke $40005, $00 ' end of options
+
+  poke $40006, $00 ' CMD lsb = COPY
+  wpoke $40007, $0000 ' length
+  wpoke $40009, $1000 ' source addr
+  poke $4000b, $05    ' source bank
+  wpoke $4000c, $1000 ' dest addr
+  poke $4000e, $05    ' dest bank
+  poke $4000f, $00    ' CMD msb (ignore)
+  wpoke $40010, $0000 ' modulo (ignore)
 
   return
 
