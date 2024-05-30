@@ -1,6 +1,59 @@
 ' silent2.el is just an extension of silent.el
 ' to work around the max 2000 source line limitations of eleven
 
+'-----------------
+.screencode_to_idx
+'-----------------
+  if chr >= 65 and chr <= 90 then chr = chr - 65:return
+  if chr = 46 then chr = 26:return ' full-stop
+  if chr = 33 then chr = 27:return ' exclamation
+  if chr = 44 then chr = 28:return ' comma (smiley)
+  if chr = 47 then chr = 29:return ' forward slash (love heart)
+  if chr = 35 then chr = 30:return ' # hash (dhufish)
+  if chr >= 1 and chr <= 26 then chr = chr + 30:return
+  if chr = 39 then chr = 57:return
+  if chr = 32 then chr = 100:return
+  return
+
+
+'---------------
+.transparent_dma
+'---------------
+  wpoke $40009, src_addr
+  wpoke $4000c, dest_addr
+  wpoke $40007, length
+  poke  $40004, transp
+  poke $d702, 4 ' dma list in bank 4
+  poke $d701, $00 ' dma list msb
+  poke $d705, $00 ' dma list lsb
+
+  return
+
+
+'------------------
+.scroll_canvas_left
+'------------------
+  for yy = 0 to 49
+    edma OP_COPY+DST_DEC+SRC_DEC, {x5F}
+           79, $52000 + yy*80 + 78, $52000 + yy*80 + 79
+    poke $52000 + yy*80, 32 
+  next yy
+  return
+
+
+'-------------------
+.scroll_canvas_right
+'-------------------
+  offs(fidx%) = offs(fidx%) + 1
+  if fidx% = 0 then addr = $20  ' $52000
+  if fidx% = 1 then addr = $40  ' $54000
+  if fidx% = 2 then addr = $20
+
+  bank 0:sys $7e12, addr: bank 128
+
+  return
+
+
 .init_rotate
 '-----------
   ^^bload "asmrotate",b0

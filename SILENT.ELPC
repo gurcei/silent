@@ -187,6 +187,8 @@ subtext$(1) = "a song by..."
 #declare box_ang, cx, cy, hyp
 #declare pl_rad, pl_ang, pl_dir, pl_clr
 
+#declare cb_init
+
 '-------
 .defines
 '-------
@@ -214,7 +216,7 @@ subtext$(1) = "a song by..."
 '----
   gosub init
 
-  logo_state = ST_FINAL_STARFIELD
+  ' logo_state = ST_FINAL_STARFIELD
 
   gosub state_loop
   end
@@ -498,7 +500,7 @@ subtext$(1) = "a song by..."
     bend
     gosub draw_starfield
 
-    if m > 60 then begin
+    if m > 40 then begin
       if s$ = "" and lyr_idx > -1 and lyr_idx <=18 then begin
         wxx = 50 : wyy = 0
         zz = mod(lyr_idx, 2)
@@ -511,6 +513,7 @@ subtext$(1) = "a song by..."
       fidx% = 2
       chrclr = wcclr + 64
       gosub iter_write_text
+      gosub iter_write_text
 
       if lyr_idx=19 and s$="" then gosub scroll_canvas_right
     bend
@@ -521,15 +524,20 @@ subtext$(1) = "a song by..."
     ' cycle alt palette
     bank 0: sys $7e06, 16: bank 128
 
+    ' draw many cubes?
+    if m > 150 then gosub iter_draw_many_cubes
+
     gosub page_flip
     gosub iter_starfield
 
-    do
-      ret% = 0
-      do while ret% = 0
-        gosub parse_current_seqptr
-      loop
-    loop while (ti-tstart) < .06
+    if m < 150 then begin
+      do
+        ret% = 0
+        do while ret% = 0
+          gosub parse_current_seqptr
+        loop
+      loop while (ti-tstart) < .07
+    bend
 
   bend
 
@@ -1094,28 +1102,31 @@ subtext$(1) = "a song by..."
 
 
 '---------------
-.draw_many_cubes
-'---------------
-  cb_incb = 0
-  cb_inca = 0
-  t1 = 0
-  t2 = 0
-  pdist = 45
+.iter_draw_many_cubes
+'--------------------
+  if cb_init = 0 then begin
+    cb_init = 1
 
-.mc_loop
+    t1 = 0
+    t2 = 0
+    pdist = 42
+
+    sys $7e24, 64  ' pick a rainbow colours
+  bend
+
   centrex = 80 + 45*sin(t2)
   centrey = 50 + 15*sin(t1)
 
   pdist = 20 - 20 * cos(t1)
   cb_incb = PI/2 * sin(t1)
   cb_inca = PI/2 * sin(t2)
+
   t1 = t1 + .1
   t2 = t2 + .05
   if t1 > 2*PI then t1=t1-2*PI
   if t2 > 2*PI then t2=t2-2*PI
 
     gosub draw_cube
-  goto mc_loop
 
   return
   
@@ -1253,7 +1264,9 @@ subtext$(1) = "a song by..."
 '----
   m = 0
 
-  print "initialising..."
+  zfact = cos(PI/4)
+
+  print "initialising... please wait a minute..."
   gosub init_baslogo
   gosub load_data
 
@@ -1805,58 +1818,5 @@ subtext$(1) = "a song by..."
   if chr>=$80 and chr<=$9f then chr=chr or $40:return
   if chr>=$a0 and chr<=$bf then chr=(chr and $7f) or $40:return ' $bf:return
   if chr>=$c0 and chr<=$fe then chr=chr and $7f:return
-  return
-
-
-'-----------------
-.screencode_to_idx
-'-----------------
-  if chr >= 65 and chr <= 90 then chr = chr - 65:return
-  if chr = 46 then chr = 26:return ' full-stop
-  if chr = 33 then chr = 27:return ' exclamation
-  if chr = 44 then chr = 28:return ' comma (smiley)
-  if chr = 47 then chr = 29:return ' forward slash (love heart)
-  if chr = 35 then chr = 30:return ' # hash (dhufish)
-  if chr >= 1 and chr <= 26 then chr = chr + 30:return
-  if chr = 39 then chr = 57:return
-  if chr = 32 then chr = 100:return
-  return
-
-
-'---------------
-.transparent_dma
-'---------------
-  wpoke $40009, src_addr
-  wpoke $4000c, dest_addr
-  wpoke $40007, length
-  poke  $40004, transp
-  poke $d702, 4 ' dma list in bank 4
-  poke $d701, $00 ' dma list msb
-  poke $d705, $00 ' dma list lsb
-
-  return
-
-
-'------------------
-.scroll_canvas_left
-'------------------
-  for yy = 0 to 49
-    edma OP_COPY+DST_DEC+SRC_DEC, {x5F}
-           79, $52000 + yy*80 + 78, $52000 + yy*80 + 79
-    poke $52000 + yy*80, 32 
-  next yy
-  return
-
-
-'-------------------
-.scroll_canvas_right
-'-------------------
-  offs(fidx%) = offs(fidx%) + 1
-  if fidx% = 0 then addr = $20  ' $52000
-  if fidx% = 1 then addr = $40  ' $54000
-  if fidx% = 2 then addr = $20
-
-  bank 0:sys $7e12, addr: bank 128
-
   return
 ÿ
