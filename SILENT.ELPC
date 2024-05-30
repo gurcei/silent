@@ -393,7 +393,7 @@ subtext$(1) = "a song by..."
     if qix_state = 2 and playidx% = 16 then begin
       ' start fade to black
       qix_state = 3
-      fadeval = -90
+      fadeval = -100
       gosub store_curr_colours
       gosub set_default_palette_to_black
     bend
@@ -416,7 +416,7 @@ subtext$(1) = "a song by..."
         palette restore
         gosub store_curr_colours
         gosub restore_default_palette
-        fadeval = 0
+        fadeval = -20
         m = 0
       bend
     bend
