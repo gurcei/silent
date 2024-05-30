@@ -143,6 +143,7 @@ subtext$(1) = "a song by..."
   lyr$(17) = "An enigma..."
   lyr$(18) = "Silent..."
 
+
 #define CMD_TEMPO = -1
 #define CMD_FILTER = -2
 #define CMD_LOOP = -3
@@ -212,7 +213,9 @@ subtext$(1) = "a song by..."
 .main
 '----
   gosub init
-  ' logo_state = ST_FADE_TO_ROTATE
+
+  logo_state = ST_FINAL_STARFIELD
+
   gosub state_loop
   end
 
@@ -388,7 +391,7 @@ subtext$(1) = "a song by..."
     if qix_state = 2 and playidx% = 16 then begin
       ' start fade to black
       qix_state = 3
-      fadeval = -80
+      fadeval = -90
       gosub store_curr_colours
       gosub set_default_palette_to_black
     bend
@@ -496,7 +499,7 @@ subtext$(1) = "a song by..."
     gosub draw_starfield
 
     if m > 60 then begin
-      if s$ = "" and lyr_idx > -1 then begin
+      if s$ = "" and lyr_idx > -1 and lyr_idx <=18 then begin
         wxx = 50 : wyy = 0
         zz = mod(lyr_idx, 2)
         if zz = 1 then wyy = 33
@@ -508,9 +511,11 @@ subtext$(1) = "a song by..."
       fidx% = 2
       chrclr = wcclr + 64
       gosub iter_write_text
+
+      if lyr_idx=19 and s$="" then gosub scroll_canvas_right
     bend
 
-    wcclr = wcclr + 1
+    wcclr = wcclr + .3
     if wcclr > 15 then wcclr = 0
 
     ' cycle alt palette
@@ -524,7 +529,7 @@ subtext$(1) = "a song by..."
       do while ret% = 0
         gosub parse_current_seqptr
       loop
-    loop while (ti-tstart) < .03
+    loop while (ti-tstart) < .06
 
   bend
 
