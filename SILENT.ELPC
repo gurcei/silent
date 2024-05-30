@@ -132,24 +132,16 @@ subtext$(1) = "a song by..."
   lyr$(9) = "Ethereal vision haunting still"
   lyr$(10) = "The solitude left me blind"
 
-  lyr$(11) = "Beneath an open sky"
-  lyr$(12) = "Sibilant cries of youth dying"
-  lyr$(13) = "Enslave me with grief"
-  lyr$(14) = "A moonlit era"
-  lyr$(15) = "Oblivion's twilight kiss"
-  lyr$(16) = "Wishes in lament"
-  lyr$(17) = "Happiness in a broken vision"
-  lyr$(18) = "Utopia"
-  lyr$(19) = "Still unborn"
+  ' skip lyrics for the middle part (will do credits/greets instead)
 
-  lyr$(20) = "Tormented echoes"
-  lyr$(21) = "of a fallen Eden"
-  lyr$(22) = "I longed for her beauty"
-  lyr$(23) = "Yet from dust"
-  lyr$(24) = "She returned"
-  lyr$(25) = "The dream..."
-  lyr$(26) = "An enigma..."
-  lyr$(27) = "Silent..."
+  lyr$(11) = "Tormented echoes"
+  lyr$(12) = "of a fallen Eden"
+  lyr$(13) = "I longed for her beauty"
+  lyr$(14) = "Yet from dust"
+  lyr$(15) = "She returned"
+  lyr$(16) = "The dream..."
+  lyr$(17) = "An enigma..."
+  lyr$(18) = "Silent..."
 
 #define CMD_TEMPO = -1
 #define CMD_FILTER = -2
@@ -214,7 +206,7 @@ subtext$(1) = "a song by..."
 #define ST_DRAW_ANATHEMA = 6
 #define ST_DRAW_SONG_TITLE = 7
 #define ST_FADE_TO_ROTATE = 8
-
+#define ST_FINAL_STARFIELD = 9
 
 '----
 .main
@@ -307,7 +299,7 @@ subtext$(1) = "a song by..."
   if logo_state = ST_FADE_TO_STARS then begin
       if fadeval <= 128 then begin
         ' fade_colours_to_defaults
-        bank 0:vsync 10:sys $7e03, fadeval:bank 128
+        bank 0:sys $7e03, fadeval:bank 128
         fadeval = fadeval + 1
       bend
       gosub draw_starfield
@@ -403,11 +395,15 @@ subtext$(1) = "a song by..."
 
     if qix_state = 3 then begin
       ' fade to black
-      if fadeval >= 0 then bank 0:sys $7e03, fadeval:bank 128
+      if fadeval >= 0 and fadeval <=128 then bank 0:sys $7e03, fadeval:bank 128
       fadeval = fadeval + 2
-      if fadeval >=129 and lyr_idx = 12 then begin
+      if fadeval > 130 then fadeval = 130
+      
+      if fadeval =130 and playidx%>=7 and lyr_idx = 12 then begin
         logo_state = ST_FADE_TO_ROTATE
         print "{x93}";chr$(14);
+        edma 3, $fa0, 32, $50000
+        edma 3, $fa0, 0, $51000
         edma 3, $fa0, 32, $52000
         edma 3, $fa0, 0, $53000
         edma 3, $fa0, 32, $54000
@@ -471,14 +467,64 @@ subtext$(1) = "a song by..."
       print "{x93}";chr$(142);  ' switch back to upper-case
       gosub store_curr_colours
       gosub restore_default_palette
-      logo_state = ST_FADE_TO_STARS
+      logo_state = ST_FINAL_STARFIELD
       fadeval = 0
 
       edma 3, $fa0, 32, $52000
       edma 3, $fa0, 0, $53000
       edma 3, $fa0, 32, $54000
       edma 3, $fa0, 0, $55000
+      m = 0
     bend
+
+  bend
+
+  ' - - - - -
+
+  if logo_state = ST_FINAL_STARFIELD then begin
+    ' init stuff
+    if m = 0 then begin
+      s$=""
+      lyr_idx = 11
+    bend
+    m = m + 1
+
+    if fadeval <= 128 then begin
+      bank 0: sys $7e03, fadeval:bank 128
+      fadeval = fadeval + 1
+    bend
+    gosub draw_starfield
+
+    if m > 60 then begin
+      if s$ = "" and lyr_idx > -1 then begin
+        wxx = 50 : wyy = 0
+        zz = mod(lyr_idx, 2)
+        if zz = 1 then wyy = 33
+        s$ = lyr$(lyr_idx)
+        lyr_idx = lyr_idx + 1
+        txt_k = 1
+      bend
+
+      fidx% = 2
+      chrclr = wcclr + 64
+      gosub iter_write_text
+    bend
+
+    wcclr = wcclr + 1
+    if wcclr > 15 then wcclr = 0
+
+    ' cycle alt palette
+    bank 0: sys $7e06, 16: bank 128
+
+    gosub page_flip
+    gosub iter_starfield
+
+    do
+      ret% = 0
+      do while ret% = 0
+        gosub parse_current_seqptr
+      loop
+    loop while (ti-tstart) < .03
 
   bend
 
