@@ -1911,3 +1911,25 @@ line_x:		!byte $00
 rbw_flag:	!byte $00
 rbw_clr:	!byte $00
 myclr:		!byte $00
+
+dmalist:
+
+!macro edma_transp .transp, .cmd, .length, .src_addr, .src_bank, .dst_addr, .dst_bank, {
+	!byte $07	// enable transparency
+	!byte $86	// set transparency
+	!byte .transp	// transparency value
+	!byte $00	// end of options
+
+	!byte .cmd	// CMD = COPY + chain
+
+	!word .length	// length
+	!word .src_addr	// src addr = $54000
+	!byte .src_bank	// src bank = $05
+	!word .dst_addr	// dest addr = $54000
+	!byte .dst_bank	// dest bank = $05
+	!byte $00	// CMD msb (ignore)
+	!word $0000	// modulo (ignore)
+}
+
++edma_transp $20, $00+$04, 4000, $4000, $05, $0000, $05
+

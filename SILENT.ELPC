@@ -188,6 +188,7 @@ subtext$(1) = "a song by..."
 #declare pl_rad, pl_ang, pl_dir, pl_clr
 
 #declare cb_init
+#declare slowdown = .04
 
 '-------
 .defines
@@ -325,15 +326,19 @@ subtext$(1) = "a song by..."
     fidx%=0
     chrclr=1
     gosub play_data_iter  ' line data
+    gosub play_data_iter  ' line data
 
     gosub page_flip
     gosub iter_starfield
 
-    if m = 570 then begin
+    if m = 285 then begin
       logo_state = ST_DRAW_SONG_TITLE
       m = 0
       offs(1) = -25
     bend
+
+    do
+    loop while (ti-tstart) < slowdown
   bend
 
   ' - - - - -
@@ -342,17 +347,17 @@ subtext$(1) = "a song by..."
     m = m + 1
     gosub draw_starfield
 
-    if m<150 then begin
+    if m<75 then begin
       fidx%=0
       chrclr=1
       gosub play_data_iter
     bend
 
     ' scroll off anathema
-    if m > 150 and m < 230 then fidx%=0:gosub scroll_canvas_right:gosub scroll_canvas_right
+    if m > 75 and m < 115 then fidx%=0:gosub scroll_canvas_right:gosub scroll_canvas_right
 
     ' draw song title
-    if m > 10 and m < 510 then begin
+    if m > 10 and m < 370 then begin
       fidx%=1
       chrclr = 2
       gosub play_data_iter
@@ -442,6 +447,9 @@ subtext$(1) = "a song by..."
       gosub page_flip
       gosub iter_starfield
     bend
+
+    do
+    loop while (ti-tstart) < slowdown
 
   bend
 
