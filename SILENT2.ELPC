@@ -257,4 +257,31 @@
   bank 0:sys $1800:bank 128
 
   return
+
+
+'-----------
+.ntsc_to_pal
+'-----------
+#declare vm$
+
+  if (peek($d06f) and 128)=0 then vm$ = "pal":else vm$="ntsc"
+
+  if vm$ = "pal" then return
+
+  print "{x11}this program requires switching from ntsc to pal"
+  print "{x11}press any key to continue..."
+  get key a$
+  poke $ffd306f,$00
+  poke $ffd3072,$00
+  poke $ffd3048,$68
+  poke $ffd3049,$00 or (peek($ffd3049) and $f0)
+  poke $ffd304a,$f8
+  poke $ffd304b,$01 or (peek($ffd304b) and $f0)
+  poke $ffd304e,$68
+  poke $ffd304f,$00 or (peek($ffd304f) and $f0)
+  poke $ffd3072,$00
+  poke $ffd3c0e, peek($ffd3c0e) or $80
+  poke $ffd3d0e, peek($ffd3d0e) or $80
+
+  return
 ÿ

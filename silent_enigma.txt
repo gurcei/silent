@@ -15,18 +15,18 @@ DONE- Try port line drawing routine to assembly, for speed
   DONE- qix lines via megaplot
   DONE- qix squares via megaplot
   DONE- qix cubes via megaplot
-  - Add and align music to demo
+  DONE- Add and align music to demo
     DONE- make silent.el from starfield.el
     DONE- add music routine in
       DONE- assess source code line size
     DONE- add bas logo
     DONE- add writer logic
-    - iron them all out
-    - add qix triangle, square and cube logic
+    DONE- iron them all out
+    DONE- add qix triangle, square and cube logic
     DONE- rotate plus greets
   DONE - final section: rotating cubes via megaplot
-  - fade back to original screen demo was run from
-  - Add PAL check
+  DONE- fade back to original screen demo was run from
+  DONE- Add PAL check
   - ROM version check (my experimental 999999.bin rom)
   - core version check (insist to run only on a specific dev core containing some needed fixes)
     (fixes for hyppo get/set map, and also fix for booting to MEGA659.ROM)
