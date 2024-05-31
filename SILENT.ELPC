@@ -188,6 +188,7 @@ subtext$(1) = "a song by..."
 
 #declare cb_init
 #declare slowdown = .04
+#declare finalfade
                                    
 '-------
 .defines
@@ -421,14 +422,15 @@ subtext$(1) = "a song by..."
     m = m + 1
     gosub draw_starfield
 
-    if m<75 then begin
+    if m<120 then begin
       fidx%=0
       chrclr=1
+      gosub play_data_iter
       gosub play_data_iter
     bend
 
     ' scroll off anathema
-    if m > 75 and m < 115 then fidx%=0:gosub scroll_canvas_right:gosub scroll_canvas_right
+    if m > 110 and m < 150 then fidx%=0:gosub scroll_canvas_right:gosub scroll_canvas_right
 
     ' draw song title
     if m > 0 and m < 370 then begin
@@ -589,23 +591,24 @@ subtext$(1) = "a song by..."
     bend
     m = m + 1
 
-    if m < 200 and fadeval <= 128 then begin
+    if finalfade = 0 and fadeval <= 128 then begin
       bank 0: sys $7e03, fadeval:bank 128
       fadeval = fadeval + 1
 
       if fadeval = 129 then begin
         gosub store_curr_colours
         gosub set_default_palette_to_black
+        finalfade = 1
+        fadeval = -80
       bend
     bend
-    if m = 205 then fadeval = 0
 
-    if plyptr = -1 then begin
-      bank 0: sys $7e03, fadeval:bank 128
-      fadeval = fadeval + 4
+    if plyptr = -1 and finalfade then begin
+      if fadeval >=0 then bank 0: sys $7e03, fadeval:bank 128
+      fadeval = fadeval + 2
 
       if fadeval >= 129 then begin
-        print "{x93}{x5}";chr$(27);8;
+        print "{x93}";chr$(27);"8";"{x5}{x4}";
         palette restore
         poke $d020, 6, 6
         boot
