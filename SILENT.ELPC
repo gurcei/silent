@@ -217,6 +217,7 @@ subtext$(1) = "a song by..."
 '----
   gosub init
 
+  ' logo_state = ST_FADE_TO_STARS
   ' logo_state = ST_FINAL_STARFIELD
 
   gosub state_loop
