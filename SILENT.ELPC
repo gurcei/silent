@@ -31,7 +31,6 @@
 ' 5.3000 screen buffer3 for 'the silent enigma' layer
 ' 5.4000 color ram buffer3 for 'the silent enigma' layer
 
-
 '--------
 .declares
 '--------
@@ -121,9 +120,9 @@ subtext$(1) = "a song by..."
 
   lyr$(0) = "In dreamland..."  : lyr_time(0) = 0 : lyr_speed(0) = 2
   lyr$(1) = "Grandeur..."      : lyr_time(1) = 4 : lyr_speed(1) = 2
-  lyr$(2) = "I held"           : lyr_time(2) = 4 : lyr_speed(2) = 2
-  lyr$(3) = "Mesmerised"       : lyr_time(3) = 4 : lyr_speed(3) = 2
-  lyr$(4) = "Peace"            : lyr_time(4) = 4 : lyr_speed(4) = 2
+  lyr$(2) = "I held..."        : lyr_time(2) = 4 : lyr_speed(2) = 2
+  lyr$(3) = "Mesmerised..."    : lyr_time(3) = 4 : lyr_speed(3) = 2
+  lyr$(4) = "Peace..."         : lyr_time(4) = 4 : lyr_speed(4) = 2
   lyr$(5) = "Innocence"        : lyr_time(5) = 4 : lyr_speed(5) = 2
   lyr$(6) = "Breathed again"   : lyr_time(6) = 2 : lyr_speed(6) = 2
 
@@ -134,14 +133,14 @@ subtext$(1) = "a song by..."
 
   ' skip lyrics for the middle part (will do credits/greets instead)
 
-  lyr$(11) = "Tormented echoes"  : lyr_time(11) = 15
-  lyr$(12) = "of a fallen Eden"
-  lyr$(13) = "I longed for her beauty"
-  lyr$(14) = "Yet from dust"
-  lyr$(15) = "She returned"
-  lyr$(16) = "The dream..."
-  lyr$(17) = "An enigma..."
-  lyr$(18) = "Silent..."
+  lyr$(11) = "Tormented echoes"        : lyr_time(11) = 0
+  lyr$(12) = "of a fallen Eden"        : lyr_time(12) = 7
+  lyr$(13) = "I longed for her beauty" : lyr_time(13) = 2
+  lyr$(14) = "Yet from dust"           : lyr_time(14) = 7
+  lyr$(15) = "She returned"            : lyr_time(15) = 1
+  lyr$(16) = "The dream..."            : lyr_time(16) = 3
+  lyr$(17) = "An enigma..."            : lyr_time(17) = 2
+  lyr$(18) = "Silent..."               : lyr_time(18) = 2
 
 
 #define CMD_TEMPO = -1
@@ -222,6 +221,78 @@ subtext$(1) = "a song by..."
 
   gosub state_loop
   end
+
+
+'--------------
+.play_data_iter
+'--------------
+  if pidx%(fidx%) < didx%(fidx%) then begin
+    val& = ldata&(fidx%, pidx%(fidx%))
+    pidx%(fidx%) = pidx%(fidx%) + 1
+
+    if ver(fidx%)=3 and val& = $ff then begin
+      if pidx%(fidx%) > last_group_idx then last_group_idx = pidx%(fidx%)
+      goto pd_endloop
+    bend
+
+    x = val& and $7f
+    if ver(fidx%)=2 then begin
+      x = val&
+      val& = ldata&(fidx%, pidx%(fidx%))
+      pidx%(fidx%) = pidx%(fidx%) + 1
+      x = x + (val& and $7f) * 256
+    bend
+
+    if val& and $80 then rev_flag&(fidx%) = 1: else rev_flag&(fidx%) = 0
+    y = ldata&(fidx%, pidx%(fidx%))
+    pidx%(fidx%) = pidx%(fidx%) + 1
+
+    a$ = chr$(ldata&(fidx%, pidx%(fidx%)))
+    pidx%(fidx%) = pidx%(fidx%) + 1
+
+    if ver(fidx%)=2 then begin
+      if x-offs(fidx%) > 78 then begin
+        gosub scroll_canvas_right
+        pidx%(fidx%) = pidx%(fidx%) - 4
+        return
+        ' print "{x13}";chr$(27);"qoffs=";offs(fidx%);
+      bend
+    bend
+
+    dxx = x-offs(fidx%) : dyy = y: gosub draw_char
+
+.pd_endloop
+
+  bend
+
+  x = x-offs(fidx%)
+
+  return
+
+
+'---------
+.draw_char
+'---------
+  ' poke $40800 + x + y*80, asc(a$)
+  ' poke $ff80000 + x + y*80, rcolor(1)
+  
+  chr = asc(a$)
+  gosub petscii_to_screencode
+
+  if rev_flag&(fidx%) = 1 then chr = chr + 128
+
+  if ver(fidx%) = 1 or ver(fidx%) = 3 then begin
+    poke $52000 + dxx + dyy*80, chr
+    poke $53000 + dxx + dyy*80, chrclr
+  bend
+
+  if ver(fidx%) = 2 then begin
+    poke $54000 + dxx + dyy*80, chr
+    poke $55000 + dxx + dyy*80, chrclr
+  bend
+
+  return
+
 
 
 '----------
@@ -305,30 +376,29 @@ subtext$(1) = "a song by..."
   ' - - - - -
 
   if logo_state = ST_FADE_TO_STARS then begin
-      if fadeval <= 128 then begin
-        ' fade_colours_to_defaults
-        bank 0:sys $7e03, fadeval:bank 128
-        fadeval = fadeval + 1
-      bend
-      gosub draw_starfield
-      gosub page_flip
-      gosub iter_starfield
-
-      if fadeval = 129 then logo_state = ST_DRAW_ANATHEMA : m = 0
+      logo_state = ST_DRAW_ANATHEMA : m = 0
   bend
 
   ' - - - - -
 
   if logo_state = ST_DRAW_ANATHEMA then begin
+      if fadeval <= 128 then begin
+        ' fade_colours_to_defaults
+        bank 0:sys $7e03, fadeval:bank 128
+        fadeval = fadeval + 1
+      bend
+
     ' gosub iter_maindemo
     m = m + 1
     gosub draw_starfield
 
     ' draw anathema logo
-    fidx%=0
-    chrclr=1
-    gosub play_data_iter  ' line data
-    gosub play_data_iter  ' line data
+    if m > 30 then begin
+      fidx%=0
+      chrclr=1
+      gosub play_data_iter  ' line data
+      gosub play_data_iter  ' line data
+    bend
 
     ' faster page_flip
     bank 0:sys $7e2a:bank 128
@@ -361,7 +431,7 @@ subtext$(1) = "a song by..."
     if m > 75 and m < 115 then fidx%=0:gosub scroll_canvas_right:gosub scroll_canvas_right
 
     ' draw song title
-    if m > 10 and m < 370 then begin
+    if m > 0 and m < 370 then begin
       fidx%=1
       chrclr = 2
       gosub play_data_iter
@@ -374,6 +444,7 @@ subtext$(1) = "a song by..."
       gosub play_data_iter
       gosub play_data_iter
       gosub scroll_canvas_right
+      if pidx%(fidx%) >= didx%(fidx%) then gosub scroll_canvas_right
     bend
 
     if qix_state = 0 and playidx% = 10 then begin
@@ -400,10 +471,10 @@ subtext$(1) = "a song by..."
 
     if qix_state = 0 and playidx% >= 7 then gosub draw_qix_lines
 
-    if qix_state = 2 and playidx% = 16 then begin
+    if qix_state = 2 and lyr_idx=11 and ti-lyr_st > 8 then begin
       ' start fade to black
       qix_state = 3
-      fadeval = -100
+      fadeval = 0
       gosub store_curr_colours
       gosub set_default_palette_to_black
     bend
@@ -414,7 +485,7 @@ subtext$(1) = "a song by..."
       fadeval = fadeval + 2
       if fadeval > 130 then fadeval = 130
       
-      if fadeval =130 and playidx%>=7 and lyr_idx = 11 then begin
+      if fadeval =130 and playidx%>=17 and lyr_idx = 11 then begin
         logo_state = ST_FADE_TO_ROTATE
         print "{x93}";chr$(14);
         edma 3, $fa0, 32, $50000
@@ -447,15 +518,13 @@ subtext$(1) = "a song by..."
         bend
       bend
 
-      if s$="" then begin
-        gosub scroll_canvas_right
-      bend: else: begin
-        fidx% = 2
-        chrclr = wcclr
-        for k=0 to lyr_speed(lyr_idx-1)-1
-          gosub iter_write_text
-        next k
-      bend
+      if s$="" then gosub scroll_canvas_right
+
+      fidx% = 2
+      chrclr = wcclr
+      for k=0 to lyr_speed(lyr_idx-1)-1
+        gosub iter_write_text
+      next k
     bend
 
     if logo_state = ST_DRAW_SONG_TITLE then begin
@@ -476,7 +545,7 @@ subtext$(1) = "a song by..."
     
     ' sys iter_greet_text
     bank 0
-    for k = 0 to 5
+    for k = 0 to 6
       sys $7e27
     next k
     bank 128
@@ -504,6 +573,7 @@ subtext$(1) = "a song by..."
       edma 3, $fa0, 32, $54000
       edma 3, $fa0, 0, $55000
       m = 0
+      lyr_st = -1
     bend
 
   bend
@@ -515,54 +585,77 @@ subtext$(1) = "a song by..."
     if m = 0 then begin
       s$=""
       lyr_idx = 11
+      fadeval = 0
     bend
     m = m + 1
 
-    if fadeval <= 128 then begin
+    if m < 200 and fadeval <= 128 then begin
       bank 0: sys $7e03, fadeval:bank 128
       fadeval = fadeval + 1
+
+      if fadeval = 129 then begin
+        gosub store_curr_colours
+        gosub set_default_palette_to_black
+      bend
     bend
+    if m = 205 then fadeval = 0
+
+    if plyptr = -1 then begin
+      bank 0: sys $7e03, fadeval:bank 128
+      fadeval = fadeval + 4
+
+      if fadeval >= 129 then begin
+        print "{x93}{x5}";chr$(27);8;
+        palette restore
+        poke $d020, 6, 6
+        boot
+      bend
+    bend
+
     gosub draw_starfield
 
-    if m > 40 then begin
+    if playidx% >= 29 then begin
+      if lyr_st = -1 then lyr_st = ti
       if s$ = "" and lyr_idx > -1 and lyr_idx <=18 then begin
-        wxx = 50 : wyy = 0
-        zz = mod(lyr_idx, 2)
-        if zz = 1 then wyy = 33
-        s$ = lyr$(lyr_idx)
-        lyr_idx = lyr_idx + 1
-        txt_k = 1
+        if ti-lyr_st > lyr_time(lyr_idx) then begin
+          wxx = 50 : wyy = 0
+          zz = mod(lyr_idx, 2)
+          if zz = 1 then wyy = 33
+          s$ = lyr$(lyr_idx)
+          lyr_idx = lyr_idx + 1
+          txt_k = 1
+        bend
       bend
 
-      fidx% = 2
-      chrclr = wcclr + 64
-      gosub iter_write_text
-      gosub iter_write_text
-
-      if lyr_idx=19 and s$="" then gosub scroll_canvas_right
+      if s$="" then begin
+        gosub scroll_canvas_right
+        gosub scroll_canvas_right
+        gosub scroll_canvas_right
+        gosub scroll_canvas_right
+        gosub scroll_canvas_right
+      bend:else begin
+        fidx% = 2
+        chrclr = wcclr + 64
+        gosub iter_write_text
+        gosub iter_write_text
+        gosub iter_write_text
+        gosub iter_write_text
+        gosub iter_write_text
+      bend
     bend
-
-    wcclr = wcclr + .3
-    if wcclr > 15 then wcclr = 0
 
     ' cycle alt palette
     bank 0: sys $7e06, 16: bank 128
 
     ' draw many cubes?
-    if m > 150 then gosub iter_draw_many_cubes
+    if playidx% >=29 then gosub iter_draw_many_cubes
 
     ' faster page_flip
     bank 0:sys $7e2a:bank 128
     gosub iter_starfield
 
-    if m < 150 then begin
-      do
-        ret% = 0
-        do while ret% = 0
-          gosub parse_current_seqptr
-        loop
-      loop while (ti-tstart) < .07
-    bend
+    do
+    loop while (ti-tstart) < .1
 
   bend
 
@@ -892,7 +985,7 @@ subtext$(1) = "a song by..."
 '-------------
   for fadeval=0 to 128
     ' fade_colours_to_white
-    bank 0:sys $7e00, fadeval:bank 128
+    bank 0:vsync 10:sys $7e00, fadeval:bank 128
 
     do while ret% = 0
       gosub parse_current_seqptr
@@ -1611,6 +1704,7 @@ subtext$(1) = "a song by..."
 .iter_write_text
 '---------------
   ret = 0
+  if s$ = "" then return
 
   'if wc_space>0 then begin
   '  wxx=wxx+1
@@ -1732,140 +1826,5 @@ subtext$(1) = "a song by..."
   didx%(fidx%) = 0
   group_flag& = 0 : rev_flag&(fidx%) = 0
   offs(fidx%) = 0
-  return
-
-
-'--------------
-.draw_starfield
-'--------------
-  for k = 0 to 20
-    poke $50000 + starx%(k)/256 + stary(k) * 80, 46  ' dot
-  next k
-  return
-
-
-'--------------
-.iter_starfield
-'--------------
-  bank 0:sys $7e0f:bank 128
-
-  'for k = 0 to 20
-  '  starx(k) = mod( (starx(k)-starvx(k)) + 80, 80)
-  'next k
-
-  'cursor 0,0
-  'for k = 0 to 20
-  '  print int(starx%(k)/256), stary(k)
-  'next k
-  'get key a$
-  return
-
-
-'---------
-.page_flip
-'---------
-  bank 0 : sys $7e15 : bank 128
-
-  return
-
-
-'--------------
-.play_data_init
-'--------------
-  offs(fidx%)=0
-  pidx%(fidx%) = 0
-  if lastflag = 1 then pidx%(fidx%) = last_group_idx : lastflag = 0
-  return
-
-'--------------
-.play_data_iter
-'--------------
-  if pidx%(fidx%) < didx%(fidx%) then begin
-    val& = ldata&(fidx%, pidx%(fidx%))
-    pidx%(fidx%) = pidx%(fidx%) + 1
-
-    if ver(fidx%)=3 and val& = $ff then begin
-      if pidx%(fidx%) > last_group_idx then last_group_idx = pidx%(fidx%)
-      goto pd_endloop
-    bend
-
-    x = val& and $7f
-    if ver(fidx%)=2 then begin
-      x = val&
-      val& = ldata&(fidx%, pidx%(fidx%))
-      pidx%(fidx%) = pidx%(fidx%) + 1
-      x = x + (val& and $7f) * 256
-    bend
-
-    if val& and $80 then rev_flag&(fidx%) = 1: else rev_flag&(fidx%) = 0
-    y = ldata&(fidx%, pidx%(fidx%))
-    pidx%(fidx%) = pidx%(fidx%) + 1
-
-    a$ = chr$(ldata&(fidx%, pidx%(fidx%)))
-    pidx%(fidx%) = pidx%(fidx%) + 1
-
-    if ver(fidx%)=2 then begin
-      if x-offs(fidx%) > 78 then begin
-        gosub scroll_canvas_right
-        pidx%(fidx%) = pidx%(fidx%) - 4
-        return
-        ' print "{x13}";chr$(27);"qoffs=";offs(fidx%);
-      bend
-    bend
-
-    dxx = x-offs(fidx%) : dyy = y: gosub draw_char
-
-    debug = 0
-    if debug=1 then begin
-      print "{x13}{x11}";chr$(27);"q x,y,pidx,a$,offs=";x;y;pidx%(fidx%),asc(a$),offs(fidx%)
-      get key a$
-    bend
-
-.pd_endloop
-
-  bend
-
-  x = x-offs(fidx%)
-
-  return
-
-
-'---------
-.draw_char
-'---------
-  ' poke $40800 + x + y*80, asc(a$)
-  ' poke $ff80000 + x + y*80, rcolor(1)
-  
-  chr = asc(a$)
-  gosub petscii_to_screencode
-
-  if rev_flag&(fidx%) = 1 then chr = chr + 128
-
-  if ver(fidx%) = 1 or ver(fidx%) = 3 then begin
-    poke $52000 + dxx + dyy*80, chr
-    poke $53000 + dxx + dyy*80, chrclr
-  bend
-
-  if ver(fidx%) = 2 then begin
-    poke $54000 + dxx + dyy*80, chr
-    poke $55000 + dxx + dyy*80, chrclr
-  bend
-
-  return
-
-
-'---------------------
-.petscii_to_screencode
-'---------------------
-  ' Based on the table here:
-  ' https://sta.c64.org/cbm64pettoscr.html
-  ' - seems like I needed to do a repair to it on the $a0-->$bf range
-  if chr>=$00 and chr<=$1f then chr=chr or $80:return
-  if chr>=$20 and chr<=$3f then return
-  if chr>=$40 and chr<=$5f then chr=chr and $bf:return
-  if chr>=$60 and chr<=$7f then chr=chr and $df:return
-  if chr>=$80 and chr<=$9f then chr=chr or $40:return
-  if chr>=$a0 and chr<=$bf then chr=(chr and $7f) or $40:return ' $bf:return
-  if chr>=$c0 and chr<=$fe then chr=chr and $7f:return
   return
 ÿ

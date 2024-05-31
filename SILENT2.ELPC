@@ -1,6 +1,66 @@
 ' silent2.el is just an extension of silent.el
 ' to work around the max 2000 source line limitations of eleven
 
+
+'--------------
+.draw_starfield
+'--------------
+  for k = 0 to 20
+    poke $50000 + starx%(k)/256 + stary(k) * 80, 46  ' dot
+  next k
+  return
+
+
+'--------------
+.iter_starfield
+'--------------
+  bank 0:sys $7e0f:bank 128
+
+  'for k = 0 to 20
+  '  starx(k) = mod( (starx(k)-starvx(k)) + 80, 80)
+  'next k
+
+  'cursor 0,0
+  'for k = 0 to 20
+  '  print int(starx%(k)/256), stary(k)
+  'next k
+  'get key a$
+  return
+
+
+'---------
+.page_flip
+'---------
+  bank 0 : sys $7e15 : bank 128
+
+  return
+
+
+'--------------
+.play_data_init
+'--------------
+  offs(fidx%)=0
+  pidx%(fidx%) = 0
+  if lastflag = 1 then pidx%(fidx%) = last_group_idx : lastflag = 0
+  return
+
+
+
+'---------------------
+.petscii_to_screencode
+'---------------------
+  ' Based on the table here:
+  ' https://sta.c64.org/cbm64pettoscr.html
+  ' - seems like I needed to do a repair to it on the $a0-->$bf range
+  if chr>=$00 and chr<=$1f then chr=chr or $80:return
+  if chr>=$20 and chr<=$3f then return
+  if chr>=$40 and chr<=$5f then chr=chr and $bf:return
+  if chr>=$60 and chr<=$7f then chr=chr and $df:return
+  if chr>=$80 and chr<=$9f then chr=chr or $40:return
+  if chr>=$a0 and chr<=$bf then chr=(chr and $7f) or $40:return ' $bf:return
+  if chr>=$c0 and chr<=$fe then chr=chr and $7f:return
+  return
+
 '-----------------
 .screencode_to_idx
 '-----------------
