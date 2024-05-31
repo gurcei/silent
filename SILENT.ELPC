@@ -115,26 +115,26 @@ subtext$(1) = "a song by..."
 
 .writer_vars
 '-----------
-#declare lyr$(27), lyr_idx, max_len
+#declare lyr$(27), lyr_idx, max_len, lyr_time(27), lyr_st=-1, lyr_speed(27)
 #declare lyr_offs, lyr_t, addr, scyy, zz, wc_space, chrclr, wcclr=2
 #declare itercnt
 
-  lyr$(0) = "In dreamland..."
-  lyr$(1) = "Grandeur..."
-  lyr$(2) = "I held"
-  lyr$(3) = "Mesmerised"
-  lyr$(4) = "Peace"
-  lyr$(5) = "Innocence"
-  lyr$(6) = "Breathed again"
+  lyr$(0) = "In dreamland..."  : lyr_time(0) = 0 : lyr_speed(0) = 2
+  lyr$(1) = "Grandeur..."      : lyr_time(1) = 4 : lyr_speed(1) = 2
+  lyr$(2) = "I held"           : lyr_time(2) = 4 : lyr_speed(2) = 2
+  lyr$(3) = "Mesmerised"       : lyr_time(3) = 4 : lyr_speed(3) = 2
+  lyr$(4) = "Peace"            : lyr_time(4) = 4 : lyr_speed(4) = 2
+  lyr$(5) = "Innocence"        : lyr_time(5) = 4 : lyr_speed(5) = 2
+  lyr$(6) = "Breathed again"   : lyr_time(6) = 2 : lyr_speed(6) = 2
 
-  lyr$(7) = "A mind's escape"
-  lyr$(8) = "Leave walls of tears behind"
-  lyr$(9) = "Ethereal vision haunting still"
-  lyr$(10) = "The solitude left me blind"
+  lyr$(7) = "A mind's escape"                : lyr_time(7) = 15 : lyr_speed(7) = 3
+  lyr$(8) = "Leave walls of tears behind"    : lyr_time(8) = 7 : lyr_speed(8) = 3
+  lyr$(9) = "Ethereal vision haunting still" : lyr_time(9) = 5 : lyr_speed(9) = 3
+  lyr$(10) = "The solitude left me blind"    : lyr_time(10) = 6 : lyr_speed(10) = 3
 
   ' skip lyrics for the middle part (will do credits/greets instead)
 
-  lyr$(11) = "Tormented echoes"
+  lyr$(11) = "Tormented echoes"  : lyr_time(11) = 15
   lyr$(12) = "of a fallen Eden"
   lyr$(13) = "I longed for her beauty"
   lyr$(14) = "Yet from dust"
@@ -189,7 +189,7 @@ subtext$(1) = "a song by..."
 
 #declare cb_init
 #declare slowdown = .04
-
+                                   
 '-------
 .defines
 '-------
@@ -242,7 +242,8 @@ subtext$(1) = "a song by..."
     poke $d020, 1, 1
     gosub init_80x50
     gosub draw_backdrop
-    gosub page_flip
+    ' faster page_flip
+    bank 0:sys $7e2a:bank 128
     gosub store_curr_colours
     gosub set_palette_for_backdrop
     fadeval=0
@@ -255,7 +256,7 @@ subtext$(1) = "a song by..."
   if logo_state = ST_FADE_TO_DEFAULT then begin
     if fadeval <= 128 then begin
       ' fade_colours_to_defaults
-      bank 0:vsync 10:sys $7e03, fadeval:bank 128
+      bank 0:sys $7e03, fadeval:bank 128
       fadeval = fadeval + 1
     bend
 
@@ -329,7 +330,9 @@ subtext$(1) = "a song by..."
     gosub play_data_iter  ' line data
     gosub play_data_iter  ' line data
 
-    gosub page_flip
+    ' faster page_flip
+    bank 0:sys $7e2a:bank 128
+
     gosub iter_starfield
 
     if m = 285 then begin
@@ -361,6 +364,7 @@ subtext$(1) = "a song by..."
     if m > 10 and m < 370 then begin
       fidx%=1
       chrclr = 2
+      gosub play_data_iter
       gosub play_data_iter
       gosub play_data_iter
       gosub play_data_iter
@@ -410,7 +414,7 @@ subtext$(1) = "a song by..."
       fadeval = fadeval + 2
       if fadeval > 130 then fadeval = 130
       
-      if fadeval =130 and playidx%>=7 and lyr_idx = 12 then begin
+      if fadeval =130 and playidx%>=7 and lyr_idx = 11 then begin
         logo_state = ST_FADE_TO_ROTATE
         print "{x93}";chr$(14);
         edma 3, $fa0, 32, $50000
@@ -428,24 +432,34 @@ subtext$(1) = "a song by..."
     bend
 
     if playidx%>=7 and lyr_idx<12 and logo_state=ST_DRAW_SONG_TITLE then begin
-      if s$ = "" and lyr_idx>-1 then begin
-        wxx = 50 : wyy = 0
-        zz = mod(lyr_idx, 2)
-        if zz = 1 then wyy = 33
-        s$ = lyr$(lyr_idx)
-        lyr_idx = lyr_idx + 1
-        txt_k = 1
-        wcclr = wcclr + 1
-        if wcclr > 15 then wcclr = 3
+      if lyr_st < 0 then lyr_st = ti
+      if s$ = "" and lyr_idx>-1 and lyr_idx<11 then begin
+        if ti-lyr_st > lyr_time(lyr_idx) then begin
+          lyr_st = lyr_st + lyr_time(lyr_idx)
+          wxx = 50 : wyy = 0
+          zz = mod(lyr_idx, 2)
+          if zz = 1 then wyy = 33
+          s$ = lyr$(lyr_idx)
+          lyr_idx = lyr_idx + 1
+          txt_k = 1
+          wcclr = wcclr + 1
+          if wcclr > 15 then wcclr = 3
+        bend
       bend
 
-      fidx% = 2
-      chrclr = wcclr
-      gosub iter_write_text
+      if s$="" then begin
+        gosub scroll_canvas_right
+      bend: else: begin
+        fidx% = 2
+        chrclr = wcclr
+        for k=0 to lyr_speed(lyr_idx-1)-1
+          gosub iter_write_text
+        next k
+      bend
     bend
 
     if logo_state = ST_DRAW_SONG_TITLE then begin
-      gosub page_flip
+      if playidx%<7 then gosub page_flip:else bank 0:sys $7e2a:bank 128
       gosub iter_starfield
     bend
 
@@ -469,7 +483,8 @@ subtext$(1) = "a song by..."
 
     ' colour cycle
     bank 0:sys $7e06, 16:bank 128
-    gosub page_flip
+    ' faster page_flip
+    bank 0:sys $7e2a:bank 128
     edma 3, $fa0, 160, $50000
 
     if playidx%=27 and fadeval < 128 then begin
@@ -536,7 +551,8 @@ subtext$(1) = "a song by..."
     ' draw many cubes?
     if m > 150 then gosub iter_draw_many_cubes
 
-    gosub page_flip
+    ' faster page_flip
+    bank 0:sys $7e2a:bank 128
     gosub iter_starfield
 
     if m < 150 then begin
@@ -638,7 +654,8 @@ subtext$(1) = "a song by..."
 
   bend
   gosub draw_bas
-  gosub page_flip
+    ' faster page_flip
+    bank 0:sys $7e2a:bank 128
 
   for frameidx = 0 to 2
     if finish_cnt and 2^frameidx and bcnt(frameidx)<3 then begin
@@ -875,7 +892,7 @@ subtext$(1) = "a song by..."
 '-------------
   for fadeval=0 to 128
     ' fade_colours_to_white
-    bank 0:vsync 10:sys $7e00, fadeval:bank 128
+    bank 0:sys $7e00, fadeval:bank 128
 
     do while ret% = 0
       gosub parse_current_seqptr
@@ -1182,7 +1199,15 @@ subtext$(1) = "a song by..."
     x2 = px(cbidx)
     y2 = py(cbidx)
 
-    gosub draw_line
+    ' gosub draw_line
+  bank 0
+  x1 = mod(int(x1)+256,256)
+  y1 = mod(int(y1)+256,256)
+  x2 = mod(int(x2)+256,256)
+  y2 = mod(int(y2)+256,256)
+  sys $7e21, x1, y1, x2, y2
+  bank 128
+
     cbidx = cbidx + 1
   next cb_anga
 
@@ -1200,12 +1225,27 @@ subtext$(1) = "a song by..."
     x2 = px(pidx+1) : y2 = py(pidx+1)
     ' print "x1=";x1;", y1=";y1;", x2=";x2;", y2=";y2
     ' get key a$
-    gosub draw_line
+    ' gosub draw_line
+  bank 0
+  x1 = mod(int(x1)+256,256)
+  y1 = mod(int(y1)+256,256)
+  x2 = mod(int(x2)+256,256)
+  y2 = mod(int(y2)+256,256)
+  sys $7e21, x1, y1, x2, y2
+  bank 128
   next pidx
 
   x1 = px(plen-1) : y1 = py(plen-1)
   x2 = px(0) : y2 = py(0)
-  gosub draw_line
+
+  ' gosub draw_line
+  bank 0
+  x1 = mod(int(x1)+256,256)
+  y1 = mod(int(y1)+256,256)
+  x2 = mod(int(x2)+256,256)
+  y2 = mod(int(y2)+256,256)
+  sys $7e21, x1, y1, x2, y2
+  bank 128
 
   return
 

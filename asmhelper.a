@@ -324,6 +324,7 @@ MULTOUT = $d778
 	// rotate routines
 	// ---------------
 	jmp iter_greet_text		// 7e27
+	jmp page_flip_faster		// 7e2a
 
 
 //---------------------
@@ -938,6 +939,24 @@ page_flip:
 	// return
 	rts
 
+
+//---------
+page_flip_faster:
+//---------
+	// poke $d702, 4 ' dma list in bank 4
+	lda #$00
+	sta $d702
+
+	// poke $d701, $00 ' dma list msb
+	lda #>fasterdmalist
+	sta $d701
+
+	// poke $d705, $00 ' dma list lsb
+	lda #<fasterdmalist
+	sta $d705
+	
+	// return
+	rts
 
 //-----------
 init_and_plot:
@@ -1852,10 +1871,12 @@ dmalist:
 +edma_transp $20, $00+$04, 4000, $4000, $05, $0000, $05, $00
 +edma_transp $00, $00+$04, 4000, $5000, $05, $1000, $05, $00
 
+fasterdmalist:
 // copy screen buffer 0
 +edma_transp $20, $00+$04, 4000, $2000, $05, $0000, $05, $00
 +edma_transp $00, $00+$04, 4000, $3000, $05, $1000, $05, $00
 
+fastestdmalist:
 // perform flip to screen
 +edma $00+$04, 4000, $0000, $05, $0800, $04, $00
 +edma $00+$04, 4000, $1000, $05, $0000, $08, $ff
