@@ -211,10 +211,72 @@
   return
 .baslogo_el
   return
+
 .starfield_el
+'------------
+  do
+    print "{x93}";
+    print "{x96}starfield.el{x5}"
+    print "============"
+    print "This initially started off as a small example of a starfield."
+    print
+    print "Then I slowly started adding more and more elements to it that came"
+    print "from my other examples."
+    print
+    print "The reasoning for this approach is that Eleven's compilation step is"
+    print "very time intensive for large programs. So it proved more time-effective"
+    print "to iterate quickly on smaller ideas in separate files, and then when"
+    print "they are ready, merge those ideas together."
+    print
+    print "I eventually abandoned this file in favour of 'silent.el' as my merge"
+    print "location."
+    print
+    print "{x9F}RETURN{x5}) Open '{x96}starfield.el{x5}' in Eleven"
+    print " {x9F}SPACE{x5}) Run '{x96}starfield{x5}' (compiled source)"
+    print "     {x9F}/{x5}) Exit"
+
+    get key a$
+    if a$=chr$(13) then fname$="starfield.el":goto autoload_11
+    if a$=" " then clr:dload "starfield"
+  loop while a$<>"/"
+  a$=""
   return
+
+
 .line_el
+'-------
+  do
+    print "{x93}";
+    print "{x96}line.el{x5}"
+    print "======="
+    print "This tool's purpose seemed to evolve over time."
+    print
+    print "Version 1: I used it to draw the 'Anathema' logo, where the details"
+    print "           of each character and location I added were preserved"
+    print
+    print "Version 2: I extended upon the prior logic so that I could draw the"
+    print "           large 'The Silent Enigma' title and let the screen scroll"
+    print
+    print "Version 3: I extended it once more so that I could draw individual"
+    print "           characters within an alphabet."
+    print
+    print "Usage:"
+    print "  - Press {x9A}F9{x5} to switch versions"
+    print "  - While in V1, press {x9A}F1{x5} to load '{x9A}ana.ln{x5}'"
+    print "  - While in V2, press {x9A}F1{x5} to load '{x9A}silent.l{x5}'"
+    print "  - While in V3, press {x9A}F1{x5} to load '{x9A}abc.ln{x5}'"
+    print
+    print "{x9F}RETURN{x5}) Open '{x96}line.el{x5}' in Eleven"
+    print " {x9F}SPACE{x5}) Run '{x96}line{x5}' (compiled source)"
+    print "     {x9F}/{x5}) Exit"
+
+    get key a$
+    if a$=chr$(13) then fname$="line.el":goto autoload_11
+    if a$=" " then clr:dload "line"
+  loop while a$<>"/"
+  a$=""
   return
+
 
 .petline_el
 '----------
