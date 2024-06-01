@@ -35,7 +35,7 @@
   if a$="1" then gosub perform_checks
   if a$="2" then gosub show_about
   if a$="3" then gosub show_source_list
-  if a$="4" then print "{x93}bye!";:end
+  if a$="/" then print "{x93}bye!";:end
   
   goto main
 
@@ -145,7 +145,7 @@
   print "{x9A}gurce/bas{x5}"
   print "{x11}{x9E}Press any key to continue...{x5}"
   get key a$
-
+  a$=""
   return
 
 
@@ -191,7 +191,7 @@
   if a$="d" then gosub melody_el
   if a$="e" then gosub autoboot_el
 
-  if a$="/" then return
+  if a$="/" then a$="": return
 
   goto show_source_list
   return
@@ -203,15 +203,130 @@
   return
 
 
+.autoload_ma
+'-----------
+  poke $d020,6,6
+  print chr$(142);  ' switch back to upper-case
+  print "{x93}autoload ";chr$(34);fname$;chr$(34)
+  clr
+  dload "mega assembler"
+  return
+
+
 .silent_prj
   return
+
+
 .silent_el
+'---------
+  do
+    print "{x93}";
+    print "{x96}silent.el{x5}"
+    print "========="
+    print "The main source file for the demo, and the location where all the"
+    print "individual examples I had needed to be stitched together."
+    print
+    print "The larger this file grew, the more slow and painful it became to"
+    print "iterate. Even using Xemu's '{x9A}-fastclock 200{x5}' option, while helpful,"
+    print "was still frustratingly slow."
+    print
+    print "To complicate things further, there was the 2000 line limit of Eleven"
+    print "and BASIC string space exhaustion to contend with."
+    print
+    print "Thankfully, I was able to push a little further thanks to the .prj"
+    print "workaround, but still, looking forward to the day Eleven builds a lot"
+    print "faster!"
+    print
+    print "Oh, and working around timing differences between Xemu and Eleven wasn't"
+    print "fun either!"
+    print
+    print "{x9F}RETURN{x5}) Open '{x96}silent.el{x5}' in Eleven"
+    print "     {x9F}/{x5}) Exit"
+
+    get key a$
+    if a$=chr$(13) then fname$="silent.el":goto autoload_11
+  loop while a$<>"/"
+  a$=""
   return
+
+
 .silent2_el
+'----------
+  do
+    print "{x93}";
+    print "{x96}silent2.el{x5}"
+    print "=========="
+    print "After a while, '{x9A}silent.el{x5}' was growing so large that Eleven was"
+    print "running out of string space and approaching its 2000 line (of source)"
+    print "limit."
+    print
+    print "After tweaking Eleven to permit me to let a .prj file list several"
+    print "*.el files to be compiled as one single entity, I was able to continue"
+    print "growing the demo into this file!"
+    print
+    print "NOTE: To compile the pair of files, you must load '{x9A}silent.prj{x5}' first!"
+    print
+    print "{x9F}RETURN{x5}) Open '{x96}silent2.el{x5}' in Eleven"
+    print "     {x9F}/{x5}) Exit"
+
+    get key a$
+    if a$=chr$(13) then fname$="silent2.el":goto autoload_11
+  loop while a$<>"/"
+  a$=""
   return
+
+
 .rotate_asm
+'----------
+  do
+    print "{x93}";
+    print "{x96}rotate.asm{x5}"
+    print "=========="
+    print "This was my first attempt to port some of my BASIC logic to assembly."
+    print "(the logic to rotate the spiral)"
+    print
+    print "Mega Assembler is slow, no macros, but it gets the job done natively!"
+    print
+    print "For later Assembly forays, I switched to Acme cross-compiler."
+    print
+    print "{x9F}RETURN{x5}) Open '{x96}rotate.asm{x5}' in Mega Assembler"
+    print "     {x9F}/{x5}) Exit"
+
+    get key a$
+    if a$=chr$(13) then fname$="rotate.asm":goto autoload_ma
+  loop while a$<>"/"
+  a$=""
   return
+
+
 .asmhelper_a
+'-----------
+  do
+    print "{x93}";
+    print "{x96}asmhelper.a{x5}"
+    print "=========="
+    print "After getting acquainted with {x1E}grim fandango{x5}'s '{x9A}MEGAPLOT{x5}' utility"
+    print "and its use of the {x9A}Acme{x5} compiler, its macro system was hard to resist."
+    print
+    print "So I inevitably made the switch from native Mega Assembler to Acme."
+    print
+    print "Ah well, I'm sure one day Mega Assembler will have such perks too!"
+    print
+    print "This '{x9A}asmhelper.a{x5}' is to be compiled on your PC via the Acme compiler."
+    print "I have provided it on this disk just to ease your viewing pleasure!"
+    print
+    print "I found Assembly to be a very time-expensive approach to development."
+    print "Simple 10 line BASIC routines seemed to take about half of my day to"
+    print "translate into 200 lines of assembly, and then I'd spend the other half"
+    print "of the day debugging it!"
+    print
+    print "{x9F}RETURN{x5}) Show '{x96}asmhelper.a{x5}' listing"
+    print "     {x9F}/{x5}) Exit"
+
+    get key a$
+    if a$=chr$(13) then fast 1:type "asmhelper.a":fast 40
+  loop while a$<>"/"
+  a$=""
   return
 
 .grabber_el
