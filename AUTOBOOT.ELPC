@@ -8,18 +8,21 @@
 '-------
 .defines
 '-------
+#declare rom$, vm$, fname$
 #declare mask%, month%, year%, ds%, date$
 #declare fpga_hash$, reverse%, upper, lower
-#declare a$, k, offs
+#declare a$, k, offs, xemu_flag
 
 
 '----
 .init
 '----
+  bank 128
   offs = $ffd3630
   poke $d020, 0, 0
   print chr$(27);"8"
-  print chr$(142);  ' switch back to upper-case
+  'print chr$(142);  ' switch back to upper-case
+  print chr$(14);  ' lower-case
 
 
 '----
@@ -30,19 +33,11 @@
   get key a$
 
   if a$="1" then gosub perform_checks
-  if a$="2" then gosub show_requirements
-  if a$="3" then gosub show_about
-  if a$="4" then gosub show_source_list
-  if a$="5" then print "{x93}bye!";:end
+  if a$="2" then gosub show_about
+  if a$="3" then gosub show_source_list
+  if a$="4" then print "{x93}bye!";:end
   
   goto main
-
-  gosub format_datestamp
-  print date$
-
-  gosub format_fpga_hash
-  print "{x5}    your core: {x1C}";fpga_hash$;"  ";date$;"{x5}"
-  print "{x5}required core: {x1E}12345678  2024-05-25{x5}"
 
   end
 
@@ -51,16 +46,15 @@
 .show_main_menu
 '--------------
   print "{x93}{x5}";
-  print "'{x1}{x90}t{x5}h{x1C}e {x9F}s";chr$(156);"i{x1E}l{x1F}e{x9E}n{x81}t {x95}e{x96}n{x97}i{x98}g{x99}m{x9A}a{x4}{x5}' demo  -  gurce /bas  - 1st june 2024"
+  print "'{x1}{x90}T{x5}h{x1C}e {x9F}S";chr$(156);"i{x1E}l{x1F}e{x9E}n{x81}t {x95}E{x96}n{x97}i{x98}g{x99}m{x9A}a{x4}{x5}' Demo  -  {x9A}gurce/bas{x5}  -  1st June 2024"
   print "========================"
   print
-  print "as exclusively premiered by retrocombs!"
+  print "As exclusively premiered by {x9F}retroCombs{x5}!"
   print
-  print "{x9F}1{x5}) play demo"
-  print "{x9F}2{x5}) requirements"
-  print "{x9F}3{x5}) about this demo"
-  print "{x9F}4{x5}) browse the source code"
-  print "{x9F}5{x5}) exit"
+  print "{x9F}1{x5}) Play demo"
+  print "{x9F}2{x5}) About this demo"
+  print "{x9F}3{x5}) Browse the source code"
+  print "{x9F}/{x5}) Exit"
 
   return
 
@@ -68,41 +62,323 @@
 '--------------
 .perform_checks
 '--------------
+  gosub xemu_check
+
+  if xemu_flag = 0 then begin
+    gosub core_check
+  bend
+
+  gosub rom_check
+
+  gosub ntsc_to_pal
 
   clr
   dload "silent"
   return
 
 
-'-----------------
-.show_requirements
-'-----------------
+'----------
+.core_check
+'----------
+  gosub format_datestamp
+
+  gosub format_fpga_hash
+
+  if fpga_hash$<>"e296c3c9" then begin
+    print "{x93}{x11}{x11}{x1C}CORE WARNING{x5}: This demo presently works best using:"
+    print "- Development core: {x1E}e296c3c9  2024-05-24{x5}"
+    print "-        Your core: {x1C}";fpga_hash$;"  ";date$;"{x5}"
+    print
+    print "For best demo performance:"
+    print "- Please download it from:"
+    print "  - {x9F}https://builder.mega65.org/job/mega65-core/job/development/108{x5}"
+    print
+    print "- Unzip the '{x9F}mega65*.7z{x5}' file and locate the .cor file within"
+    print "- Place it on your sd-card"
+    print "- Power up with the '{x9F}no scroll{x5}' key and flash it to a spare slot"
+    print "- Select this core from the flash menu to run it"
+    print
+    print "{x1C}This core contains hyppo repairs needed by the demo{x5}:"
+    print "- fix to get/set map calls"
+    print "- fix to boot from 'MEGA659.ROM'"
+    print
+    print "If you have a newer development rom, it should work fine too."
+    print
+    print "{x9E}Press any key to continue...{x5}"
+    get key a$
+
   return
 
 
 '----------
 .show_about
 '----------
+  print "{x93}{x96}ABOUT{x5}"
+  print  "====="
+  print "I had been accumulating little snippets of ideas I had written in BASIC 65"
+  print "over the past year, thinking there would come a time I would be able to"
+  print "stitch them all together into a nice cute demo to once again showcase"
+  print "the fun that can be had in {x9F}BASIC 65{x5}."
+  print
+  print "That opportunity came to me this May and I pushed hard to stitch them"
+  print "all together. Along the way, I thought I'd brush up on my assembly"
+  print "language skills and relieve some of the performance bottlenecks I was"
+  print "facing."
+  print
+  print "- {x9F}BASIC 65{x5} code was written in {x9F}Eleven{x5}"
+  print "- {x9F}Assembly{x5} code was written in {x9F}Mega Assembler{x5} and {x9F}Acme{x5}"
+  print "- All visual aspects of the demo are {x9F}100% PETSCII{x5}"
+  print "- The music of the demo is performed by {x9F}BASIC 65's 'PLAY'{x5} command"
+  print "{x11}{x9E}Press any key to continue...{x5}"
+  get key a$
+
+  print "{x93}{x96}ABOUT{x5}"
+  print  "====="
+  print "I have added the source code on this disk, and you're welcome to have"
+  print "a browse of it!"
+  print
+  print "I will also aim to share the repository in github at:"
+  print "- {x9F}https://github.com/gurcei/silent{x5}"
+  print 
+  print "Hope you enjoy the demo! :)"
+  print
+  print "{x9A}gurce/bas{x5}"
+  print "{x11}{x9E}Press any key to continue...{x5}"
+  get key a$
+
   return
+
 
 '----------------
 .show_source_list
 '----------------
+  print "{x93}{x96}MAIN SOURCE FILES{x5}"
+  print "================="
+  print "{x9F}1{x5}) silent.prj"
+  print "{x9F}2{x5}) silent.el"
+  print "{x9F}3{x5}) silent2.el"
+  print "{x9F}4{x5}) rotate.asm"
+  print "{x9F}5{x5}) asmhelper.a"
+  print
+  print "{x96}MISC. FILES{x5}"
+  print "==========="
+  print "{x9F}6{x5}) baslogo.el"
+  print "{x9F}7{x5}) starfield.el"
+  print "{x9F}8{x5}) line.el"
+  print "{x9F}9{x5}) petline.el"
+  print "{x9F}a{x5}) rotate.el"
+  print "{x9F}b{x5}) writer.el"
+  print "{x9F}c{x5}) melody.el"
+  print "{x9F}d{x5}) autoboot.el"
+  print
+  print "{x9F}/{x5}) Exit"
+  get key a$
+
+  if a$="1" then gosub silent_prj
+  if a$="2" then gosub silent_el
+  if a$="3" then gosub silent2_el
+  if a$="4" then gosub rotate_asm
+  if a$="5" then gosub asmhelper_a
+  if a$="6" then gosub baslogo_el
+  if a$="7" then gosub starfield_el
+  if a$="8" then gosub line_el
+  if a$="9" then gosub petline_el
+  if a$="a" then gosub rotate_el
+  if a$="b" then gosub writer_el
+  if a$="c" then gosub melody_el
+  if a$="d" then gosub autoboot_el
+
+  if a$="/" then return
+
+  goto show_source_list
+  return
+
+.autoload_11
+'-----------
+  print "{x93}autoload ";chr$(34);fname$;chr$(34):clr:dload "11boot.c65"
+  return
+
+
+.silent_prj
+  return
+.silent_el
+  return
+.silent2_el
+  return
+.rotate_asm
+  return
+.asmhelper_a
+  return
+.baslogo_el
+  return
+.starfield_el
+  return
+.line_el
+  return
+
+.petline_el
+'----------
+  do
+    print "{x93}";
+    print "{x96}petline.el{x5}"
+    print "=========="
+    print "I used this program to explore {x1E}grim fandango{x5}'s {x9A}MEGAPLOT{x5} utility"
+    print "which could draw 2x2 PETSCII dots on the screen."
+    print "  - {x9A}https://github.com/grim-fandango/megaplot{x5}"
+    print
+    print "After trying to draw a line by calling it from BASIC per each pixel,"
+    print "it proved too slow that way, so I ported the line-drawing logic to"
+    print "assembly and added the line-drawing facility into his utility."
+    print
+    print "As he used Acme compiler for his assembly code, I followed suit and"
+    print "added to his '{x9A}megaplot.a{x5}' file."
+    print
+    print "I'll aim to make a PR to push my changes into his repo soon."
+    print
+    print "{x9F}RETURN{x5}) Open '{x96}petline.el{x5}' in Eleven"
+    print " {x9F}SPACE{x5}) Run '{x96}petline{x5}' (compiled source)"
+    print "     {x9F}/{x5}) Exit"
+
+    get key a$
+    if a$=chr$(13) then fname$="petline.el":goto autoload_11
+    if a$=" " then clr:dload "petline"
+  loop while a$<>"/"
+  a$=""
+  return
+
+.rotate_el
+'---------
+  do
+    print "{x93}";
+    print "{x96}rotate.el{x5}"
+    print "========="
+    print "This was my initial attempt at drawing a rotating spiral using radial"
+    print "coordinates. After the initial BASIC 65 attempt proved too sluggish,"
+    print "I decided to port the rotation logic to assembly in '{x9A}rotate.asm{x5}'."
+    print
+    print "I later added the logic to draw the credits/greeting text over the top"
+    print "of it (contained in the '{x9A}greets.t{x5}' file)."
+    print
+    print "{x9F}RETURN{x5}) Open '{x96}rotate.el{x5}' in Eleven"
+    print " {x9F}SPACE{x5}) Run '{x96}rotate{x5}' (compiled source)"
+    print "     {x9F}/{x5}) Exit"
+
+    get key a$
+    if a$=chr$(13) then fname$="rotate.el":goto autoload_11
+    if a$=" " then clr:dload "rotate"
+  loop while a$<>"/"
+  a$=""
+  return
+
+.writer_el
+'---------
+  do
+    print "{x93}";
+    print "{x96}writer.el{x5}"
+    print "========="
+    print "After making the '{x9A}abc.ln{x5}' font via the '{x9A}line.el{x5}' tool, I made this"
+    print "small program to try make use of the font to draw text on the fly with"
+    print "the font."
+    print
+    print "{x9F}RETURN{x5}) Open '{x96}writer.el{x5}' in Eleven"
+    print " {x9F}SPACE{x5}) Run '{x96}writer{x5}' (compiled source)"
+    print "     {x9F}/{x5}) Exit"
+
+    get key a$
+    if a$=chr$(13) then fname$="writer.el":goto autoload_11
+    if a$=" " then clr:dload "writer"
+  loop while a$<>"/"
+  a$=""
+  return
+
+
+.melody_el
+'---------
+  do
+    print "{x93}";
+    print "{x96}melody.el{x5}"
+    print "========="
+    print "While I'm a big fan of BASIC 65's PLAY command, I admit that after "
+    print "manually sequencing play strings for several songs, it does get quite "
+    print "tedious. So I tried making this tool to make it easier for me to "
+    print "sequence such play strings."
+    print
+    print "I made use of this tool for the song used by this demo."
+    print
+    print "Usage:"
+    print "- Press {x9A}F5{x5} to build from source"
+    print "- Press {x9A}F1{x5} to load a song (try loading '{x9A}enigma.p{x5}')"
+    print "- Press {x9A}F9{x5} to open sequencer"
+    print "- Press {x9A}Shift+Return{x5} to play sequence"
+    print
+    print "{x9F}RETURN{x5}) Open '{x96}melody.el{x5}' in Eleven"
+    print " {x9F}SPACE{x5}) Run '{x96}playmaker{x5}' (compiled source)"
+    print "     {x9F}/{x5}) Exit"
+
+    get key a$
+    if a$=chr$(13) then fname$="melody.el":goto autoload_11
+    if a$=" " then clr:dload "playmaker"
+  loop while a$<>"/"
+  a$=""
+  return
+
+
+.autoboot_el
+'-----------
+  do
+    print "{x93}";
+    print "{x96}autoboot.el{x5}"
+    print "==========="
+    print "While preparing this boot menu (which is typically an '{x9A}autoboot.c65{x5}' file)"
+    print "I thought, why not write this in Eleven too?"
+    print
+    print "As I had wanted to have some core/rom/xemu check logic within it, I"
+    print "felt it was better to have such routines written in Eleven, so that"
+    print "they could be more easily copy/pasted into my (or even your!) future"
+    print "projects."
+    print
+    print "{x9F}RETURN{x5}) Open '{x96}autoboot.el{x5}' in Eleven"
+    print "     {x9F}/{x5}) Exit"
+
+    get key a$
+    if a$=chr$(13) then fname$="autoboot.el":goto autoload_11
+    if a$="/" then a$="":return
+    goto autoboot_el
+  loop while a$<>"/"
+  a$=""
+  return
+
+
+'----------
+.xemu_check
+'----------
+  if not (peek($ffd360f) and $20) then xemu_flag = 1
+
+  if xemu_flag = 0 then return
+
+  print "{x93}{x11}{x11}{x1E}xemu note{x5}: you are running this demo in the xemu emulator."
+  print
+  print "please note that some aspects of this demo run slightly faster"
+  print "under xemu compared to real hardware (likely due to differences in"
+  print "how much time is consumed for dma calls, but still to be investigated)"
+  print
+  print "apart from that, it should still run fine."
+  print "{x11}{x9E}press any key to continue...{x5}"
+  get key a$
   return
 
 
 '-----------
 .ntsc_to_pal
 '-----------
-#declare vm$
-
-  gosub rom_check
-
   if (peek($d06f) and 128)=0 then vm$ = "pal":else vm$="ntsc"
 
   if vm$ = "pal" then return
 
   print "{x93}{x11}{x11}{x5}this program requires switching from {x1C}ntsc{x5} to {x1E}pal{x5}"
+  print
+  print "will switch over now."
+
   print "{x11}{x9E}press any key to continue...{x5}"
   get key a$
   poke $ffd306f,$00
@@ -123,28 +399,30 @@
 '---------
 .rom_check
 '---------
-#declare rom$
   for k = 0 to 5
     rom$=rom$ + chr$(peek($20017+k))
   next k
 
   if rom$<>"999999" then begin
-    print "{x93}{x11}{x11}{x1C}warning{x5}: this demo presently works best using:"
+    print "{x93}{x11}{x11}{x1C}rom warning{x5}: this demo presently works best using:"
     print "- experimental rom: {x1E}v999999{x5}"
     print "-         your rom: {x1C}v";rom$;"{x5}"
     print
     print "for best demo performance:"
-    print "- please download it from https://gurce.net/999999.bin"
-    print "- rename it to 'mega659.rom'"
-    print "    (yes, add the '9' to the end)"
+    print "- please download it from {x9F}https://gurce.net/999999.bin{x5}"
+    print "- rename it to '{x9F}mega65{x96}9{x9F}.rom{x5}'"
+    print "    (yes, add the '{x96}9{x5}' to the end)"
     print "- place it on your sd-card"
-    print "- reboot your mega65 while holding down the '9' key"
+    print "- reboot your mega65 while holding down the '{x96}9{x5}' key"
     print
     print "{x1C}if not done, you will experience music slowdown issues{x5} due to "
     print "existing/older roms blocking basic 'play' command while in sys calls"
     print
+    print "newer roms made after this demo will likely have repaired this matter."
+    print
     print "{x9E}press any key to continue...{x5}"
     get key a$
+
   bend
   return
 

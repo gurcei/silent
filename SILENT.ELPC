@@ -215,8 +215,6 @@ subtext$(1) = "a song by..."
 '----
 .main
 '----
-  gosub ntsc_to_pal
-
   gosub init
 
   ' logo_state = ST_FADE_TO_STARS
