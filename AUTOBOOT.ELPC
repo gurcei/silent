@@ -8,10 +8,262 @@
 '-------
 .defines
 '-------
+#declare mask%, month%, year%, ds%, date$
+#declare fpga_hash$, reverse%, upper, lower
+#declare a$, k, offs
 
+
+'----
+.init
+'----
+  offs = $ffd3630
+  poke $d020, 0, 0
+  print chr$(27);"8"
+  print chr$(142);  ' switch back to upper-case
 
 
 '----
 .main
 '----
+  gosub show_main_menu
+
+  get key a$
+
+  if a$="1" then gosub perform_checks
+  if a$="2" then gosub show_requirements
+  if a$="3" then gosub show_about
+  if a$="4" then gosub show_source_list
+  if a$="5" then print "{x93}bye!";:end
+  
+  goto main
+
+  gosub format_datestamp
+  print date$
+
+  gosub format_fpga_hash
+  print "{x5}    your core: {x1C}";fpga_hash$;"  ";date$;"{x5}"
+  print "{x5}required core: {x1E}12345678  2024-05-25{x5}"
+
+  end
+
+
+'--------------
+.show_main_menu
+'--------------
+  print "{x93}{x5}";
+  print "'{x1}{x90}t{x5}h{x1C}e {x9F}s";chr$(156);"i{x1E}l{x1F}e{x9E}n{x81}t {x95}e{x96}n{x97}i{x98}g{x99}m{x9A}a{x4}{x5}' demo  -  gurce /bas  - 1st june 2024"
+  print "========================"
+  print
+  print "as exclusively premiered by retrocombs!"
+  print
+  print "{x9F}1{x5}) play demo"
+  print "{x9F}2{x5}) requirements"
+  print "{x9F}3{x5}) about this demo"
+  print "{x9F}4{x5}) browse the source code"
+  print "{x9F}5{x5}) exit"
+
+  return
+
+
+'--------------
+.perform_checks
+'--------------
+
+  clr
+  dload "silent"
+  return
+
+
+'-----------------
+.show_requirements
+'-----------------
+  return
+
+
+'----------
+.show_about
+'----------
+  return
+
+'----------------
+.show_source_list
+'----------------
+  return
+
+
+'-----------
+.ntsc_to_pal
+'-----------
+#declare vm$
+
+  gosub rom_check
+
+  if (peek($d06f) and 128)=0 then vm$ = "pal":else vm$="ntsc"
+
+  if vm$ = "pal" then return
+
+  print "{x93}{x11}{x11}{x5}this program requires switching from {x1C}ntsc{x5} to {x1E}pal{x5}"
+  print "{x11}{x9E}press any key to continue...{x5}"
+  get key a$
+  poke $ffd306f,$00
+  poke $ffd3072,$00
+  poke $ffd3048,$68
+  poke $ffd3049,$00 or (peek($ffd3049) and $f0)
+  poke $ffd304a,$f8
+  poke $ffd304b,$01 or (peek($ffd304b) and $f0)
+  poke $ffd304e,$68
+  poke $ffd304f,$00 or (peek($ffd304f) and $f0)
+  poke $ffd3072,$00
+  poke $ffd3c0e, peek($ffd3c0e) or $80
+  poke $ffd3d0e, peek($ffd3d0e) or $80
+
+  return
+
+
+'---------
+.rom_check
+'---------
+#declare rom$
+  for k = 0 to 5
+    rom$=rom$ + chr$(peek($20017+k))
+  next k
+
+  if rom$<>"999999" then begin
+    print "{x93}{x11}{x11}{x1C}warning{x5}: this demo presently works best using:"
+    print "- experimental rom: {x1E}v999999{x5}"
+    print "-         your rom: {x1C}v";rom$;"{x5}"
+    print
+    print "for best demo performance:"
+    print "- please download it from https://gurce.net/999999.bin"
+    print "- rename it to 'mega659.rom'"
+    print "    (yes, add the '9' to the end)"
+    print "- place it on your sd-card"
+    print "- reboot your mega65 while holding down the '9' key"
+    print
+    print "{x1C}if not done, you will experience music slowdown issues{x5} due to "
+    print "existing/older roms blocking basic 'play' command while in sys calls"
+    print
+    print "{x9E}press any key to continue...{x5}"
+    get key a$
+  bend
+  return
+
+
+'----------------
+.format_datestamp
+'----------------
+' A port of lydon's function in "freeze_megainfo.c"
+
+  mask% = $ff  ' for max10, would need to be $3f
+
+  month% = 1
+  year% = 2020
+  ds% = ((peek(offs + 1) and mask%) << 8) + peek(offs)
+
+  do while ds% > 366
+    year% = year% + 1
+    ds% = ds% - 366
+  loop
+
+  if month%=1 and ds%=31 then begin
+    month% = month% + 1
+    ds% = ds% - 31
+  bend
+
+  if month%=2 and not (year% and 3) and ds%>29 then begin
+    month% = month% + 1
+    ds% = ds% - 29
+  bend
+
+  if month%=2 and (year% and 3) and ds%>28 then begin
+    month% = month% + 1
+    ds% = ds% - 28
+  bend
+
+  if month%=3 and ds%>31 then begin
+    month% = month% + 1
+    ds% = ds% - 31
+  bend
+
+  if month%=4 and ds%>30 then begin
+    month% = month% + 1
+    ds% = ds% - 30
+  bend
+
+  if month%=5 and ds%>31 then begin
+    month% = month% + 1
+    ds% = ds% - 31
+  bend
+
+  if month%=6 and ds%>30 then begin
+    month% = month% + 1
+    ds% = ds% - 30
+  bend
+
+  if month%=7 and ds%>31 then begin
+    month% = month% + 1
+    ds% = ds% - 31
+  bend
+
+  if month%=8 and ds%>31 then begin
+    month% = month% + 1
+    ds% = ds% - 31
+  bend
+
+  if month%=9 and ds%>30 then begin
+    month% = month% + 1
+    ds% = ds% - 30
+  bend
+
+  if month%=10 and ds%>31 then begin
+    month% = month% + 1
+    ds% = ds% - 31
+  bend
+
+  if month%=11 and ds%>30 then begin
+    month% = month% + 1
+    ds% = ds% - 30
+  bend
+
+  date$=mid$(str$(year%),2)
+
+  if month% > 9 then begin
+    date$ = date$ + "-"
+  bend:else begin
+    date$ = date$ + "-0"
+  bend
+
+  date$ = date$ + mid$(str$(month%), 2)
+
+
+  if ds% > 9 then begin
+    date$ = date$ + "-"
+  bend:else begin
+    date$ = date$ + "-0"
+  bend
+
+  date$ = date$ + mid$(str$(ds%), 2)
+
+  return
+
+
+'----------------
+.format_fpga_hash
+'----------------
+' A port of lydon's function in "freeze_megainfo.c"
+
+  reverse% = 0  ' max10 is reversed
+
+  if reverse% then begin
+    upper = (peek(offs+2) << 8) + peek(offs+3)
+    lower = (peek(offs+4) << 8) + peek(offs+5)
+  bend:else:begin
+    upper = (peek(offs+5) << 8) + peek(offs+4)
+    lower = (peek(offs+3) << 8) + peek(offs+2)
+  bend
+
+  fpga_hash$ = hex$(upper) + hex$(lower)
+
+  return
+  
 ÿ

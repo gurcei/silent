@@ -27,10 +27,10 @@ DONE- Try port line drawing routine to assembly, for speed
   DONE - final section: rotating cubes via megaplot
   DONE- fade back to original screen demo was run from
   DONE- Add PAL check
-  - ROM version check (my experimental 999999.bin rom)
+  DONE- ROM version check (my experimental 999999.bin rom)
   - core version check (insist to run only on a specific dev core containing some needed fixes)
     (fixes for hyppo get/set map, and also fix for booting to MEGA659.ROM)
-  - Thank ubik for Eleven
+  DONE- Thank ubik for Eleven
 
   - Improve autoboot.c65 menu system to be more polished and friendly (like our intro disks)
   - mention in boot menu that demo requires a new development core, and a tweaked rom, presently available at:
