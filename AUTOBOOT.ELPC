@@ -162,14 +162,15 @@
   print
   print "{x96}MISC. FILES{x5}"
   print "==========="
-  print "{x9F}6{x5}) baslogo.el"
-  print "{x9F}7{x5}) starfield.el"
-  print "{x9F}8{x5}) line.el"
-  print "{x9F}9{x5}) petline.el"
-  print "{x9F}a{x5}) rotate.el"
-  print "{x9F}b{x5}) writer.el"
-  print "{x9F}c{x5}) melody.el"
-  print "{x9F}d{x5}) autoboot.el"
+  print "{x9F}6{x5}) grabber.el"
+  print "{x9F}7{x5}) baslogo.el"
+  print "{x9F}8{x5}) starfield.el"
+  print "{x9F}9{x5}) line.el"
+  print "{x9F}a{x5}) petline.el"
+  print "{x9F}b{x5}) rotate.el"
+  print "{x9F}c{x5}) writer.el"
+  print "{x9F}d{x5}) melody.el"
+  print "{x9F}e{x5}) autoboot.el"
   print
   print "{x9F}/{x5}) Exit"
   get key a$
@@ -179,19 +180,22 @@
   if a$="3" then gosub silent2_el
   if a$="4" then gosub rotate_asm
   if a$="5" then gosub asmhelper_a
-  if a$="6" then gosub baslogo_el
-  if a$="7" then gosub starfield_el
-  if a$="8" then gosub line_el
-  if a$="9" then gosub petline_el
-  if a$="a" then gosub rotate_el
-  if a$="b" then gosub writer_el
-  if a$="c" then gosub melody_el
-  if a$="d" then gosub autoboot_el
+
+  if a$="6" then gosub grabber_el
+  if a$="7" then gosub baslogo_el
+  if a$="8" then gosub starfield_el
+  if a$="9" then gosub line_el
+  if a$="a" then gosub petline_el
+  if a$="b" then gosub rotate_el
+  if a$="c" then gosub writer_el
+  if a$="d" then gosub melody_el
+  if a$="e" then gosub autoboot_el
 
   if a$="/" then return
 
   goto show_source_list
   return
+
 
 .autoload_11
 '-----------
@@ -210,6 +214,38 @@
 .asmhelper_a
   return
 
+.grabber_el
+'----------
+  do
+    print "{x93}";
+    print "{x96}grabber.el{x5}"
+    print "=========="
+    print "This is a tool I had used previously for the 'Xanadu - BASIC 65 Edition'"
+    print "demo from 2022. On that occasion, I had used it to record the PETSCII"
+    print "animation details in the initial Sonny 'painting' sequence."
+    print
+    print "On this occasion, I used it to save out PETSCII objects for the"
+    print "individual elements of the BAS logo (the backdrop, the B, A, and S)"
+    print
+    print "Usage:"
+    print "  - If it asks about a magic signature, just type '{x9A}y{x5}'"
+    print "  - Press '{x9A}F1{x5}' and load '{x9A}BAS.BIN{x5}'"
+    print "  - Press '{x9A}C{x5}' to draw the first recorded PETSCII object"
+    print "  - Press '{x9A}={x5}' to draw the next recorded PETSCII object"
+    print "  - Press '{x9A}-{x5}' to draw the previous recorded PETSCII object"
+    print
+    print "{x9F}RETURN{x5}) Open '{x96}grabber.el{x5}' in Eleven"
+    print " {x9F}SPACE{x5}) Run '{x96}grabber{x5}' (compiled source)"
+    print "     {x9F}/{x5}) Exit"
+
+    get key a$
+    if a$=chr$(13) then fname$="grabber.el":goto autoload_11
+    if a$=" " then clr:dload "grabber"
+  loop while a$<>"/"
+  a$=""
+  return
+
+
 .baslogo_el
 '----------
   do
@@ -226,6 +262,9 @@
     print
     print "The bouncy effect was achieved by either skipping or repeating some"
     print "rows, to give the impression of shrinking or stretching the height."
+    print
+    print "It no longer seems to be in a functional state anymore, don't have the"
+    print "energy to debug it right now... :)"
     print
     print "{x9F}RETURN{x5}) Open '{x96}baslogo.el{x5}' in Eleven"
     print " {x9F}SPACE{x5}) Run '{x96}baslogo{x5}' (compiled source)"
@@ -312,7 +351,7 @@
     print "{x96}petline.el{x5}"
     print "=========="
     print "I used this program to explore {x1E}grim fandango{x5}'s {x9A}MEGAPLOT{x5} utility"
-    print "which could draw 2x2 PETSCII dots on the screen."
+    print "which could draw 4x4 pixel PETSCII dots on the screen."
     print "  - {x9A}https://github.com/grim-fandango/megaplot{x5}"
     print
     print "After trying to draw a line by calling it from BASIC per each pixel,"
@@ -445,14 +484,14 @@
 
   if xemu_flag = 0 then return
 
-  print "{x93}{x11}{x11}{x1E}xemu note{x5}: you are running this demo in the xemu emulator."
+  print "{x93}{x11}{x11}{x1E}XEMU NOTE{x5}: You are running this demo in the Xemu emulator."
   print
-  print "please note that some aspects of this demo run slightly faster"
-  print "under xemu compared to real hardware (likely due to differences in"
+  print "Please note that some aspects of this demo run slightly faster"
+  print "under Xemu compared to real hardware (likely due to differences in"
   print "how much time is consumed for dma calls, but still to be investigated)"
   print
-  print "apart from that, it should still run fine."
-  print "{x11}{x9E}press any key to continue...{x5}"
+  print "Apart from that, it should still run fine."
+  print "{x11}{x9E}Press any key to continue...{x5}"
   get key a$
   return
 
@@ -464,11 +503,11 @@
 
   if vm$ = "pal" then return
 
-  print "{x93}{x11}{x11}{x5}this program requires switching from {x1C}ntsc{x5} to {x1E}pal{x5}"
+  print "{x93}{x11}{x11}{x5}This program requires switching from {x1C}NTSC{x5} to {x1E}PAL{x5}"
   print
-  print "will switch over now."
+  print "Will switch over now."
 
-  print "{x11}{x9E}press any key to continue...{x5}"
+  print "{x11}{x9E}Press any key to continue...{x5}"
   get key a$
   poke $ffd306f,$00
   poke $ffd3072,$00
@@ -493,23 +532,23 @@
   next k
 
   if rom$<>"999999" then begin
-    print "{x93}{x11}{x11}{x1C}rom warning{x5}: this demo presently works best using:"
-    print "- experimental rom: {x1E}v999999{x5}"
-    print "-         your rom: {x1C}v";rom$;"{x5}"
+    print "{x93}{x11}{x11}{x1C}ROM WARNING{x5}: This demo presently works best using:"
+    print "- Experimental rom: {x1E}v999999{x5}"
+    print "-         Your rom: {x1C}v";rom$;"{x5}"
     print
-    print "for best demo performance:"
-    print "- please download it from {x9F}https://gurce.net/999999.bin{x5}"
-    print "- rename it to '{x9F}mega65{x96}9{x9F}.rom{x5}'"
+    print "For best demo performance:"
+    print "- Please download it from {x9F}https://gurce.net/999999.bin{x5}"
+    print "- Rename it to '{x9F}MEGA65{x96}9{x9F}.ROM{x5}'"
     print "    (yes, add the '{x96}9{x5}' to the end)"
-    print "- place it on your sd-card"
-    print "- reboot your mega65 while holding down the '{x96}9{x5}' key"
+    print "- Place it on your sd-card"
+    print "- Reboot your mega65 while holding down the '{x96}9{x5}' key"
     print
-    print "{x1C}if not done, you will experience music slowdown issues{x5} due to "
-    print "existing/older roms blocking basic 'play' command while in sys calls"
+    print "{x1C}If not done, you will experience music slowdown issues{x5} due to "
+    print "existing/older roms blocking basic 'PLAY' command while in sys calls"
     print
-    print "newer roms made after this demo will likely have repaired this matter."
+    print "Newer roms made after this demo will likely have repaired this matter."
     print
-    print "{x9E}press any key to continue...{x5}"
+    print "{x9E}Press any key to continue...{x5}"
     get key a$
 
   bend

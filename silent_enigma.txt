@@ -28,21 +28,23 @@ DONE- Try port line drawing routine to assembly, for speed
   DONE- fade back to original screen demo was run from
   DONE- Add PAL check
   DONE- ROM version check (my experimental 999999.bin rom)
-  - core version check (insist to run only on a specific dev core containing some needed fixes)
+  DONE- core version check (insist to run only on a specific dev core containing some needed fixes)
     (fixes for hyppo get/set map, and also fix for booting to MEGA659.ROM)
   DONE- Thank ubik for Eleven
 
   - Improve autoboot.c65 menu system to be more polished and friendly (like our intro disks)
-  - mention in boot menu that demo requires a new development core, and a tweaked rom, presently available at:
-    - Make mention that will need latest development core
-      - for fix to hyppo get/set map, and ability to use MEGA659.ROM
-    - gurce.net/999999.bin (version 999999)
-    - rename to "MEGA659.ROM"
+  DONE- mention in boot menu that demo requires a new development core, and a tweaked rom, presently available at:
+    DONE- Make mention that will need latest development core
+      DONE- for fix to hyppo get/set map, and ability to use MEGA659.ROM
+    DONE- gurce.net/999999.bin (version 999999)
+    DONE- rename to "MEGA659.ROM"
       (yes, add the extra '9' at the end, that's not a typo!)
-    - place this on your sd-card
-    - Reboot your MEGA65 while holding down the 9 key (to load this alternate rom)
+    DONE- place this on your sd-card
+    DONE- Reboot your MEGA65 while holding down the 9 key (to load this alternate rom)
 DONE- Allow Eleven to support .prj file for multi-file compilation
 DONE- Push Eleven improvements into main eleven repo
+- Suggest Eleven link on wiki for more usage help
+- Suggest help on using Mega Assembler too
 
 baslogo.el = 621 lines
 starfield.el = 625 lines
