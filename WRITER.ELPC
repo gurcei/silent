@@ -43,6 +43,8 @@
 '----
 .init
 '----
+  print chr$(27);"5"
+
   lyr$(0) = "In dreamland..."
   lyr$(1) = "grandeur..."
   lyr$(2) = "I held..."

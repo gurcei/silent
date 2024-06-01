@@ -12,7 +12,7 @@
 #declare mask%, month%, year%, ds%, date$
 #declare fpga_hash$, reverse%, upper, lower
 #declare a$, k, offs, xemu_flag
-
+#declare rbw_clr, ctime
 
 '----
 .init
@@ -30,7 +30,14 @@
 '----
   gosub show_main_menu
 
-  get key a$
+  ctime=ti
+  do
+    if ti-ctime > .03 then begin
+      gosub cycle_colours
+      ctime=ti
+    bend
+    get a$
+  loop while a$=""
 
   if a$="1" then gosub perform_checks
   if a$="2" then gosub show_about
@@ -42,6 +49,16 @@
   end
 
 
+'-------------
+.cycle_colours
+'-------------
+  for k = 0 to 16
+    poke $ff80001+k, mod(rbw_clr+k,16) + 64
+  next k
+  rbw_clr = mod(rbw_clr + 1, 16)
+  return
+
+
 '--------------
 .show_main_menu
 '--------------
@@ -49,7 +66,7 @@
   print "'{x1}{x90}T{x5}h{x1C}e {x9F}S";chr$(156);"i{x1E}l{x1F}e{x9E}n{x81}t {x95}E{x96}n{x97}i{x98}g{x99}m{x9A}a{x4}{x5}' Demo  -  {x9A}gurce/bas{x5}  -  2nd June 2024"
   print "========================"
   print
-  print "As exclusively premiered by {x9F}retroCombs{x5}!"
+  print "Exclusively premiered by {x9F}retroCombs{x5}!"
   print
   print "{x9F}1{x5}) Play demo"
   print "{x9F}2{x5}) About this demo"
@@ -113,7 +130,7 @@
 '----------
 .show_about
 '----------
-  print "{x93}{x96}ABOUT{x5}"
+  print "{x93}{x96}ABOUT{x5} (1/2)"
   print  "====="
   print "I had been accumulating little snippets of ideas I had written in BASIC 65"
   print "over the past year, thinking there would come a time I would be able to"
@@ -132,13 +149,16 @@
   print "{x11}{x9E}Press any key to continue...{x5}"
   get key a$
 
-  print "{x93}{x96}ABOUT{x5}"
+  print "{x93}{x96}ABOUT{x5} (2/2)"
   print  "====="
   print "I have added the source code on this disk, and you're welcome to have"
   print "a browse of it!"
   print
   print "I will also aim to share the repository in github at:"
   print "- {x9F}https://github.com/gurcei/silent{x5}"
+  print
+  print "Want to learn more about Eleven? Have a read of this wiki page:"
+  print "- {x9F}https://tinyurl.com/m65-eleven{x5}"
   print 
   print "Hope you enjoy the demo! :)"
   print
@@ -214,6 +234,31 @@
 
 
 .silent_prj
+'----------
+  do
+    print "{x93}";
+    print "{x96}silent.prj{x5}"
+    print "=========="
+    print "The contents of this file aren't terribly exciting. It just lists the"
+    print "two main source files the project consists of:"
+    print "  - silent.el"
+    print "  - silent2.el"
+    print
+    print "Under the bonnet, Eleven will just paste both files into attic ram and"
+    print "treat them like they are one big file. It was a quick/dirty workaround"
+    print "to get around Eleven's 2000 source-line limitation and avoid BASIC"
+    print "string space exhaustion issues."
+    print
+    print "In order to compile the project from Eleven, load up this .prj file"
+    print "first, then press '{x9A}F5{x5}' (and wait patiently... ;))"
+    print
+    print "{x9F}RETURN{x5}) Open '{x96}silent.prj{x5}' in Eleven"
+    print "     {x9F}/{x5}) Exit"
+
+    get key a$
+    if a$=chr$(13) then fname$="silent.prj":goto autoload_11
+  loop while a$<>"/"
+  a$=""
   return
 
 
@@ -239,6 +284,8 @@
     print
     print "Oh, and working around timing differences between Xemu and Eleven wasn't"
     print "fun either!"
+    print
+    print "NOTE: To compile the pair of files, you must load '{x9A}silent.prj{x5}' first!"
     print
     print "{x9F}RETURN{x5}) Open '{x96}silent.el{x5}' in Eleven"
     print "     {x9F}/{x5}) Exit"
@@ -304,7 +351,7 @@
   do
     print "{x93}";
     print "{x96}asmhelper.a{x5}"
-    print "=========="
+    print "==========="
     print "After getting acquainted with {x1E}grim fandango{x5}'s '{x9A}MEGAPLOT{x5}' utility"
     print "and its use of the {x9A}Acme{x5} compiler, its macro system was hard to resist."
     print

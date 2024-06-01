@@ -11,7 +11,7 @@
 '       - adds $ff (start) or $fe (stop) to data stream
 '         the intent is to draw such groups in one hit
 '         (rather than char by char)
-'  F9 = toggle between version 1 or 2 of file format (default ver2)
+'  F9 = toggle between version 1, 2 or 3 of file format (default ver1)
 '  ALT+Left/Right = scroll canvas left/right
 
 
@@ -26,7 +26,7 @@
 
 #declare ldata&(12288), didx%=0, pidx%=0
 #declare group_flag&, val&, rev_flag& = 0
-#declare offs, ver=2
+#declare offs, ver=1
 #declare lastflag, last_group_idx
 
 .defines
@@ -91,7 +91,9 @@ goto main
 '----
   key off
   ' switch back to upper-case
-  ' poke $d018, peek($d018) and $fd
+  print chr$(142);  ' switch back to upper-case
+  print chr$(27);"5"
+
   oldx = -1 : oldy = -1 : oldoffs = 0
   didx% = 0
   group_flag& = 0 : rev_flag& = 0

@@ -5,7 +5,7 @@ TODO:
 DONE- 80x50 petscii line drawing routine
 DONE- Draw rotating 3d cube with petscii art
 DONE- Try port line drawing routine to assembly, for speed
-- Tie up all pieces of demo together
+DONE- Tie up all pieces of demo together
   DONE - Fade to black
   DONE- Starfield moving from right to left
   DONE- Anathema title
@@ -32,7 +32,7 @@ DONE- Try port line drawing routine to assembly, for speed
     (fixes for hyppo get/set map, and also fix for booting to MEGA659.ROM)
   DONE- Thank ubik for Eleven
 
-  - Improve autoboot.c65 menu system to be more polished and friendly (like our intro disks)
+  DONE- Improve autoboot.c65 menu system to be more polished and friendly (like our intro disks)
   DONE- mention in boot menu that demo requires a new development core, and a tweaked rom, presently available at:
     DONE- Make mention that will need latest development core
       DONE- for fix to hyppo get/set map, and ability to use MEGA659.ROM
@@ -43,8 +43,8 @@ DONE- Try port line drawing routine to assembly, for speed
     DONE- Reboot your MEGA65 while holding down the 9 key (to load this alternate rom)
 DONE- Allow Eleven to support .prj file for multi-file compilation
 DONE- Push Eleven improvements into main eleven repo
-- Suggest Eleven link on wiki for more usage help
-- Suggest help on using Mega Assembler too
+DONE- Suggest Eleven link on wiki for more usage help
+SKIP- Suggest help on using Mega Assembler too
 
 baslogo.el = 621 lines
 starfield.el = 625 lines

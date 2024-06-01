@@ -16,12 +16,12 @@
 '        0032: ptr to clraddr%
 '        0034: ptr to inc%
 ' 4.0800 SCREEN MEMORY
-' 4.2000 PETSCII GRAPHICS
+' 4.2000 PETSCII GRAPHICS for BAS logo
 
 ' BANK5 Memory usage
 ' ------------------
-' 5.0000 screen buffer
-' 5.1000 color ram buffer
+' 5.0000 screen buffer for draw_petscii_frame
+' 5.1000 color ram buffer for draw_petscii_frame
 
 .defines
 #declare k, ptr, tmp, max_frames, frm_idx, frmw, frmh, sz
