@@ -46,7 +46,7 @@
 .show_main_menu
 '--------------
   print "{x93}{x5}";
-  print "'{x1}{x90}T{x5}h{x1C}e {x9F}S";chr$(156);"i{x1E}l{x1F}e{x9E}n{x81}t {x95}E{x96}n{x97}i{x98}g{x99}m{x9A}a{x4}{x5}' Demo  -  {x9A}gurce/bas{x5}  -  1st June 2024"
+  print "'{x1}{x90}T{x5}h{x1C}e {x9F}S";chr$(156);"i{x1E}l{x1F}e{x9E}n{x81}t {x95}E{x96}n{x97}i{x98}g{x99}m{x9A}a{x4}{x5}' Demo  -  {x9A}gurce/bas{x5}  -  2nd June 2024"
   print "========================"
   print
   print "As exclusively premiered by {x9F}retroCombs{x5}!"
@@ -209,8 +209,35 @@
   return
 .asmhelper_a
   return
+
 .baslogo_el
+'----------
+  do
+    print "{x93}";
+    print "{x96}baslogo.el{x5}"
+    print "=========="
+    print "I wanted to improve upon the 80x25 PETSCII BAS logo I drew for the"
+    print "'Xanadu - BASIC 65 Edition' demo from 2022. So this time I redrew it"
+    print "in 80x50 text mode to get more detail."
+    print
+    print "I then drew out each letter individually, so that I could save them out"
+    print "separately in the '{x9A}grabber.el{x5}' tool, as I then wanted to animate"
+    print "them individually on the screen as they fell down."
+    print
+    print "The bouncy effect was achieved by either skipping or repeating some"
+    print "rows, to give the impression of shrinking or stretching the height."
+    print
+    print "{x9F}RETURN{x5}) Open '{x96}baslogo.el{x5}' in Eleven"
+    print " {x9F}SPACE{x5}) Run '{x96}baslogo{x5}' (compiled source)"
+    print "     {x9F}/{x5}) Exit"
+
+    get key a$
+    if a$=chr$(13) then fname$="baslogo.el":goto autoload_11
+    if a$=" " then clr:dload "baslogo"
+  loop while a$<>"/"
+  a$=""
   return
+
 
 .starfield_el
 '------------
