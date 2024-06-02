@@ -17,6 +17,7 @@
 '----
 .init
 '----
+  fast 40
   bank 128
   offs = $ffd3630
   poke $d020, 0, 0
@@ -123,6 +124,7 @@
     print
     print "{x9E}Press any key to continue...{x5}"
     get key a$
+  bend
 
   return
 
@@ -282,10 +284,11 @@
     print "workaround, but still, looking forward to the day Eleven builds a lot"
     print "faster!"
     print
-    print "Oh, and working around timing differences between Xemu and Eleven wasn't"
-    print "fun either!"
+    print "Oh, and working around timing differences between Xemu and real hardware"
+    print "wasn't fun either!"
     print
-    print "NOTE: To compile the pair of files, you must load '{x9A}silent.prj{x5}' first!"
+    print "NOTE: To compile the pair of files, you must load '{x9A}silent.prj{x5}' first,"
+    print "      and then press '{x9A}F5{x5}'.
     print
     print "{x9F}RETURN{x5}) Open '{x96}silent.el{x5}' in Eleven"
     print "     {x9F}/{x5}) Exit"
@@ -642,7 +645,7 @@
 '----------
 .xemu_check
 '----------
-  if not (peek($ffd360f) and $20) then xemu_flag = 1
+  if (peek($ffd360f) and $20)=0 then xemu_flag = 1
 
   if xemu_flag = 0 then return
 
@@ -726,14 +729,14 @@
 
   month% = 1
   year% = 2020
-  ds% = ((peek(offs + 1) and mask%) << 8) + peek(offs)
+  ds% = ((peek(offs + 1) and mask%) * 256) + peek(offs)
 
   do while ds% > 366
     year% = year% + 1
     ds% = ds% - 366
   loop
 
-  if month%=1 and ds%=31 then begin
+  if month%=1 and ds%>31 then begin
     month% = month% + 1
     ds% = ds% - 31
   bend
@@ -823,11 +826,11 @@
   reverse% = 0  ' max10 is reversed
 
   if reverse% then begin
-    upper = (peek(offs+2) << 8) + peek(offs+3)
-    lower = (peek(offs+4) << 8) + peek(offs+5)
+    upper = (peek(offs+2) * 256) + peek(offs+3)
+    lower = (peek(offs+4) * 256) + peek(offs+5)
   bend:else:begin
-    upper = (peek(offs+5) << 8) + peek(offs+4)
-    lower = (peek(offs+3) << 8) + peek(offs+2)
+    upper = (peek(offs+5) * 256) + peek(offs+4)
+    lower = (peek(offs+3) * 256) + peek(offs+2)
   bend
 
   fpga_hash$ = hex$(upper) + hex$(lower)
