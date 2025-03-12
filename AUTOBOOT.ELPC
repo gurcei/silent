@@ -12,7 +12,10 @@
 #declare mask%, month%, year%, ds%, date$
 #declare fpga_hash$, reverse%, upper, lower
 #declare a$, k, offs, xemu_flag
-#declare rbw_clr, ctime
+#declare rbw_clr, ctime, ret%
+
+#define TRUE = 1
+#define FALSE = 0
 
 '----
 .init
@@ -95,6 +98,23 @@
   return
 
 
+'------------------
+.is_core_date_older
+'------------------
+  if year% < 2024 then ret% = TRUE : return
+  if year% > 2024 then ret% = FALSE : return
+
+  if month% < 5 then ret% = TRUE : return
+  if month% > 5 then ret% = FALSE : return
+
+  if ds% < 24 then ret% = TRUE : return
+  if ds% > 24 then ret% = FALSE : return
+
+  ' final case of dates being equal
+  ret% = FALSE
+  return
+
+
 '----------
 .core_check
 '----------
@@ -102,14 +122,16 @@
 
   gosub format_fpga_hash
 
-  if fpga_hash$<>"e296c3c9" then begin
-    print "{x93}{x11}{x11}{x1C}CORE WARNING{x5}: This demo presently works best using:"
+  gosub is_core_date_older
+
+  if fpga_hash$<>"e296c3c9" and ret% = TRUE then begin
+    print "{x93}{x11}{x11}{x1C}CORE WARNING{x5}: This demo presently works best using this core or newer:"
     print "- Development core: {x1E}e296c3c9  2024-05-24{x5}"
     print "-        Your core: {x1C}";fpga_hash$;"  ";date$;"{x5}"
     print
     print "For best demo performance:"
-    print "- Please download it from:"
-    print "  - {x9F}https://builder.mega65.org/job/mega65-core/job/development/108{x5}"
+    print "- Please download newer core from:"
+    print "  - {x9F}https://builder.mega65.org/job/mega65-core/job/development/{x5}"
     print
     print "- Unzip the '{x9F}mega65*.7z{x5}' file and locate the .cor file within"
     print "- Place it on your sd-card"
