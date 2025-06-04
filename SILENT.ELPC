@@ -315,7 +315,7 @@ subtext$(1) = "a song by..."
     gosub init_80x50
     gosub draw_backdrop
     ' faster page_flip
-    bank 0:sys $7e2a:bank 128
+    bank 0:sys to $7e2a, i1:bank 128
     gosub store_curr_colours
     gosub set_palette_for_backdrop
     fadeval=0
@@ -328,12 +328,12 @@ subtext$(1) = "a song by..."
   if logo_state = ST_FADE_TO_DEFAULT then begin
     if fadeval <= 128 then begin
       ' fade_colours_to_defaults
-      bank 0:sys $7e03, fadeval:bank 128
+      bank 0:sys to $7e03, a(fadeval), i1:bank 128
       fadeval = fadeval + 1
     bend
 
     ' cycle_alt_palette from colour 12 to 31
-    bank 0:sys $7e06, 12:bank 128
+    bank 0:sys to $7e06, a(12), i1:bank 128
     m = m + 1
 
     if m = 130 then logo_state = ST_DROP_IN_B
@@ -344,7 +344,7 @@ subtext$(1) = "a song by..."
   if logo_state = ST_DROP_IN_B then begin
     gosub animate_logo
     ' cycle_alt_palette
-    bank 0:sys $7e06, 12:bank 128
+    bank 0:sys to $7e06, a(12), i1:bank 128
     m = m + 1
 
     if m > 250 then logo_state = ST_PRESENTS:fadeval = 0
@@ -355,12 +355,12 @@ subtext$(1) = "a song by..."
   if logo_state = ST_PRESENTS then begin
     gosub anim_draw_subtext
     ' cycle_alt_palette
-    bank 0:sys $7e06, 12:bank 128
+    bank 0:sys to $7e06, a(12), i1:bank 128
     m = m + 1
 
     if m > 360 then begin
       ' fade to black
-      bank 0:sys $7e0c, fadeval:bank 128
+      bank 0:sys to $7e0c, a(fadeval), i1:bank 128
       fadeval = fadeval + 1
     bend
 
@@ -385,7 +385,7 @@ subtext$(1) = "a song by..."
   if logo_state = ST_DRAW_ANATHEMA then begin
       if fadeval <= 128 then begin
         ' fade_colours_to_defaults
-        bank 0:sys $7e03, fadeval:bank 128
+        bank 0:sys to $7e03, a(fadeval), i1:bank 128
         fadeval = fadeval + 1
       bend
 
@@ -402,7 +402,7 @@ subtext$(1) = "a song by..."
     bend
 
     ' faster page_flip
-    bank 0:sys $7e2a:bank 128
+    bank 0:sys to $7e2a, i1:bank 128
 
     gosub iter_starfield
 
@@ -483,7 +483,7 @@ subtext$(1) = "a song by..."
 
     if qix_state = 3 then begin
       ' fade to black
-      if fadeval >= 0 and fadeval <=128 then bank 0:sys $7e03, fadeval:bank 128
+      if fadeval >= 0 and fadeval <=128 then bank 0:sys to $7e03, a(fadeval), i1:bank 128
       fadeval = fadeval + 2
       if fadeval > 130 then fadeval = 130
       
@@ -530,7 +530,7 @@ subtext$(1) = "a song by..."
     bend
 
     if logo_state = ST_DRAW_SONG_TITLE then begin
-      if playidx%<7 then gosub page_flip:else bank 0:sys $7e2a:bank 128
+      if playidx%<7 then gosub page_flip:else bank 0:sys to $7e2a, i1:bank 128
       gosub iter_starfield
     bend
 
@@ -548,18 +548,18 @@ subtext$(1) = "a song by..."
     ' sys iter_greet_text
     bank 0
     for k = 0 to 6
-      sys $7e27
+      sys to $7e27, i1
     next k
     bank 128
 
     ' colour cycle
-    bank 0:sys $7e06, 16:bank 128
+    bank 0:sys to $7e06, a(16), i1:bank 128
     ' faster page_flip
-    bank 0:sys $7e2a:bank 128
+    bank 0:sys to $7e2a, i1:bank 128
     edma 3, $fa0, 160, $50000
 
     if playidx%=27 and fadeval < 128 then begin
-      if fadeval >=0 then bank 0 : sys $7e0c, fadeval : bank 128
+      if fadeval >=0 then bank 0 : sys to $7e0c, a(fadeval), i1 : bank 128
       fadeval = fadeval + 2
     bend
 
@@ -592,7 +592,7 @@ subtext$(1) = "a song by..."
     m = m + 1
 
     if finalfade = 0 and fadeval <= 128 then begin
-      bank 0: sys $7e03, fadeval:bank 128
+      bank 0: sys to $7e03, a(fadeval), i1:bank 128
       fadeval = fadeval + 1
 
       if fadeval = 129 then begin
@@ -604,7 +604,7 @@ subtext$(1) = "a song by..."
     bend
 
     if plyptr = -1 and finalfade then begin
-      if fadeval >=0 then bank 0: sys $7e03, fadeval:bank 128
+      if fadeval >=0 then bank 0: sys to $7e03, a(fadeval), i1:bank 128
       fadeval = fadeval + 2
 
       if fadeval >= 129 then begin
@@ -648,13 +648,13 @@ subtext$(1) = "a song by..."
     bend
 
     ' cycle alt palette
-    bank 0: sys $7e06, 16: bank 128
+    bank 0: sys to $7e06, a(16), i1: bank 128
 
     ' draw many cubes?
     if playidx% >=29 then gosub iter_draw_many_cubes
 
     ' faster page_flip
-    bank 0:sys $7e2a:bank 128
+    bank 0:sys to $7e2a, i1:bank 128
     gosub iter_starfield
 
     do
@@ -751,7 +751,7 @@ subtext$(1) = "a song by..."
   bend
   gosub draw_bas
     ' faster page_flip
-    bank 0:sys $7e2a:bank 128
+    bank 0:sys to $7e2a, i1:bank 128
 
   for frameidx = 0 to 2
     if finish_cnt and 2^frameidx and bcnt(frameidx)<3 then begin
@@ -979,7 +979,7 @@ subtext$(1) = "a song by..."
   inc% = inc(frameidx) * 256
 
   ' asm: draw_petscii_frame
-  bank 0:sys $7e09, mod(frmy+256,256), mod(frmy1+256,256), frmw
+  bank 0:sys to $7e09, a(mod(frmy+256,256)), x(mod(frmy1+256,256)), y(frmw), i1
 
   return
 
@@ -988,7 +988,7 @@ subtext$(1) = "a song by..."
 '-------------
   for fadeval=0 to 128
     ' fade_colours_to_white
-    bank 0:vsync 10:sys $7e00, fadeval:bank 128
+    bank 0:vsync 10:sys to $7e00, a(fadeval), i1:bank 128
 
     do while ret% = 0
       gosub parse_current_seqptr
@@ -1105,14 +1105,14 @@ subtext$(1) = "a song by..."
   for k = 0 to qlcnt - 1
     kk = mod(qlidx + k, 10)
 
-    sys $7e24, qlclr(kk) + 64
+    sys to $7e24, a(qlclr(kk) + 64), i1
 
     x1 = qlx1(kk)
     y1 = qly1(kk)
     x2 = qlx2(kk)
     y2 = qly2(kk)
 
-    sys $7e21, x1, y1, x2, y2
+    sys to $7e21, a(x1), x(y1), y(x2), z(y2), i1
 
     ' gosub draw_line
   next k
@@ -1174,7 +1174,7 @@ subtext$(1) = "a song by..."
   for qix_k = 0 to qlcnt - 1
     kk = mod(qlidx - (qlcnt-1) + qix_k + 5, 5)
 
-    sys $7e24, qlclr(kk) + 64
+    sys to $7e24, a(qlclr(kk) + 64), i1
 
     x1 = qlx1(kk)
     y1 = qly1(kk)
@@ -1233,7 +1233,7 @@ subtext$(1) = "a song by..."
     t2 = 0
     pdist = 42
 
-    sys $7e24, 64  ' pick a rainbow colours
+    sys to $7e24, a(64), i1  ' pick a rainbow colours
   bend
 
   centrex = 80 + 45*sin(t2)
@@ -1301,7 +1301,7 @@ subtext$(1) = "a song by..."
   y1 = mod(int(y1)+256,256)
   x2 = mod(int(x2)+256,256)
   y2 = mod(int(y2)+256,256)
-  sys $7e21, x1, y1, x2, y2
+  sys to $7e21, a(x1), x(y1), y(x2), z(y2), i1
   bank 128
 
     cbidx = cbidx + 1
@@ -1327,7 +1327,7 @@ subtext$(1) = "a song by..."
   y1 = mod(int(y1)+256,256)
   x2 = mod(int(x2)+256,256)
   y2 = mod(int(y2)+256,256)
-  sys $7e21, x1, y1, x2, y2
+  sys to $7e21, a(x1), x(y1), y(x2), z(y2), i1
   bank 128
   next pidx
 
@@ -1340,7 +1340,7 @@ subtext$(1) = "a song by..."
   y1 = mod(int(y1)+256,256)
   x2 = mod(int(x2)+256,256)
   y2 = mod(int(y2)+256,256)
-  sys $7e21, x1, y1, x2, y2
+  sys to $7e21, a(x1), x(y1), y(x2), z(y2), i1
   bank 128
 
   return
@@ -1394,12 +1394,12 @@ subtext$(1) = "a song by..."
 .draw_line
 '---------
   bank 0
-  sys $7e1b
+  sys to $7e1b, i1
   x1 = mod(int(x1)+256,256)
   y1 = mod(int(y1)+256,256)
   x2 = mod(int(x2)+256,256)
   y2 = mod(int(y2)+256,256)
-  sys $7e21, x1, y1, x2, y2
+  sys to $7e21, a(x1), x(y1), y(x2), z(y2), i1
   bank 128
   return
 

@@ -14,7 +14,7 @@
 '--------------
 .iter_starfield
 '--------------
-  bank 0:sys $7e0f:bank 128
+  bank 0:sys to $7e0f, i1:bank 128
 
   'for k = 0 to 20
   '  starx(k) = mod( (starx(k)-starvx(k)) + 80, 80)
@@ -31,7 +31,7 @@
 '---------
 .page_flip
 '---------
-  bank 0 : sys $7e15 : bank 128
+  bank 0 : sys to $7e15, i1 : bank 128
 
   return
 
@@ -109,7 +109,7 @@
   if fidx% = 1 then addr = $40  ' $54000
   if fidx% = 2 then addr = $20
 
-  bank 0:sys $7e12, addr: bank 128
+  bank 0:sys to $7e12, a(addr), i1: bank 128
 
   return
 
@@ -254,7 +254,7 @@
   wpoke $1a14, mod(tyinc, 65536)
   wpoke $1a16, tyinc/65536
 
-  bank 0:sys $1800:bank 128
+  bank 0:sys to $1800, i1:bank 128
 
   return
 
