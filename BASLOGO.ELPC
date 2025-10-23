@@ -132,7 +132,7 @@
     bend
 
     ' cycle_alt_palette
-    bank 0:sys $7e06:bank 128
+    bank 0:sys $7e06, 12:bank 128
     m = m + 1
 
     if m = 130 then logo_state = ST_DROP_IN_B
@@ -141,7 +141,7 @@
   if logo_state = ST_DROP_IN_B then begin
     gosub animate_logo
     ' cycle_alt_palette
-    bank 0:sys $7e06:bank 128
+    bank 0:sys $7e06, 12:bank 128
     m = m + 1
 
     if m > 250 then logo_state = ST_PRESENTS:fadeval = 0
@@ -150,7 +150,7 @@
   if logo_state = ST_PRESENTS then begin
     gosub anim_draw_subtext
     ' cycle_alt_palette
-    bank 0:sys $7e06:bank 128
+    bank 0:sys $7e06,12:bank 128
     m = m + 1
 
     if m > 360 then begin
